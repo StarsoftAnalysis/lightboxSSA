@@ -4,23 +4,22 @@ body.lb-disable-scrolling {
     overflow: hidden;
 }
 
-.lightboxOverlay {
-    position: absolute;
+.lb-overlay {
+    position: fixed; // absolute;
     top: 0;
     left: 0; 
-    /*
     width: 100%;
     height: 100%;
-     */
     z-index: 9999;
     background-color: green;
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=80);
     opacity: 0.8;
-    display: none;
+    display: none;  // gets changed by JS
 }
 
-.lightbox {
-    position: absolute;
+.lightbox { // not used
+    position: fixed;
+    background: blue;
     left: 0;
     width: 100%;
     z-index: 10000;
@@ -30,15 +29,16 @@ body.lb-disable-scrolling {
     outline: none;
 }
 
-.lightbox .lb-image {
-    display: block;
+.lb-image {
+    display: inline-block;
     height: auto;
     max-width: inherit;
     max-height: none;
     border-radius: 3px;
-
-    /* Image border */
-    border: 4px solid white;
+    img {
+        border: 4px solid white;
+        width: 100%
+    }
 }
 
 .lightbox a img {
@@ -47,14 +47,14 @@ body.lb-disable-scrolling {
 
 .lb-outerContainer {
     position: relative;
-              *zoom: 1;
-              width: 250px;
-              height: 250px;
-              margin: 0 auto;
-              border-radius: 4px;
+    z-index: 10000;
+    width: 250px;
+    height: 250px;
+    margin: 0 auto;
+    border-radius: 4px;
 
-              /* Background color behind image.
-              This is visible during transitions. */
+    /* Background color behind image.
+    This is visible during transitions. */
     background-color: white;
 }
 
@@ -64,37 +64,41 @@ body.lb-disable-scrolling {
     clear: both;
 }
 
-.lb-loader {
-    position: absolute;
-    top: 43%;
-    left: 0;
-    height: 25%;
+.lb-container {
     width: 100%;
-    text-align: center;
-    line-height: 0;
+    height: 100%;
+}
+
+.lb-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: none;  // later gets set to flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
 }
 
 .lb-cancel {
-    display: block;
     width: 32px;
     height: 32px;
-    margin: 0 auto;
-    background: url(../images/loading.gif) no-repeat;
+    background: url(../images/loading.gif) no-repeat;   // spinner
 }
 
 .lb-nav {
-    position: absolute;
-    border: 1px solid cyan;
-    top: 0;
-    left: -50%;
+    //position: fixed;
+    background: cyan;
+    //top: 0;
+    //left: 0;
     height: 100%;
-    width: 200%;
+    width: 100%;
     z-index: 10;
 }
 
-.lb-container > .nav {
-    left: 0;
-}
+//.lb-container > .nav {
+//    left: 0;
+//}
 
 .lb-nav a {
     outline: none;
@@ -104,16 +108,13 @@ body.lb-disable-scrolling {
 .lb-prev, .lb-next {
     height: 100%;
     cursor: pointer;
-    display: block;
+    display: inline-block;
 }
 
 // TODO lb-prev and lb-next should be span, not a?
-.lb-nav a.lb-prev {
-    border: 1px solid red;
-    width: 34%;
-    left: 0;
-    float: left;
-    background: url(../images/prev.png) left 48% no-repeat;
+.lb-prev {
+    //border: 1px solid red;
+    background: orange; // TEMP out url(../images/prev.png) left 48% no-repeat;
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
     // TEMP should be 0 opacity: 0;
     -webkit-transition: opacity 0.6s;
@@ -122,17 +123,14 @@ body.lb-disable-scrolling {
     transition: opacity 0.6s;
 }
 
-.lb-nav a.lb-prev:hover {
+lb-prev:hover {
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
     opacity: 1;
 }
 
-.lb-nav a.lb-next {
-    border: 1px solid green;
-    width: 64%;
-    right: 0;
-    xfloat: right;
-    background: url(../images/next.png) right 48% no-repeat;
+.lb-next {
+    //border: 1px solid green;
+    background: yellow; // TEMP out url(../images/next.png) right 48% no-repeat;
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
     // TEMP out  opacity: 0;
     -webkit-transition: opacity 0.6s;
@@ -141,15 +139,15 @@ body.lb-disable-scrolling {
     transition: opacity 0.6s;
 }
 
-.lb-nav a.lb-next:hover {
+.lb-next:hover {
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
     opacity: 1;
 }
 
 .lb-dataContainer {
+    display: none; // later
     margin: 0 auto;
     padding-top: 5px;
-    *zoom: 1;
     width: 100%;
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;

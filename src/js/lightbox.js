@@ -12,7 +12,7 @@
 //
 
 // TODO
-// - convert to proper Class
+// - it's a class, but use of # implies only one...
 
 'use strict';
 
@@ -32,30 +32,23 @@
     }
 }(this, function ($) {
 
-    function Lightbox(options) {
-        this.album = [];
-        this.currentImageIndex = void 0;
-        this.init();
-        // options
-        this.options = $.extend({}, this.constructor.defaults);
-        this.option(options);
-    }
+    class Lightbox {
 
     // Descriptions of all options available on the demo site:
     // http://lokeshdhakar.com/projects/lightbox2/index.html#options
-    Lightbox.defaults = {
+    defaults = {
         albumLabel: 'Image %1 of %2',
+        showImageNumberLabel: false,    // TODO not reimplemented
         alwaysShowNavOnTouchDevices: false,
         fadeDuration: 600,
         fitImagesInViewport: true,
         imageFadeDuration: 600,
-        // maxWidth: 800,
+        // maxWidth: 800,   // TODO get rid of these, or use maxSize
         // maxHeight: 600,
         positionFromTop: 50,    // pixels needed for arithmetic  "5vh",    // CD try using this at the bottom too
         resizeDuration: 700,
-        showImageNumberLabel: true,
         wrapAround: false,
-        disableScrolling: false,
+        disableScrolling: true, // false,  ??
         // Sanitize Title
         // If the caption data is trusted, for example you are hardcoding it in, then leave this to false.
         // This will free you to add html tags, such as links, in the caption.
@@ -65,15 +58,26 @@
         arrowWidth: 32, // Space for arrow *outside* the image area
     };
 
-    Lightbox.prototype.option = function(options) {
+    options = {};
+
+    constructor (options) {
+        this.album = [];
+        this.currentImageIndex = void 0;
+        this.init();
+        // options
+        this.options = $.extend({}, this.defaults);
+        this.option(options);
+    }
+
+    option (options) {
         $.extend(this.options, options);
     };
 
-    Lightbox.prototype.imageCountLabel = function(currentImageNum, totalImages) {
+    imageCountLabel (currentImageNum, totalImages) {
         return this.options.albumLabel.replace(/%1/g, currentImageNum).replace(/%2/g, totalImages);
     };
 
-    Lightbox.prototype.init = function() {
+    init () {
         var self = this;
         // Both enable and build methods require the body tag to be in the DOM.
         $(document).ready(function() {
@@ -84,10 +88,9 @@
 
     // Loop through anchors and areamaps looking for either data-lightbox attributes or rel attributes
     // that contain 'lightbox'. When these are clicked, start lightbox.
-    // TODO don't think this is a valid use of rel, so get rid of it.
-    Lightbox.prototype.enable = function() {
+    enable () {
         var self = this;
-        $('body').on('click', 'a[rel^=lightbox], area[rel^=lightbox], a[data-lightbox], area[data-lightbox]', function(event) {
+        $('body').on('click', 'a[data-lightbox], area[data-lightbox]', function(event) {
             self.start($(event.currentTarget));
             return false;
         });
@@ -96,14 +99,14 @@
     // Build html for the lightbox and the overlay.
     // Attach event handlers to the new DOM elements. click click click
     // NOTE This happens when page is loaded, NOT when an image is clicked.
-    Lightbox.prototype.build = function() {
+    build () {
         if ($('#lightbox').length > 0) {
             return;
         }
 
         var self = this;
 
-        // The two root notes generated, #lightboxOverlay and #lightbox are given
+        // The two root nodes generated, #lightboxOverlay and #lightbox are given
         // tabindex attrs so they are focusable. We attach our keyboard event
         // listeners to these two elements, and not the document. Clicking anywhere
         // while Lightbox is opened will keep the focus on or inside one of these
@@ -116,17 +119,69 @@
         // Github issue: https://github.com/lokesh/lightbox2/issues/663
         // orig: $('<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div><div id="lightbox" tabindex="-1" class="lightbox"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href="" ></a><a class="lb-next" aria-label="Next image" href="" ></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"><a class="lb-close"></a></div></div></div></div>').appendTo($('body'));
         // without lb-close:
-        $('<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div><div id="lightbox" tabindex="-1" class="lightbox"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href="" ></a><a class="lb-next" aria-label="Next image" href="" ></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"></div></div></div></div>').appendTo($('body'));
+        // also old $('<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div><div id="lightbox" tabindex="-1" class="lightbox"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href="" ></a><a class="lb-next" aria-label="Next image" href="" ></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"></div></div></div></div>').appendTo($('body'));
+        const oldhtml = `
+            <div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div>
+            <div id="lightbox" tabindex="-1" class="lightbox">
+                <div class="lb-outerContainer">
+                    <div class="lb-container">
+                        <img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><!-- temp 1x1 gif because it needs a src -->
+                        <div class="lb-nav">
+                            <a class="lb-prev" aria-label="Previous image" href="" ></a>
+                            <a class="lb-next" aria-label="Next image" href="" ></a>
+                        </div>
+                        <div class="lb-loader">
+                            <a class="lb-cancel"></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="lb-dataContainer">
+                    <div class="lb-data">
+                        <div class="lb-details">
+                            <span class="lb-caption"></span>
+                            <span class="lb-number"></span>
+                        </div>
+                        <div class="lb-closeContainer"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        const html = `
+            <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey backgroundi, click on it to close -->
+                    <div id="lb-container" class="lb-container"><!-- full width -->
+                            <div id="lb-prev" class="lb-prev" aria-label="Previous image"></div>
+                            <div id=lb-imagewrapper class="lb-image-wrapper">
+                                <img id=lb-image class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><!-- temp 1x1 gif -->
+                            </div>
+                            <div id=lb-next class="lb-next" aria-label="Next image"></div>
+                        </div>
+                        <div class="lb-loader">
+                            <a class="lb-cancel"></a>
+                        </div>
+                    </div>
+                    <div class="lb-dataContainer"><!-- maybe later -->
+                        <div class="lb-data">
+                            <div class="lb-details">
+                                <span class="lb-caption"></span>
+                                <span class="lb-number"></span>
+                            </div>
+                            <div class="lb-closeContainer"></div>
+                        </div>
+                    </div>
+            </div>
+        `;
+        $(html).appendTo($('body'));
 
         // Cache jQuery objects
-        this.$lightbox       = $('#lightbox');
-        this.$overlay        = $('#lightboxOverlay');
-        this.$outerContainer = this.$lightbox.find('.lb-outerContainer');
-        this.$container      = this.$lightbox.find('.lb-container');
-        this.$image          = this.$lightbox.find('.lb-image');
-        this.$nav            = this.$lightbox.find('.lb-nav');
+        //this.$lightbox       = $('#lightbox');
+        this.$overlay        = $('#lb-overlay');
+        //this.$outerContainer = this.$lightbox.find('.lb-outerContainer');
+        this.$container      = $('#lb-container');  //this.$lightbox.find('.lb-container');
+        this.$image          = $('#lb-image');  //this.$lightbox.find('.lb-image');
+        //this.$nav            = this.$lightbox.find('.lb-nav');
 
         // Store css values for future lookup
+        // (use parseInt to get rid of trailing 'px')
         this.containerPadding = {
             top:    parseInt(this.$container.css('padding-top'), 10),
             right:  parseInt(this.$container.css('padding-right'), 10),
@@ -147,20 +202,22 @@
             return false;
         });
 
+        /*
         this.$lightbox.hide().on('click', function(event) {
             if ($(event.target).attr('id') === 'lightbox') {
                 self.end();
             }
         });
+        */
 
-        this.$outerContainer.on('click', function(event) {
-            if ($(event.target).attr('id') === 'lightbox') {
+        this.$container.on('click', function(event) {
+            if ($(event.target).attr('id') === 'lb-container') {
                 self.end();
             }
             return false;
         });
 
-        this.$lightbox.find('.lb-prev').on('click', function() {
+        this.$overlay.find('.lb-prev').on('click', function() {
             if (self.currentImageIndex === 0) {
                 self.changeImage(self.album.length - 1);
             } else {
@@ -169,7 +226,7 @@
             return false;
         });
 
-        this.$lightbox.find('.lb-next').on('click', function() {
+        this.$overlay.find('.lb-next').on('click', function() {
             if (self.currentImageIndex === self.album.length - 1) {
                 self.changeImage(0);
             } else {
@@ -188,26 +245,29 @@
         // we set the pointer events back to auto for the nav div so it can capture hover and left-click
         // events as usual.
         // TODO  maybe don't need this
+        /*
         this.$nav.on('mousedown', function(event) {
             if (event.which === 3) {
                 self.$nav.css('pointer-events', 'none');
 
-                self.$lightbox.one('contextmenu', function() {
+                self.$overlay.one('contextmenu', function() {
                     setTimeout(function() {
                         this.$nav.css('pointer-events', 'auto');
                     }.bind(self), 0);
                 });
             }
         });
+        */
 
-        this.$lightbox.find('.lb-loader, .lb-close').on('click', function() {
+        this.$overlay.find('.lb-loader, .lb-close').on('click', function() {
             self.end();
             return false;
         });
     };
 
+    // User has clicked on an image with 'data-lightbox'.
     // Show overlay and lightbox. If the image is part of a set, add siblings to album array.
-    Lightbox.prototype.start = function($link) {
+    start ($link) {
         var self    = this;
         var $window = $(window);
 
@@ -229,10 +289,10 @@
         }
 
         // Support both data-lightbox attribute and rel attribute implementations
-        var dataLightboxValue = $link.attr('data-lightbox');
+        var dataLightboxValue = $link.attr('data-lightbox');    // dLV gets 'lightbox' (or the name of the gallery)
         var $links;
 
-        if (dataLightboxValue) {
+        //if (dataLightboxValue) {
             $links = $($link.prop('tagName') + '[data-lightbox="' + dataLightboxValue + '"]');
             for (var i = 0; i < $links.length; i += 1) {
                 addToAlbum($($links[i]));
@@ -240,6 +300,7 @@
                     imageNumber = i;
                 }
             }
+            /*
         } else {
             if ($link.attr('rel') === 'lightbox') {
                 // If image is not part of a set
@@ -255,14 +316,18 @@
                 }
             }
         }
+        */
 
-        // Position Lightbox
-        var top  = $window.scrollTop() + this.options.positionFromTop;  // CD to do centre it vertically    Why use scrollTop? because we're positioning on whole page
-        var left = $window.scrollLeft();
-        this.$lightbox.css({
-            top: top + 'px',
-            left: left + 'px'
-        }).fadeIn(this.options.fadeDuration);
+        // Position lb-overlay -- NO, it's always full screen
+        //var top  = /*$window.scrollTop() + */ this.options.positionFromTop;  // CD to do centre it vertically    Why use scrollTop? because we're positioning on whole page
+        //var left = 0 /*$window.scrollLeft()*/;
+        //this.$overlay.css({
+        //    top: top + 'px',
+        //    left: left + 'px'
+        //});
+        // fade from none to flex -- from https://stackoverflow.com/questions/28904698/how-fade-in-a-flex-box
+        // later in changeImage()
+        //this.$overlay.css("display", "flex").hide().fadeIn(this.options.fadeDuration);
 
         // Disable scrolling of the page while open
         if (this.options.disableScrolling) {
@@ -273,20 +338,24 @@
     };
 
     // Hide most UI elements in preparation for the animated resizing of the lightbox.
-    Lightbox.prototype.changeImage = function(imageNumber) {
+    changeImage (imageNumber) {
         var self = this;
         var filename = this.album[imageNumber].link;
         var filetype = filename.split('.').slice(-1)[0];
-        var $image = this.$lightbox.find('.lb-image');
+        var $image = this.$overlay.find('.lb-image');
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
 
         // Show loading state
-        this.$overlay.fadeIn(this.options.fadeDuration);
+        //this.$overlay.fadeIn(this.options.fadeDuration);
+        // fade from none to flex -- from https://stackoverflow.com/questions/28904698/how-fade-in-a-flex-box
+        // later in changeImage()
+        this.$overlay.css("display", "flex").hide().fadeIn(this.options.fadeDuration);
         $('.lb-loader').fadeIn('slow');
-        this.$lightbox.find('.lb-image, .lb-nav, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
-        this.$outerContainer.addClass('animating');
+        //this.$overlay.find('.lb-image, .lb-nav, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
+        this.$overlay.find('.lb-image, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
+        this.$container.addClass('animating');
 
         // When image to show is preloaded, we send the width and height to sizeContainer()
         var preloader = new Image();
@@ -382,7 +451,8 @@
     };
 
     // Stretch overlay to fit the viewport
-    Lightbox.prototype.sizeOverlay = function() {
+    sizeOverlay () {
+        return; // CD not needed
         var self = this;
         // We use a setTimeout 0 to pause JS execution and let the rendering catch-up.
         // Why do this? If the `disableScrolling` option is set to true, a class is added to the body
@@ -401,30 +471,32 @@
 
     // Animate the size of the lightbox to fit the image we are showing
     // This method also shows the the image.
-    Lightbox.prototype.sizeContainer = function(imageWidth, imageHeight) {
+    sizeContainer (imageWidth, imageHeight) {
         var self = this;
-        var oldWidth  = this.$outerContainer.outerWidth();
-        var oldHeight = this.$outerContainer.outerHeight();
-        var newWidth  = imageWidth + 
+        var oldWidth  = this.$container.outerWidth();
+        var oldHeight = this.$container.outerHeight();
+        var newWidth  = imageWidth + // get nan
             this.containerPadding.left + this.containerPadding.right + 
             this.imageBorderWidth.left + this.imageBorderWidth.right + 
             this.options.arrowWidth*2;   // CD...  FIXME  maybe container is now always window width -- it's just lb-prev and lb-next that change width...???
         var newHeight = imageHeight + 
             this.containerPadding.top + this.containerPadding.bottom + 
             this.imageBorderWidth.top + this.imageBorderWidth.bottom;
-        // TODO adjust  width of lb-prev and lb-prev 
+        const windowWidth = $(window).width();
+        const lbPrevWidth = Math.round((windowWidth - newWidth) / 2);
+        const lbNextWidth = windowWidth - newWidth - lbPrevWidth;
 
         function postResize() {
-            self.$lightbox.find('.lb-dataContainer').width(newWidth);
-            self.$lightbox.find('.lb-prevLink').height(newHeight);
-            self.$lightbox.find('.lb-nextLink').height(newHeight);
+            //self.$overlay.find('.lb-dataContainer').width(newWidth);
+            self.$overlay.find('.lb-prev').width(lbPrevWidth).height(newHeight);
+            self.$overlay.find('.lb-next').width(lbNextWidth).height(newHeight);
             // Set focus on one of the two root nodes so keyboard events are captured.
             self.$overlay.focus();
             self.showImage();
         }
 
         if (oldWidth !== newWidth || oldHeight !== newHeight) {
-            this.$outerContainer.animate({
+            this.$container.animate({
                 width: newWidth,
                 height: newHeight
             //}, this.options.resizeDuration, 'swing', function() {
@@ -437,9 +509,9 @@
     };
 
     // Display the image and its details and begin preload neighboring images.
-    Lightbox.prototype.showImage = function() {
-        this.$lightbox.find('.lb-loader').stop(true).hide();
-        this.$lightbox.find('.lb-image').fadeIn(this.options.imageFadeDuration);
+    showImage () {
+        this.$overlay.find('.lb-loader').stop(true).hide();
+        this.$overlay.find('.lb-image').fadeIn(this.options.imageFadeDuration);
         this.updateNav();
         this.updateDetails();
         this.preloadNeighboringImages();
@@ -447,35 +519,35 @@
     };
 
     // Display previous and next navigation if appropriate.
-    Lightbox.prototype.updateNav = function() {
+    updateNav () {
         // Check to see if the browser supports touch events. If so, we take the conservative approach
         // and assume that mouse hover events are not supported and always show prev/next navigation
         // arrows in image sets.
         var alwaysShowNav = false;
         try {
             document.createEvent('TouchEvent');
-            alwaysShowNav = (this.options.alwaysShowNavOnTouchDevices) ? true : false;
+            alwaysShowNav = this.options.alwaysShowNavOnTouchDevices;   //) ? true : false;
         } catch (e) {}
 
-        this.$lightbox.find('.lb-nav').show();
+        // ???? this.$overlay.find('.lb-nav').show();
 
         if (this.album.length > 1) {
             if (this.options.wrapAround) {
                 if (alwaysShowNav) {
-                    this.$lightbox.find('.lb-prev, .lb-next').css('opacity', '1');
+                    this.$overlay.find('.lb-prev, .lb-next').css('opacity', '1');
                 }
-                this.$lightbox.find('.lb-prev, .lb-next').show();
+                this.$overlay.find('.lb-prev, .lb-next').show();
             } else {
                 if (this.currentImageIndex > 0) {
-                    this.$lightbox.find('.lb-prev').show();
+                    this.$overlay.find('.lb-prev').show();
                     if (alwaysShowNav) {
-                        this.$lightbox.find('.lb-prev').css('opacity', '1');
+                        this.$overlay.find('.lb-prev').css('opacity', '1');
                     }
                 }
                 if (this.currentImageIndex < this.album.length - 1) {
-                    this.$lightbox.find('.lb-next').show();
+                    this.$overlay.find('.lb-next').show();
                     if (alwaysShowNav) {
-                        this.$lightbox.find('.lb-next').css('opacity', '1');
+                        this.$overlay.find('.lb-next').css('opacity', '1');
                     }
                 }
             }
@@ -483,14 +555,14 @@
     };
 
     // Display caption, image number, and closing button.
-    Lightbox.prototype.updateDetails = function() {
+    updateDetails () {
         var self = this;
 
         // Enable anchor clicks in the injected caption html.
         // Thanks Nate Wright for the fix. @https://github.com/NateWr
         if (typeof this.album[this.currentImageIndex].title !== 'undefined' &&
             this.album[this.currentImageIndex].title !== '') {
-            var $caption = this.$lightbox.find('.lb-caption');
+            var $caption = this.$overlay.find('.lb-caption');
             if (this.options.sanitizeTitle) {
                 $caption.text(this.album[this.currentImageIndex].title);
             } else {
@@ -501,20 +573,20 @@
 
         if (this.album.length > 1 && this.options.showImageNumberLabel) {
             var labelText = this.imageCountLabel(this.currentImageIndex + 1, this.album.length);
-            this.$lightbox.find('.lb-number').text(labelText).fadeIn('fast');
+            this.$overlay.find('.lb-number').text(labelText).fadeIn('fast');
         } else {
-            this.$lightbox.find('.lb-number').hide();
+            this.$overlay.find('.lb-number').hide();
         }
 
-        this.$outerContainer.removeClass('animating');
+        this.$container.removeClass('animating');
 
-        this.$lightbox.find('.lb-dataContainer').fadeIn(this.options.resizeDuration, function() {
+        this.$overlay.find('.lb-dataContainer').fadeIn(this.options.resizeDuration, function() {
             return self.sizeOverlay();
         });
     };
 
     // Preload previous and next images in set.
-    Lightbox.prototype.preloadNeighboringImages = function() {
+    preloadNeighboringImages () {
         if (this.album.length > this.currentImageIndex + 1) {
             var preloadNext = new Image();
             preloadNext.src = this.album[this.currentImageIndex + 1].link;
@@ -525,17 +597,17 @@
         }
     };
 
-    Lightbox.prototype.enableKeyboardNav = function() {
-        this.$lightbox.on('keyup.keyboard', $.proxy(this.keyboardAction, this));
+    enableKeyboardNav () {
+        this.$overlay.on('keyup.keyboard', $.proxy(this.keyboardAction, this));
         this.$overlay.on('keyup.keyboard', $.proxy(this.keyboardAction, this));
     };
 
-    Lightbox.prototype.disableKeyboardNav = function() {
-        this.$lightbox.off('.keyboard');
+    disableKeyboardNav () {
+        this.$overlay.off('.keyboard');
         this.$overlay.off('.keyboard');
     };
 
-    Lightbox.prototype.keyboardAction = function(event) {
+    keyboardAction (event) {
         const KEYCODE_ESC        = 27;
         const KEYCODE_LEFTARROW  = 37;
         const KEYCODE_RIGHTARROW = 39;
@@ -561,15 +633,17 @@
     };
 
     // Closing time. :-(
-    Lightbox.prototype.end = function() {
+    end () {
         this.disableKeyboardNav();
         $(window).off('resize', this.sizeOverlay);
-        this.$lightbox.fadeOut(this.options.fadeDuration);
+        this.$overlay.fadeOut(this.options.fadeDuration);
         this.$overlay.fadeOut(this.options.fadeDuration);
         if (this.options.disableScrolling) {
             $('body').removeClass('lb-disable-scrolling');
         }
     };
+
+    } // end of class Lightbox
 
     return new Lightbox();
 }));
