@@ -13,6 +13,7 @@
 
 // TODO
 // - it's a class, but use of # implies only one...
+// - swiping
 
 'use strict';
 
@@ -55,7 +56,7 @@
         // If the caption data is user submitted or from some other untrusted source, then set this to true
         // to prevent xss and other injection attacks.
         sanitizeTitle: false,
-        arrowWidth: 32, // Space for arrow *outside* the image area
+        minArrowWidth: 32, // Space for arrow *outside* the image area
     };
 
     options = {};
@@ -120,6 +121,7 @@
         // orig: $('<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div><div id="lightbox" tabindex="-1" class="lightbox"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href="" ></a><a class="lb-next" aria-label="Next image" href="" ></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"><a class="lb-close"></a></div></div></div></div>').appendTo($('body'));
         // without lb-close:
         // also old $('<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div><div id="lightbox" tabindex="-1" class="lightbox"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href="" ></a><a class="lb-next" aria-label="Next image" href="" ></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"></div></div></div></div>').appendTo($('body'));
+        /*
         const oldhtml = `
             <div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div>
             <div id="lightbox" tabindex="-1" class="lightbox">
@@ -146,6 +148,7 @@
                 </div>
             </div>
         `;
+        */
         const html = `
             <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey backgroundi, click on it to close -->
                     <div id="lb-container" class="lb-container"><!-- full width -->
@@ -177,8 +180,11 @@
         this.$overlay        = $('#lb-overlay');
         //this.$outerContainer = this.$lightbox.find('.lb-outerContainer');
         this.$container      = $('#lb-container');  //this.$lightbox.find('.lb-container');
+        this.$wrapper        = $('#lb-imagewrapper');
         this.$image          = $('#lb-image');  //this.$lightbox.find('.lb-image');
         //this.$nav            = this.$lightbox.find('.lb-nav');
+        this.$prev = $('#lb-prev');
+        this.$next = $('#lb-next');
 
         // Store css values for future lookup
         // (use parseInt to get rid of trailing 'px')
@@ -217,7 +223,8 @@
             return false;
         });
 
-        this.$overlay.find('.lb-prev').on('click', function() {
+        //this.$overlay.find('.lb-prev').on('click', function() {
+        this.$prev.on('click', function() {
             if (self.currentImageIndex === 0) {
                 self.changeImage(self.album.length - 1);
             } else {
@@ -226,7 +233,8 @@
             return false;
         });
 
-        this.$overlay.find('.lb-next').on('click', function() {
+        //this.$overlay.find('.lb-next').on('click', function() {
+        this.$next.on('click', function() {
             if (self.currentImageIndex === self.album.length - 1) {
                 self.changeImage(0);
             } else {
@@ -354,6 +362,7 @@
         this.$overlay.css("display", "flex").hide().fadeIn(this.options.fadeDuration);
         $('.lb-loader').fadeIn('slow');
         //this.$overlay.find('.lb-image, .lb-nav, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
+        // TODO use ids:
         this.$overlay.find('.lb-image, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
         this.$container.addClass('animating');
 
@@ -382,12 +391,12 @@
 
             // Calculate the max image dimensions for the current viewport.
             // Take into account the border around the image and an additional 10px gutter on each side.
-            // CD added arrowWidth
-            // New plan  'arrowWidth' is whole block between left/right edge of image and edge of viewport
+            // CD added minArrowWidth
+            // New plan  'minArrowWidth' is whole block between left/right edge of image and edge of viewport
             maxImageWidth  = windowWidth - 
                 self.containerPadding.left - self.containerPadding.right - 
                 self.imageBorderWidth.left - self.imageBorderWidth.right - 
-                /*20 -*/ self.options.arrowWidth*2;
+                /*20 -*/ self.options.minArrowWidth*2;
             maxImageHeight = windowHeight - 
                 self.containerPadding.top - self.containerPadding.bottom - 
                 self.imageBorderWidth.top - self.imageBorderWidth.bottom - 
@@ -472,14 +481,14 @@
     // Animate the size of the lightbox to fit the image we are showing
     // This method also shows the the image.
     sizeContainer (imageWidth, imageHeight) {
-        var self = this;
-        var oldWidth  = this.$container.outerWidth();
-        var oldHeight = this.$container.outerHeight();
-        var newWidth  = imageWidth + // get nan
-            this.containerPadding.left + this.containerPadding.right + 
-            this.imageBorderWidth.left + this.imageBorderWidth.right + 
-            this.options.arrowWidth*2;   // CD...  FIXME  maybe container is now always window width -- it's just lb-prev and lb-next that change width...???
-        var newHeight = imageHeight + 
+        const self = this;
+        const oldWidth  = this.$wrapper.outerWidth();  // FIXME these are 0
+        const oldHeight = this.$wrapper.outerHeight();
+        const newWidth  = imageWidth +
+            this.containerPadding.left + this.containerPadding.right + // FIXME not containerPadding?
+            this.imageBorderWidth.left + this.imageBorderWidth.right; 
+            //this.options.minArrowWidth*2;   // CD...  FIXME   rename minArrowWidth to minNavWidth or something
+        const newHeight = imageHeight + 
             this.containerPadding.top + this.containerPadding.bottom + 
             this.imageBorderWidth.top + this.imageBorderWidth.bottom;
         const windowWidth = $(window).width();
@@ -488,20 +497,21 @@
 
         function postResize() {
             //self.$overlay.find('.lb-dataContainer').width(newWidth);
-            self.$overlay.find('.lb-prev').width(lbPrevWidth).height(newHeight);
-            self.$overlay.find('.lb-next').width(lbNextWidth).height(newHeight);
+            self.$prev.width(lbPrevWidth).height(newHeight);
+            self.$wrapper.width(newWidth).height(newHeight);
+            self.$next.width(lbNextWidth).height(newHeight);
+            //self.$overlay.find('.lb-prev').width(lbPrevWidth).height(newHeight);
+            //self.$overlay.find('.lb-next').width(lbNextWidth).height(newHeight);
             // Set focus on one of the two root nodes so keyboard events are captured.
             self.$overlay.focus();
             self.showImage();
         }
 
-        if (oldWidth !== newWidth || oldHeight !== newHeight) {
+        //if (oldWidth !== newWidth || oldHeight !== newHeight) {
+        if (oldHeight !== newHeight) {
             this.$container.animate({
-                width: newWidth,
+                //width: newWidth,
                 height: newHeight
-            //}, this.options.resizeDuration, 'swing', function() {
-            //    postResize();
-            //});
             }, this.options.resizeDuration, 'swing', postResize);
         } else {
             postResize();
@@ -531,6 +541,7 @@
 
         // ???? this.$overlay.find('.lb-nav').show();
 
+        // FIXME sort out arrow opacity
         if (this.album.length > 1) {
             if (this.options.wrapAround) {
                 if (alwaysShowNav) {
