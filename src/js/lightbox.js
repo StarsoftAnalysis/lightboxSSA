@@ -11,6 +11,15 @@
 // https://github.com/lokesh/lightbox2/blob/master/LICENSE
 //
 
+// data- attributes
+// - data-lightbox="galleryname"
+// - data-title="image title"
+// - data-alt="alt info"
+// - data-link="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
+// Oh - Lokesh puts the data- on an <a> with the image as the href!!
+// I'll change that to put the data- attributes in the <fig>, so no wrapping <a> required.
+//  -- see enable() applying click to anything with a data-lightbox
+
 // TODO
 // - it's a class, but use of # implies only one...
 // - swiping
@@ -87,11 +96,12 @@
         });
     };
 
-    // Loop through anchors and areamaps looking for either data-lightbox attributes or rel attributes
+    // Loop through anchors and areamaps looking for data-lightbox attributes
     // that contain 'lightbox'. When these are clicked, start lightbox.
     enable () {
         var self = this;
-        $('body').on('click', 'a[data-lightbox], area[data-lightbox]', function(event) {
+        //$('body').on('click', 'figure[data-lightbox], area[data-lightbox]', function(event) {
+        $('body').on('click', '[data-lightbox]', function(event) {
             self.start($(event.currentTarget));
             return false;
         });
@@ -154,6 +164,7 @@
                     <div id="lb-container" class="lb-container"><!-- full width -->
                             <div id="lb-prev" class="lb-prev" aria-label="Previous image"></div>
                             <div id=lb-imagewrapper class="lb-image-wrapper">
+                                <!-- This is where to add <a> but only if there's a data-lightbox2-link -->
                                 <img id=lb-image class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><!-- temp 1x1 gif -->
                             </div>
                             <div id=lb-next class="lb-next" aria-label="Next image"></div>
@@ -288,11 +299,12 @@
 
         // TODO also add the 2ndary link, if any,
         // and srclist -- already supplied as data-imagelist
-        function addToAlbum($link) {
+        function addToAlbum($image) {
             self.album.push({
-                alt: $link.attr('data-alt'),
-                link: $link.attr('href'),
-                title: $link.attr('data-title') || $link.attr('title')
+                alt: $image.attr('data-alt'),
+                name: $image.attr('data-image'),   // FIXME or from the image within the fig
+                title: $image.attr('data-title') || $image.attr('title'),
+                url: $image.attr('data-url'),
             });
         }
 
@@ -348,7 +360,8 @@
     // Hide most UI elements in preparation for the animated resizing of the lightbox.
     changeImage (imageNumber) {
         var self = this;
-        var filename = this.album[imageNumber].link;
+        var filename = this.album[imageNumber].name;
+        console.log("changeImage: imageNumber=%d filename=%s", imageNumber, filename);
         var filetype = filename.split('.').slice(-1)[0];
         var $image = this.$overlay.find('.lb-image');
 
@@ -455,7 +468,7 @@
         };
 
         // Preload image before showing
-        preloader.src = this.album[imageNumber].link;
+        preloader.src = this.album[imageNumber].name;
         this.currentImageIndex = imageNumber;
     };
 
