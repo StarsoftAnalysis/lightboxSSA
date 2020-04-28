@@ -16,7 +16,9 @@
 // - data-title="image title"
 // - data-alt="alt info"
 // - data-link="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
+    // OR -- don't wrap it, just add an on.click and a pointer
 // Oh - Lokesh puts the data- on an <a> with the image as the href!!
+// Oh2 -- no javascript? should fall back to showing the image.  or fallback to just showing the image/gallery?  The latter
 // I'll change that to put the data- attributes in the <fig>, so no wrapping <a> required.
 //  -- see enable() applying click to anything with a data-lightbox
 
@@ -165,6 +167,7 @@
                             <div id="lb-prev" class="lb-prev" aria-label="Previous image"></div>
                             <div id=lb-imagewrapper class="lb-image-wrapper">
                                 <!-- This is where to add <a> but only if there's a data-lightbox2-link -->
+                                <!-- GIF causes flash? -->
                                 <img id=lb-image class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><!-- temp 1x1 gif -->
                             </div>
                             <div id=lb-next class="lb-next" aria-label="Next image"></div>
@@ -254,6 +257,24 @@
             return false;
         });
 
+        // New for CD: 
+        // If image has an url, add an on-click event
+        // -- need to redo this on change of image -- seems to work.
+        this.$image.on('click', function(event) {
+            console.log("XXX: event=", event);
+            console.log("XXX; cII=%d, album[]=", self.currentImageIndex, self.album[self.currentImageIndex]);
+            /*
+            if (self.currentImageIndex === 0) {
+                self.changeImage(self.album.length - 1);
+            } else {
+                self.changeImage(self.currentImageIndex - 1);
+            }
+            const url = this.album[imageNumber].url;
+            */
+            window.location = self.album[self.currentImageIndex].url;
+            return false;
+        });
+
         // Show context menu for image on right-click
         // There is a div containing the navigation that spans the entire image and lives above of it. If
         // you right-click, you are right clicking this div and not the image. This prevents users from
@@ -287,10 +308,12 @@
     // User has clicked on an image with 'data-lightbox'.
     // Show overlay and lightbox. If the image is part of a set, add siblings to album array.
     start ($link) {
+        // FIXME $link is the thing clicked on -- currently a figure.  rename $link
         var self    = this;
         var $window = $(window);
 
         $window.on('resize', $.proxy(this.sizeOverlay, this));
+        // FIXME what's $proxy?
 
         this.sizeOverlay();
 
@@ -299,12 +322,14 @@
 
         // TODO also add the 2ndary link, if any,
         // and srclist -- already supplied as data-imagelist
+        // TODO $image here is a link as above -- rename it.
         function addToAlbum($image) {
             self.album.push({
                 alt: $image.attr('data-alt'),
                 name: $image.attr('data-image'),   // FIXME or from the image within the fig
                 title: $image.attr('data-title') || $image.attr('title'),
                 url: $image.attr('data-url'),
+                srclist: $image.attr('data-imagelist'),
             });
         }
 
@@ -613,18 +638,18 @@
     preloadNeighboringImages () {
         if (this.album.length > this.currentImageIndex + 1) {
             var preloadNext = new Image();
-            preloadNext.src = this.album[this.currentImageIndex + 1].link;
+            preloadNext.src = this.album[this.currentImageIndex + 1].name;
         }
         if (this.currentImageIndex > 0) {
             var preloadPrev = new Image();
-            preloadPrev.src = this.album[this.currentImageIndex - 1].link;
+            preloadPrev.src = this.album[this.currentImageIndex - 1].name;
         }
     };
 
     enableKeyboardNav () {
         this.$overlay.on('keyup.keyboard', $.proxy(this.keyboardAction, this));
         this.$overlay.on('keyup.keyboard', $.proxy(this.keyboardAction, this));
-    };
+    }
 
     disableKeyboardNav () {
         this.$overlay.off('.keyboard');
