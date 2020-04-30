@@ -2,6 +2,9 @@
 
 // NOTE: don't use opacity for overlay, because that affects all children, use rgba() instead.
 
+// TODO
+// -- see https://freebiesupply.com/blog/css-arrows/ for fancy responsive < > arrows
+
 body.lb-disable-scrolling {
     overflow: hidden;
 }
@@ -17,6 +20,7 @@ body.lb-disable-scrolling {
     display: none;  // gets changed by JS to flex
     justify-content: center;
     align-items: center;
+    cursor: url(../images/close.png) 13 14, pointer;
 }
 
 .lightboxUnused { // not used
@@ -116,20 +120,21 @@ body.lb-disable-scrolling {
 
 .lb-prev, .lb-next {
     height: 100%;
-    cursor: pointer;
+    //cursor: pointer;
     //display: inline-block;
 }
 
-// TODO lb-prev and lb-next should be span, not a?
 .lb-prev {
     //border: 1px solid red;
     background: url(../images/prev.png) left 48% no-repeat;
+    cursor: url(../images/prev-cursor.png) 2 17, pointer;
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
     // TEMP should be 0 opacity: 0;
     -webkit-transition: opacity 0.6s;
     -moz-transition: opacity 0.6s;
     -o-transition: opacity 0.6s;
     transition: opacity 0.6s;
+    // width and height from JS
 }
 
 lb-prev:hover {
@@ -140,12 +145,14 @@ lb-prev:hover {
 .lb-next {
     //border: 1px solid green;
     background: url(../images/next.png) right 48% no-repeat;
+    cursor: url(../images/next-cursor.png) 18 17, pointer;
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
     // TEMP out  opacity: 0;
     -webkit-transition: opacity 0.6s;
     -moz-transition: opacity 0.6s;
     -o-transition: opacity 0.6s;
     transition: opacity 0.6s;
+    // width and height from JS
 }
 
 .lb-next:hover {

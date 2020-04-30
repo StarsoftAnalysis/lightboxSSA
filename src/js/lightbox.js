@@ -21,14 +21,16 @@
 // Oh2 -- no javascript? should fall back to showing the image.  or fallback to just showing the image/gallery?  The latter
 // I'll change that to put the data- attributes in the <fig>, so no wrapping <a> required.
 //  -- see enable() applying click to anything with a data-lightbox
+//  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
 // - it's a class, but use of # implies only one...
+// - need to images to blend between them?
 // - swiping
 
 'use strict';
 
-// Uses Node, AMD or browser globals to create a module.
+// Uses Node, AMD, or browser globals to create a module.
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
@@ -258,11 +260,9 @@
         });
 
         // New for CD: 
-        // If image has an url, add an on-click event
+        // TODO IF! If image has an url, add an on-click event
         // -- need to redo this on change of image -- seems to work.
         this.$image.on('click', function(event) {
-            console.log("XXX: event=", event);
-            console.log("XXX; cII=%d, album[]=", self.currentImageIndex, self.album[self.currentImageIndex]);
             /*
             if (self.currentImageIndex === 0) {
                 self.changeImage(self.album.length - 1);
@@ -271,7 +271,11 @@
             }
             const url = this.album[imageNumber].url;
             */
-            window.location = self.album[self.currentImageIndex].url;
+            // self.currentImageIndex is evaluated at click time, so gives the correct URL.
+            if (self.album[self.currentImageIndex].url) {
+                // Jump to the given URL
+                window.location = self.album[self.currentImageIndex].url;
+            }
             return false;
         });
 
@@ -388,7 +392,7 @@
         var filename = this.album[imageNumber].name;
         console.log("changeImage: imageNumber=%d filename=%s", imageNumber, filename);
         var filetype = filename.split('.').slice(-1)[0];
-        var $image = this.$overlay.find('.lb-image');
+        var $image = this.$image;   // this.$overlay.find('.lb-image');   // FIXME already have this.$image defined
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
@@ -417,7 +421,8 @@
 
             $image.attr({
                 'alt': self.album[imageNumber].alt,
-                'src': filename
+                'title': self.album[imageNumber].title,
+                'src': filename,
             });
 
             $preloader = $(preloader);
@@ -455,7 +460,6 @@
 
             // Fit image inside the viewport.
             if (self.options.fitImagesInViewport) {
-
                 // Check if image size is larger then maxWidth|maxHeight in settings
                 if (self.options.maxWidth && self.options.maxWidth < maxImageWidth) {
                     maxImageWidth = self.options.maxWidth;
@@ -463,7 +467,6 @@
                 if (self.options.maxHeight && self.options.maxHeight < maxImageHeight) {
                     maxImageHeight = self.options.maxHeight;
                 }
-
             } else {
                 maxImageWidth = self.options.maxWidth || preloader.width || maxImageWidth;
                 maxImageHeight = self.options.maxHeight || preloader.height || maxImageHeight;
@@ -471,6 +474,7 @@
 
             // Is the current image's width or height is greater than the maxImageWidth or maxImageHeight
             // option than we need to size down while maintaining the aspect ratio.
+            // FIXME what about sizing up if needed -- maybe not
             if ((preloader.width > maxImageWidth) || (preloader.height > maxImageHeight)) {
                 const widthFactor = preloader.width / maxImageWidth;
                 const heightFactor = preloader.height / maxImageHeight;
@@ -490,12 +494,19 @@
                 }
             }
             self.sizeContainer($image.width(), $image.height());
+            
+            if (self.album[imageNumber].url) {
+                $image.css("cursor", "pointer");
+            } else {
+                $image.css("cursor", "auto");
+            }
         };
 
         // Preload image before showing
         preloader.src = this.album[imageNumber].name;
         this.currentImageIndex = imageNumber;
-    };
+
+    }; // end of changeImage()
 
     // Stretch overlay to fit the viewport
     sizeOverlay () {
@@ -535,9 +546,9 @@
 
         function postResize() {
             //self.$overlay.find('.lb-dataContainer').width(newWidth);
-            self.$prev.width(lbPrevWidth).height(newHeight);
+            self.$prev.width(lbPrevWidth).height(newHeight/2);  // Just use the middle part of the sides of the screen for prev/next clicking
             self.$wrapper.width(newWidth).height(newHeight);
-            self.$next.width(lbNextWidth).height(newHeight);
+            self.$next.width(lbNextWidth).height(newHeight/2);
             //self.$overlay.find('.lb-prev').width(lbPrevWidth).height(newHeight);
             //self.$overlay.find('.lb-next').width(lbNextWidth).height(newHeight);
             // Set focus on one of the two root nodes so keyboard events are captured.
