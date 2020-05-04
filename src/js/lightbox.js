@@ -2,6 +2,9 @@
 // Lightbox v2.11.1
 // by Lokesh Dhakar
 // Modified by Chris Dennis...
+// - changed DOM -- simplified, data-lightbox now works on any element, not just <a>, I use <figure>
+// - fancy cursors indicate where prev/next clickable areas are -- now outside the image
+// - added link-through for clicking on the image.
 //
 // More info:
 // http://lokeshdhakar.com/projects/lightbox2/
@@ -15,15 +18,15 @@
 // - data-lightbox="galleryname"
 // - data-title="image title"
 // - data-alt="alt info"
-// - data-link="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
+// - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
     // OR -- don't wrap it, just add an on.click and a pointer
-// Oh - Lokesh puts the data- on an <a> with the image as the href!!
 // Oh2 -- no javascript? should fall back to showing the image.  or fallback to just showing the image/gallery?  The latter
 // I'll change that to put the data- attributes in the <fig>, so no wrapping <a> required.
 //  -- see enable() applying click to anything with a data-lightbox
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
+// - is lb-cancel needed?
 // - it's a class, but use of # implies only one...
 // - need to images to blend between them?
 // - swiping
@@ -57,9 +60,9 @@
         fadeDuration: 600,
         fitImagesInViewport: true,
         imageFadeDuration: 600,
-        // maxWidth: 800,   // TODO get rid of these, or use maxSize
+        // maxWidth: 800,   // TODO get rid of these, or use maxSize and keep aspect ratio
         // maxHeight: 600,
-        positionFromTop: 50,    // pixels needed for arithmetic  "5vh",    // CD try using this at the bottom too
+        verticalMargin: 50,    // pixels needed for arithmetic  "5vh", 
         resizeDuration: 700,
         wrapAround: false,
         disableScrolling: true, // false,  ??
@@ -164,7 +167,7 @@
         `;
         */
         const html = `
-            <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey backgroundi, click on it to close -->
+            <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey background, click on it to close -->
                     <div id="lb-container" class="lb-container"><!-- full width -->
                             <div id="lb-prev" class="lb-prev" aria-label="Previous image"></div>
                             <div id=lb-imagewrapper class="lb-image-wrapper">
@@ -174,7 +177,7 @@
                             </div>
                             <div id=lb-next class="lb-next" aria-label="Next image"></div>
                         </div>
-                        <div class="lb-loader">
+                        <div class="lb-loader" id=lb-loader>
                             <a class="lb-cancel"></a>
                         </div>
                     </div>
@@ -198,6 +201,7 @@
         this.$container      = $('#lb-container');  //this.$lightbox.find('.lb-container');
         this.$wrapper        = $('#lb-imagewrapper');
         this.$image          = $('#lb-image');  //this.$lightbox.find('.lb-image');
+        this.$loader         = $('#lb-loader');
         //this.$nav            = this.$lightbox.find('.lb-nav');
         this.$prev = $('#lb-prev');
         this.$next = $('#lb-next');
@@ -303,6 +307,7 @@
         });
         */
 
+        // FIXME use ids
         this.$overlay.find('.lb-loader, .lb-close').on('click', function() {
             self.end();
             return false;
@@ -368,7 +373,7 @@
         */
 
         // Position lb-overlay -- NO, it's always full screen
-        //var top  = /*$window.scrollTop() + */ this.options.positionFromTop;  // CD to do centre it vertically    Why use scrollTop? because we're positioning on whole page
+        //var top  = /*$window.scrollTop() + */ this.options.verticalMargin;  // CD to do centre it vertically    Why use scrollTop? because we're positioning on whole page
         //var left = 0 /*$window.scrollLeft()*/;
         //this.$overlay.css({
         //    top: top + 'px',
@@ -402,7 +407,7 @@
         // fade from none to flex -- from https://stackoverflow.com/questions/28904698/how-fade-in-a-flex-box
         // later in changeImage()
         this.$overlay.css("display", "flex").hide().fadeIn(this.options.fadeDuration);
-        $('.lb-loader').fadeIn('slow');
+        this.$loader.fadeIn('slow');
         //this.$overlay.find('.lb-image, .lb-nav, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
         // TODO use ids:
         this.$overlay.find('.lb-image, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
@@ -443,7 +448,7 @@
             maxImageHeight = windowHeight - 
                 self.containerPadding.top - self.containerPadding.bottom - 
                 self.imageBorderWidth.top - self.imageBorderWidth.bottom - 
-                self.options.positionFromTop * 2; // - 70;
+                self.options.verticalMargin * 2; // - 70;
             // above line -- without the -70 is fine for landscape, not room at the bottom for portrait
 
             // SVGs that don't have width and height attributes specified are reporting width and height
@@ -569,8 +574,8 @@
 
     // Display the image and its details and begin preload neighboring images.
     showImage () {
-        this.$overlay.find('.lb-loader').stop(true).hide();
-        this.$overlay.find('.lb-image').fadeIn(this.options.imageFadeDuration);
+        this.$loader.stop(true).hide();
+        this.$image.fadeIn(this.options.imageFadeDuration);
         this.updateNav();
         this.updateDetails();
         this.preloadNeighboringImages();

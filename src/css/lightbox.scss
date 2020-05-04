@@ -9,6 +9,10 @@ body.lb-disable-scrolling {
     overflow: hidden;
 }
 
+[data-lightbox] {
+	cursor: pointer;
+}
+
 .lb-overlay {
     position: fixed; // absolute;
     top: 0;
@@ -91,12 +95,13 @@ body.lb-disable-scrolling {
     align-items: center;
     height: 100%;
     width: 100%;
+    background: url(../images/loading.gif) no-repeat;   // spinner
 }
 
 .lb-cancel {
     width: 32px;
     height: 32px;
-    background: url(../images/loading.gif) no-repeat;   // spinner
+    // ?? background: url(../images/loading.gif) no-repeat;   // spinner
 }
 
 .lb-navUnused {
