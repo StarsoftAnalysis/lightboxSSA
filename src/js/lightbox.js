@@ -134,38 +134,6 @@
         // Lightbox is open. This prevents it from intefering with other components
         // on the page below.
         //
-        // Github issue: https://github.com/lokesh/lightbox2/issues/663
-        // orig: $('<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div><div id="lightbox" tabindex="-1" class="lightbox"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href="" ></a><a class="lb-next" aria-label="Next image" href="" ></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"><a class="lb-close"></a></div></div></div></div>').appendTo($('body'));
-        // without lb-close:
-        // also old $('<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div><div id="lightbox" tabindex="-1" class="lightbox"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href="" ></a><a class="lb-next" aria-label="Next image" href="" ></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"></div></div></div></div>').appendTo($('body'));
-        /*
-        const oldhtml = `
-            <div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay"></div>
-            <div id="lightbox" tabindex="-1" class="lightbox">
-                <div class="lb-outerContainer">
-                    <div class="lb-container">
-                        <img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><!-- temp 1x1 gif because it needs a src -->
-                        <div class="lb-nav">
-                            <a class="lb-prev" aria-label="Previous image" href="" ></a>
-                            <a class="lb-next" aria-label="Next image" href="" ></a>
-                        </div>
-                        <div class="lb-loader">
-                            <a class="lb-cancel"></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="lb-dataContainer">
-                    <div class="lb-data">
-                        <div class="lb-details">
-                            <span class="lb-caption"></span>
-                            <span class="lb-number"></span>
-                        </div>
-                        <div class="lb-closeContainer"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-        */
         const html = `
             <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey background, click on it to close -->
                     <div id="lb-container" class="lb-container"><!-- full width -->
@@ -187,7 +155,6 @@
                                 <span class="lb-caption"></span>
                                 <span class="lb-number"></span>
                             </div>
-                            <div class="lb-closeContainer"></div>
                         </div>
                     </div>
             </div>
@@ -263,18 +230,7 @@
             return false;
         });
 
-        // New for CD: 
-        // TODO IF! If image has an url, add an on-click event
-        // -- need to redo this on change of image -- seems to work.
         this.$image.on('click', function(event) {
-            /*
-            if (self.currentImageIndex === 0) {
-                self.changeImage(self.album.length - 1);
-            } else {
-                self.changeImage(self.currentImageIndex - 1);
-            }
-            const url = this.album[imageNumber].url;
-            */
             // self.currentImageIndex is evaluated at click time, so gives the correct URL.
             if (self.album[self.currentImageIndex].url) {
                 // Jump to the given URL
@@ -307,81 +263,47 @@
         });
         */
 
-        // FIXME use ids
-        this.$overlay.find('.lb-loader, .lb-close').on('click', function() {
+        this.$loader.on('click', function() {
             self.end();
             return false;
         });
     };
 
-    // User has clicked on an image with 'data-lightbox'.
+    // User has clicked on an element with 'data-lightbox'.
     // Show overlay and lightbox. If the image is part of a set, add siblings to album array.
-    start ($link) {
-        // FIXME $link is the thing clicked on -- currently a figure.  rename $link
+    start ($lbelement) {
+        // $lbelement is the thing clicked on -- typically a <figure> or <image>.
         var self    = this;
         var $window = $(window);
 
-        $window.on('resize', $.proxy(this.sizeOverlay, this));
-        // FIXME what's $proxy?
+        //$window.on('resize', $.proxy(this.sizeOverlay, this));
+        $window.on('resize', this.sizeOverlay.bind(this));
 
         this.sizeOverlay();
 
         this.album = [];
         var imageNumber = 0;
 
-        // TODO also add the 2ndary link, if any,
-        // and srclist -- already supplied as data-imagelist
-        // TODO $image here is a link as above -- rename it.
-        function addToAlbum($image) {
+        function addToAlbum ($lbelement) {
             self.album.push({
-                alt: $image.attr('data-alt'),
-                name: $image.attr('data-image'),   // FIXME or from the image within the fig
-                title: $image.attr('data-title') || $image.attr('title'),
-                url: $image.attr('data-url'),
-                srclist: $image.attr('data-imagelist'),
+                alt: $lbelement.attr('data-alt'),
+                name: $lbelement.attr('data-image'),   // FIXME or from the image within the fig
+                title: $lbelement.attr('data-title') || $lbelement.attr('title'),
+                url: $lbelement.attr('data-url'),
+                srclist: $lbelement.attr('data-imagelist'),
             });
         }
 
-        // Support both data-lightbox attribute and rel attribute implementations
-        var dataLightboxValue = $link.attr('data-lightbox');    // dLV gets 'lightbox' (or the name of the gallery)
-        var $links;
-
-        //if (dataLightboxValue) {
-            $links = $($link.prop('tagName') + '[data-lightbox="' + dataLightboxValue + '"]');
-            for (var i = 0; i < $links.length; i += 1) {
-                addToAlbum($($links[i]));
-                if ($links[i] === $link[0]) {
-                    imageNumber = i;
-                }
-            }
-            /*
-        } else {
-            if ($link.attr('rel') === 'lightbox') {
-                // If image is not part of a set
-                addToAlbum($link);
-            } else {
-                // If image is part of a set
-                $links = $($link.prop('tagName') + '[rel="' + $link.attr('rel') + '"]');
-                for (var j = 0; j < $links.length; j += 1) {
-                    addToAlbum($($links[j]));
-                    if ($links[j] === $link[0]) {
-                        imageNumber = j;
-                    }
-                }
+        var dataLightboxValue = $lbelement.attr('data-lightbox');    // dLV gets 'lightbox' (or the name of the gallery)
+        var $lbelements;
+        // Find all elements with the same gallery name
+        $lbelements = $('[data-lightbox="' + dataLightboxValue + '"]');
+        for (var i = 0; i < $lbelements.length; i += 1) {
+            addToAlbum($($lbelements[i]));
+            if ($lbelements[i] === $lbelement[0]) {
+                imageNumber = i;
             }
         }
-        */
-
-        // Position lb-overlay -- NO, it's always full screen
-        //var top  = /*$window.scrollTop() + */ this.options.verticalMargin;  // CD to do centre it vertically    Why use scrollTop? because we're positioning on whole page
-        //var left = 0 /*$window.scrollLeft()*/;
-        //this.$overlay.css({
-        //    top: top + 'px',
-        //    left: left + 'px'
-        //});
-        // fade from none to flex -- from https://stackoverflow.com/questions/28904698/how-fade-in-a-flex-box
-        // later in changeImage()
-        //this.$overlay.css("display", "flex").hide().fadeIn(this.options.fadeDuration);
 
         // Disable scrolling of the page while open
         if (this.options.disableScrolling) {
@@ -411,7 +333,7 @@
         //this.$overlay.find('.lb-image, .lb-nav, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
         // TODO use ids:
         this.$overlay.find('.lb-image, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
-        this.$container.addClass('animating');
+        this.$container.addClass('animating'); // NEEDED? FIXME
 
         // When image to show is preloaded, we send the width and height to sizeContainer()
         var preloader = new Image();
@@ -479,7 +401,6 @@
 
             // Is the current image's width or height is greater than the maxImageWidth or maxImageHeight
             // option than we need to size down while maintaining the aspect ratio.
-            // FIXME what about sizing up if needed -- maybe not
             if ((preloader.width > maxImageWidth) || (preloader.height > maxImageHeight)) {
                 const widthFactor = preloader.width / maxImageWidth;
                 const heightFactor = preloader.height / maxImageHeight;
@@ -514,6 +435,8 @@
     }; // end of changeImage()
 
     // Stretch overlay to fit the viewport
+    // FIXME this is called on window resize and lots of other places
+        // -- need to change it to resize the new container/image etc.
     sizeOverlay () {
         return; // CD not needed
         var self = this;
@@ -595,7 +518,7 @@
 
         // ???? this.$overlay.find('.lb-nav').show();
 
-        // FIXME sort out arrow opacity
+        // FIXME sort out arrow opacity -- is it still needed? yes, does .show() among other things.
         if (this.album.length > 1) {
             if (this.options.wrapAround) {
                 if (alwaysShowNav) {
