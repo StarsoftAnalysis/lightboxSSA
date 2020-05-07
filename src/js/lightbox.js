@@ -134,6 +134,7 @@
         // Lightbox is open. This prevents it from intefering with other components
         // on the page below.
         //
+        /* Old:
         const html = `
             <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey background, click on it to close -->
                     <div id="lb-container" class="lb-container"><!-- full width -->
@@ -157,6 +158,42 @@
                             </div>
                         </div>
                     </div>
+            </div>
+        `;
+        */
+        const xhtml = `
+            <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey background, click on it to close -->
+                    <div id="lb-container" class="lb-container"><!-- full width -->
+                            <div id="lb-prev" class="lb-prev" aria-label="Previous image"></div>
+                            <div id=lb-imagewrapper class="lb-image-wrapper">
+                                <img id=lb-imageA class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/>
+                                <img id=lb-imageB class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/>
+                            </div>
+                            <div id=lb-next class="lb-next" aria-label="Next image"></div>
+                        </div>
+                        <div class="lb-loader" id=lb-loader>
+                            <a class="lb-cancel"></a>
+                        </div>
+                    </div>
+                    <div class="lb-dataContainer"><!-- maybe later -->
+                        <div class="lb-data">
+                            <div class="lb-details">
+                                <span class="lb-caption"></span>
+                                <span class="lb-number"></span>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        `;
+        const html = `
+            <div id=lb-overlay></div>
+            <div id=lb-nav>
+                <div id=lb-prev aria-label="Previous image"></div>
+                <div id=lb-next aria-label="Next image"></div>
+            </div>
+            <div id=lb-container><!-- may not be needed -->
+                <img id=lb-image1 src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                <img id=lb-image2 src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
             </div>
         `;
         $(html).appendTo($('body'));
