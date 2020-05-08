@@ -49,7 +49,7 @@
     }
 }(this, function ($) {
 
-    class Lightbox {
+class Lightbox {
 
     // Descriptions of all options available on the demo site:
     // http://lokeshdhakar.com/projects/lightbox2/index.html#options
@@ -64,7 +64,7 @@
         // maxHeight: 600,
         verticalMargin: 50,    // pixels needed for arithmetic  "5vh", 
         resizeDuration: 700,
-        wrapAround: false,
+        wrapAround: true,
         disableScrolling: true, // false,  ??
         // Sanitize Title
         // If the caption data is trusted, for example you are hardcoding it in, then leave this to false.
@@ -79,13 +79,12 @@
 
     constructor (options) {
         this.album = [];
-        this.currentImageIndex = void 0;
+        this.currentImageIndex = 0;
         this.init();
-        // options
-        this.options = $.extend({}, this.defaults);
-        this.option(options);
+        this.options = $.extend(this.options, this.defaults, options);
     }
 
+    // This can get called from top level script e.g. 'lightbox.option({fadeDuration: 42});'
     option (options) {
         $.extend(this.options, options);
     };
@@ -98,13 +97,11 @@
         var self = this;
         // Both enable and build methods require the body tag to be in the DOM.
         $(document).ready(function() {
+            // Now in start():  self.build();
             self.enable();
-            self.build();
         });
     };
 
-    // Loop through anchors and areamaps looking for data-lightbox attributes
-    // that contain 'lightbox'. When these are clicked, start lightbox.
     enable () {
         var self = this;
         //$('body').on('click', 'figure[data-lightbox], area[data-lightbox]', function(event) {
@@ -118,49 +115,14 @@
     // Attach event handlers to the new DOM elements. click click click
     // NOTE This happens when page is loaded, NOT when an image is clicked.
     build () {
-        if ($('#lightbox').length > 0) {
+        // FIXME what's this?
+        if ($('#lb-overlay').length > 0) {  // Presumably avoiding reentry
             return;
         }
 
         var self = this;
 
-        // The two root nodes generated, #lightboxOverlay and #lightbox are given
-        // tabindex attrs so they are focusable. We attach our keyboard event
-        // listeners to these two elements, and not the document. Clicking anywhere
-        // while Lightbox is opened will keep the focus on or inside one of these
-        // two elements.
-        //
-        // We do this so we can prevent propogation of the Esc keypress when
-        // Lightbox is open. This prevents it from intefering with other components
-        // on the page below.
-        //
-        /* Old:
-        const html = `
-            <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey background, click on it to close -->
-                    <div id="lb-container" class="lb-container"><!-- full width -->
-                            <div id="lb-prev" class="lb-prev" aria-label="Previous image"></div>
-                            <div id=lb-imagewrapper class="lb-image-wrapper">
-                                <!-- This is where to add <a> but only if there's a data-lightbox2-link -->
-                                <!-- GIF causes flash? -->
-                                <img id=lb-image class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/><!-- temp 1x1 gif -->
-                            </div>
-                            <div id=lb-next class="lb-next" aria-label="Next image"></div>
-                        </div>
-                        <div class="lb-loader" id=lb-loader>
-                            <a class="lb-cancel"></a>
-                        </div>
-                    </div>
-                    <div class="lb-dataContainer"><!-- maybe later -->
-                        <div class="lb-data">
-                            <div class="lb-details">
-                                <span class="lb-caption"></span>
-                                <span class="lb-number"></span>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-        `;
-        */
+        /*
         const xhtml = `
             <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey background, click on it to close -->
                     <div id="lb-container" class="lb-container"><!-- full width -->
@@ -185,13 +147,14 @@
                     </div>
             </div>
         `;
+        */
         const html = `
             <div id=lb-overlay></div>
             <div id=lb-nav>
                 <div id=lb-prev aria-label="Previous image"></div>
                 <div id=lb-next aria-label="Next image"></div>
             </div>
-            <div id=lb-container><!-- may not be needed -->
+            <div id=lb-container>
                 <img id=lb-image1 src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
                 <img id=lb-image2 src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
             </div>
@@ -199,17 +162,16 @@
         $(html).appendTo($('body'));
 
         // Cache jQuery objects
-        //this.$lightbox       = $('#lightbox');
-        this.$overlay        = $('#lb-overlay');
-        //this.$outerContainer = this.$lightbox.find('.lb-outerContainer');
-        this.$container      = $('#lb-container');  //this.$lightbox.find('.lb-container');
-        this.$wrapper        = $('#lb-imagewrapper');
-        this.$image          = $('#lb-image');  //this.$lightbox.find('.lb-image');
-        this.$loader         = $('#lb-loader');
-        //this.$nav            = this.$lightbox.find('.lb-nav');
-        this.$prev = $('#lb-prev');
-        this.$next = $('#lb-next');
+        this.$overlay   = $('#lb-overlay');
+        this.$nav       = $('#lb-nav');
+        this.$prev      = $('#lb-prev');
+        this.$next      = $('#lb-next');
+        this.$container = $('#lb-container');
+        this.$image1    = $('#lb-image1');
+        this.$image2    = $('#lb-image2');
+        this.$lbElements = $('lb-overlay, #lb-nav, #lb-prev, #lb-next, #lb-container, #lb-image1, #lb-image2');
 
+        // FIXME these are zero anyway?
         // Store css values for future lookup
         // (use parseInt to get rid of trailing 'px')
         this.containerPadding = {
@@ -218,36 +180,29 @@
             bottom: parseInt(this.$container.css('padding-bottom'), 10),
             left:   parseInt(this.$container.css('padding-left'), 10)
         };
-
-        this.imageBorderWidth = {
-            top:    parseInt(this.$image.css('border-top-width'), 10),
-            right:  parseInt(this.$image.css('border-right-width'), 10),
-            bottom: parseInt(this.$image.css('border-bottom-width'), 10),
-            left:   parseInt(this.$image.css('border-left-width'), 10)
+        this.imageBorderWidth = {   // FIXME which image? or use class?
+            top:    parseInt(this.$image1.css('border-top-width'), 10),
+            right:  parseInt(this.$image1.css('border-right-width'), 10),
+            bottom: parseInt(this.$image1.css('border-bottom-width'), 10),
+            left:   parseInt(this.$image1.css('border-left-width'), 10)
         };
 
         // Attach event handlers to the newly minted DOM elements
-        this.$overlay.hide().on('click', function() {
+        //?? this.$overlay.hide();
+        this.$overlay.on('click', function() {
             self.end();
             return false;
         });
 
         /*
-        this.$lightbox.hide().on('click', function(event) {
-            if ($(event.target).attr('id') === 'lightbox') {
-                self.end();
-            }
-        });
-        */
-
         this.$container.on('click', function(event) {
             if ($(event.target).attr('id') === 'lb-container') {
                 self.end();
             }
             return false;
         });
+        */
 
-        //this.$overlay.find('.lb-prev').on('click', function() {
         this.$prev.on('click', function() {
             if (self.currentImageIndex === 0) {
                 self.changeImage(self.album.length - 1);
@@ -257,7 +212,6 @@
             return false;
         });
 
-        //this.$overlay.find('.lb-next').on('click', function() {
         this.$next.on('click', function() {
             if (self.currentImageIndex === self.album.length - 1) {
                 self.changeImage(0);
@@ -267,7 +221,16 @@
             return false;
         });
 
-        this.$image.on('click', function(event) {
+        // TODO check that this works for both images
+        this.$image1.on('click', function(event) {
+            // self.currentImageIndex is evaluated at click time, so gives the correct URL.
+            if (self.album[self.currentImageIndex].url) {
+                // Jump to the given URL
+                window.location = self.album[self.currentImageIndex].url;
+            }
+            return false;
+        });
+        this.$image2.on('click', function(event) {
             // self.currentImageIndex is evaluated at click time, so gives the correct URL.
             if (self.album[self.currentImageIndex].url) {
                 // Jump to the given URL
@@ -276,47 +239,52 @@
             return false;
         });
 
-        // Show context menu for image on right-click
-        // There is a div containing the navigation that spans the entire image and lives above of it. If
-        // you right-click, you are right clicking this div and not the image. This prevents users from
-        // saving the image or using other context menu actions with the image.
-        // To fix this, when we detect the right mouse button is pressed down, but not yet clicked, we
-        // set pointer-events to none on the nav div. This is so that the upcoming right-click event on
-        // the next mouseup will bubble down to the image. Once the right-click/contextmenu event occurs
-        // we set the pointer events back to auto for the nav div so it can capture hover and left-click
-        // events as usual.
-        // TODO  maybe don't need this
         /*
-        this.$nav.on('mousedown', function(event) {
-            if (event.which === 3) {
-                self.$nav.css('pointer-events', 'none');
-
-                self.$overlay.one('contextmenu', function() {
-                    setTimeout(function() {
-                        this.$nav.css('pointer-events', 'auto');
-                    }.bind(self), 0);
-                });
-            }
-        });
-        */
-
         this.$loader.on('click', function() {
             self.end();
             return false;
         });
-    };
+        */
+    }; // end of build()
+
+    /* Fiddle:
+$('#image1').click(function(e) { 
+	//alert("image1") 
+	//e.preventDefault();
+  $('#image2').css({'opacity':"1", "pointer-events": "auto"});
+  $('#image1').css({'opacity':'0', "pointer-events": "none"});
+  // also need to adjust clickiness and/or set to display not after transitioning to 0 opacity
+});
+$('#image2').click(function(e) {
+	//alert("image2") 
+  $('#image1').css({'opacity':"1", "pointer-events": "auto"});
+  $('#image2').css({'opacity':'0', "pointer-events": "none"});
+});
+$('#prev').click(function() { alert("prev") });
+$('#next').click(function() { alert("next") });
+$('#overlay').click(function() { alert("close") });
+//$('#container').click(function() {
+//	// pass it to overlay underneath
+//  //$('#overlay').click();
+//})
+*/
 
     // User has clicked on an element with 'data-lightbox'.
-    // Show overlay and lightbox. If the image is part of a set, add siblings to album array.
+    // Show lightbox. If the image is part of a set, add siblings to album array.
     start ($lbelement) {
         // $lbelement is the thing clicked on -- typically a <figure> or <image>.
-        var self    = this;
+        var self    = this; // The Lightbox object
         var $window = $(window);
 
-        //$window.on('resize', $.proxy(this.sizeOverlay, this));
-        $window.on('resize', this.sizeOverlay.bind(this));
+        // CD moved this from above
+        self.build();
 
-        this.sizeOverlay();
+        // FIXME what happens if window is resized? -- does it adjust automatically
+        //$window.on('resize', $.proxy(this.sizeOverlay, this));
+        // NOT NEEDED $window.on('resize', this.sizeOverlay.bind(this));
+
+        //this.sizeOverlay();
+        this.showLightbox();
 
         this.album = [];
         var imageNumber = 0;
@@ -331,7 +299,7 @@
             });
         }
 
-        var dataLightboxValue = $lbelement.attr('data-lightbox');    // dLV gets 'lightbox' (or the name of the gallery)
+        var dataLightboxValue = $lbelement.attr('data-lightbox');    // dLV gets 'lightbox' or the name of the gallery
         var $lbelements;
         // Find all elements with the same gallery name
         $lbelements = $('[data-lightbox="' + dataLightboxValue + '"]');
@@ -342,25 +310,25 @@
             }
         }
 
-        // Disable scrolling of the page while open
-        if (this.options.disableScrolling) {
-            $('body').addClass('lb-disable-scrolling');
-        }
-
+        this.albumLen = this.album.length;
+        this.$currentImage = this.$image1;
+        this.$otherImage = this.$image2;
         this.changeImage(imageNumber);
-    };
+    }; // end of start()
 
-    // Hide most UI elements in preparation for the animated resizing of the lightbox.
+    // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
+    // (depends on length of album)
     changeImage (imageNumber) {
         var self = this;
         var filename = this.album[imageNumber].name;
         console.log("changeImage: imageNumber=%d filename=%s", imageNumber, filename);
         var filetype = filename.split('.').slice(-1)[0];
-        var $image = this.$image;   // this.$overlay.find('.lb-image');   // FIXME already have this.$image defined
+        var $image = this.$otherImage;   // this.$overlay.find('.lb-image');   // FIXME already have this.$image defined
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
 
+        /*
         // Show loading state
         //this.$overlay.fadeIn(this.options.fadeDuration);
         // fade from none to flex -- from https://stackoverflow.com/questions/28904698/how-fade-in-a-flex-box
@@ -371,11 +339,12 @@
         // TODO use ids:
         this.$overlay.find('.lb-image, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
         this.$container.addClass('animating'); // NEEDED? FIXME
+        */
 
-        // When image to show is preloaded, we send the width and height to sizeContainer()
+        // FIXME is Image.onload still a thing?
         var preloader = new Image();
         preloader.onload = function() {
-            var $preloader;
+            //var $this = this;   // The preloaded image
             var imageHeight;
             var imageWidth;
             var maxImageHeight;
@@ -389,10 +358,8 @@
                 'src': filename,
             });
 
-            $preloader = $(preloader);
-
-            $image.width(preloader.width);
-            $image.height(preloader.height);
+            $image.width(this.width);
+            $image.height(this.height);
             windowWidth = $(window).width();
             windowHeight = $(window).height();
 
@@ -416,7 +383,7 @@
             // https://github.com/lokesh/lightbox2/issues/552
 
             if (filetype === 'svg') {
-                if ((preloader.width === 0) || preloader.height === 0) {
+                if ((this.width === 0) || this.height === 0) {
                     $image.width(maxImageWidth);
                     $image.height(maxImageHeight);
                 }
@@ -432,31 +399,33 @@
                     maxImageHeight = self.options.maxHeight;
                 }
             } else {
-                maxImageWidth = self.options.maxWidth || preloader.width || maxImageWidth;
-                maxImageHeight = self.options.maxHeight || preloader.height || maxImageHeight;
+                maxImageWidth = self.options.maxWidth || this.width || maxImageWidth;
+                maxImageHeight = self.options.maxHeight || this.height || maxImageHeight;
             }
 
             // Is the current image's width or height is greater than the maxImageWidth or maxImageHeight
             // option than we need to size down while maintaining the aspect ratio.
-            if ((preloader.width > maxImageWidth) || (preloader.height > maxImageHeight)) {
-                const widthFactor = preloader.width / maxImageWidth;
-                const heightFactor = preloader.height / maxImageHeight;
-                //if ((preloader.width / maxImageWidth) > (preloader.height / maxImageHeight)) {
+            if ((this.width > maxImageWidth) || (this.height > maxImageHeight)) {
+                const widthFactor = this.width / maxImageWidth;
+                const heightFactor = this.height / maxImageHeight;
+                //if ((this.width / maxImageWidth) > (this.height / maxImageHeight)) {
                 if (widthFactor > heightFactor) {
                     imageWidth  = maxImageWidth;
-                    // CD imageHeight = parseInt(preloader.height / (preloader.width / imageWidth), 10);
-                    imageHeight = Math.round(preloader.height / widthFactor);
+                    // CD imageHeight = parseInt(this.height / (this.width / imageWidth), 10);
+                    imageHeight = Math.round(this.height / widthFactor);
                     $image.width(imageWidth);
                     $image.height(imageHeight);
                 } else {
                     imageHeight = maxImageHeight;
-                    //imageWidth = parseInt(preloader.width / (preloader.height / imageHeight), 10);
-                    imageWidth = Math.round(preloader.width / heightFactor);
+                    //imageWidth = parseInt(this.width / (this.height / imageHeight), 10);
+                    imageWidth = Math.round(this.width / heightFactor);
                     $image.width(imageWidth);
                     $image.height(imageHeight);
                 }
             }
-            self.sizeContainer($image.width(), $image.height());
+            //self.sizeContainer($image.width(), $image.height());
+            self.$overlay.focus();  // FIXME do this in start()?
+            self.showImage();
             
             if (self.album[imageNumber].url) {
                 $image.css("cursor", "pointer");
@@ -470,6 +439,14 @@
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
+
+    // Make the lightbox stuff visible
+    showLightbox () {
+        //this.$lbElements.css({"display": "block"});
+        //this.$lbElements.fadeIn(this.options.fadeDuration);
+        //this.$overlay.css({"opacity": "0.5"});
+        this.$overlay.fadeIn(this.options.fadeDuration);
+    }
 
     // Stretch overlay to fit the viewport
     // FIXME this is called on window resize and lots of other places
@@ -494,10 +471,11 @@
 
     // Animate the size of the lightbox to fit the image we are showing
     // This method also shows the the image.
+    // FIXME not used
     sizeContainer (imageWidth, imageHeight) {
         const self = this;
-        const oldWidth  = this.$wrapper.outerWidth();  // FIXME these are 0
-        const oldHeight = this.$wrapper.outerHeight();
+        const oldWidth  = 0;    //this.$wrapper.outerWidth();  // FIXME these are 0
+        const oldHeight = 0;    //this.$wrapper.outerHeight();
         const newWidth  = imageWidth +
             this.containerPadding.left + this.containerPadding.right + // FIXME not containerPadding?
             this.imageBorderWidth.left + this.imageBorderWidth.right; 
@@ -511,9 +489,9 @@
 
         function postResize() {
             //self.$overlay.find('.lb-dataContainer').width(newWidth);
-            self.$prev.width(lbPrevWidth).height(newHeight/2);  // Just use the middle part of the sides of the screen for prev/next clicking
-            self.$wrapper.width(newWidth).height(newHeight);
-            self.$next.width(lbNextWidth).height(newHeight/2);
+            //self.$prev.width(lbPrevWidth).height(newHeight/2);  // Just use the middle part of the sides of the screen for prev/next clicking
+            //self.$wrapper.width(newWidth).height(newHeight);
+            //self.$next.width(lbNextWidth).height(newHeight/2);
             //self.$overlay.find('.lb-prev').width(lbPrevWidth).height(newHeight);
             //self.$overlay.find('.lb-next').width(lbNextWidth).height(newHeight);
             // Set focus on one of the two root nodes so keyboard events are captured.
@@ -521,11 +499,12 @@
             self.showImage();
         }
 
+        // FIXME container resizing not needed -- just show the image!
         //if (oldWidth !== newWidth || oldHeight !== newHeight) {
         if (oldHeight !== newHeight) {
             this.$container.animate({
                 //width: newWidth,
-                height: newHeight
+                //height: newHeight
             }, this.options.resizeDuration, 'swing', postResize);
         } else {
             postResize();
@@ -534,12 +513,24 @@
 
     // Display the image and its details and begin preload neighboring images.
     showImage () {
-        this.$loader.stop(true).hide();
-        this.$image.fadeIn(this.options.imageFadeDuration);
-        this.updateNav();
-        this.updateDetails();
-        this.preloadNeighboringImages();
-        this.enableKeyboardNav();
+        //this.$loader.stop(true).hide();
+        // TODO ? also disable other clicks and keyboard events before the swap?
+        // TODO ?? swap z-index values
+        this.$currentImage.css({"pointer-events": "none"});
+        // Don't forget: fadeOut adds 'display: none' at the end of the fade (aka .hide())
+        //  (and fadeIn does the opposite)
+        this.$currentImage.fadeOut(this.options.imageFadeDuration);
+        this.$otherImage.fadeIn(this.options.imageFadeDuration+10, function() {
+            // Swap the images
+            const $temp = this.$otherImage;
+            this.$otherImage = this.$currentImage;
+            this.$currentImage = $temp;
+            this.$currentImage.css({"pointer-events": "auto"});
+            //this.updateNav();
+            //this.updateDetails();
+            this.preloadNeighboringImages();
+            this.enableKeyboardNav();  // FIXME move this start() or build() 
+        }.bind(this));
     };
 
     // Display previous and next navigation if appropriate.
@@ -579,6 +570,7 @@
         }
     };
 
+    /*
     // Display caption, image number, and closing button.
     updateDetails () {
         var self = this;
@@ -603,12 +595,13 @@
             this.$overlay.find('.lb-number').hide();
         }
 
-        this.$container.removeClass('animating');
+        //this.$container.removeClass('animating');
 
         this.$overlay.find('.lb-dataContainer').fadeIn(this.options.resizeDuration, function() {
             return self.sizeOverlay();
         });
     };
+    */
 
     // Preload previous and next images in set.
     preloadNeighboringImages () {
@@ -622,15 +615,16 @@
         }
     };
 
+    // FIXME does this still work?
     enableKeyboardNav () {
-        this.$overlay.on('keyup.keyboard', $.proxy(this.keyboardAction, this));
-        this.$overlay.on('keyup.keyboard', $.proxy(this.keyboardAction, this));
+        this.$overlay.on('keyup.keyboard', this.keyboardAction.bind(this));
+        this.$overlay.on('keyup.keyboard', this.keyboardAction.bind(this));
     }
 
     disableKeyboardNav () {
+        //this.$lightbox.off('.keyboard');
         this.$overlay.off('.keyboard');
-        this.$overlay.off('.keyboard');
-    };
+    }
 
     keyboardAction (event) {
         const KEYCODE_ESC        = 27;
@@ -659,13 +653,15 @@
 
     // Closing time. :-(
     end () {
-        this.disableKeyboardNav();
-        $(window).off('resize', this.sizeOverlay);
-        this.$overlay.fadeOut(this.options.fadeDuration);
-        this.$overlay.fadeOut(this.options.fadeDuration);
+        $(window).off('resize', this.sizeOverlay);  // FIXME needed?
+        this.$lbElements.fadeOut(this.options.fadeDuration);
+        //this.$lbElements.css({"display": "none"});
         if (this.options.disableScrolling) {
             $('body').removeClass('lb-disable-scrolling');
         }
+        this.$nav.remove();
+        this.$container.remove();
+        this.$overlay.remove();
     };
 
     } // end of class Lightbox

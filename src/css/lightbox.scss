@@ -10,8 +10,107 @@ body.lb-disable-scrolling {
 }
 
 [data-lightbox] {
-	cursor: pointer;
+    cursor: pointer;
 }
+
+#lb-overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    background: gray; // yellow;
+    opacity: 1; //0.5;   // should start/stay at e.g. 0.5;
+    transition: opacity 1s ease-in-out;
+    //display: none;  // initial state
+    cursor: url(../images/close.png) 13 14, pointer;
+}
+#lb-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 11;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    opacity: 0.2;   // 0
+    //display: none;  // initial state
+}
+#lb-prev {
+    //background: cyan;
+    border: cyan 1px solid;
+    opacity: 0; //0.2; // 0
+    height: 50%;
+    width: 50%;
+    pointer-events: auto;
+    //display: none;  // initial state
+    background: url(../images/prev.png) left 48% no-repeat;
+    cursor: url(../images/prev-cursor.png) 2 17, pointer;
+}
+#lb-next {
+    //background: green;
+    border: green 1px solid;
+    opacity: 0;//0.2; // 0
+    height: 50%;
+    width: 50%;
+    pointer-events: auto;
+    //display: none;  // initial state
+    background: url(../images/next.png) right 48% no-repeat;
+    cursor: url(../images/next-cursor.png) 18 17, pointer;
+}
+#lb-container {
+    //border: 1px white solid;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 12;
+    opacity: 1; // has to be 1 because its children can't be less transparent.   could use rgba.  see https://css-tricks.com/non-transparent-elements-inside-transparent-elements/   S0.2;  // 0
+    /* display: flex;
+    justify-content: center;
+    align-items: center; */
+    pointer-events: none;
+    //display: none;  // initial state
+}
+#lb-image1, #lb-image2 {
+    border: white 8px solid;
+    border-radius: 4px;
+}
+#lb-image1 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 13;
+    //width: 40%;
+    height: 90vw;   // TODO 70%;
+    //background: red;
+    pointer-events: auto;
+    //opacity: 1; // 0; // 0.2; // 0; //1.0;
+    // use JS  transition: opacity 1s ease-in-out;
+    //display: none;  // initial state
+}
+#lb-image2 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 14;
+    //width: 70%;
+    height: calc(100% - 10vw); /* 60%; */   // FIXME in JS -- make max size -- possibly already done
+    //background: blue;
+    pointer-events: none; /* initially */
+    //opacity: 1; // 0; //.2;  // 0;
+    // transition: opacity 1s ease-in-out;
+    //display: none;  // initial state
+}
+
+/* Old...
 
 .lb-overlay {
     position: fixed; // absolute;
@@ -65,8 +164,8 @@ body.lb-disable-scrolling {
     margin: 0 auto;
     border-radius: 4px;
 
-    /* Background color behind image.
-    This is visible during transitions. */
+    // Background color behind image.
+    //This is visible during transitions. 
     background-color: white;
 }
 
@@ -120,7 +219,7 @@ body.lb-disable-scrolling {
 
 .lb-navUnused a {
     outline: none;
- /*   background-image: url('data:image/gif;base64,R0lGODlhAQABAPAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='); FIXME what's this? */
+    // background-image: url('data:image/gif;base64,R0lGODlhAQABAPAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='); FIXME what's 
 }
 
 .lb-prev, .lb-next {
@@ -231,3 +330,5 @@ lb-prev:hover {
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
     opacity: 1;
 }
+
+*/
