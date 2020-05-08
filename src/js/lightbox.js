@@ -1,10 +1,13 @@
 //
-// Lightbox v2.11.1
-// by Lokesh Dhakar
+// LightboxSSA v2.12
 // Modified by Chris Dennis...
 // - changed DOM -- simplified, data-lightbox now works on any element, not just <a>, I use <figure>
 // - fancy cursors indicate where prev/next clickable areas are -- now outside the image
 // - added link-through for clicking on the image.
+
+// Forked May 2020 from:
+// Lightbox v2.11.1
+// by Lokesh Dhakar
 //
 // More info:
 // http://lokeshdhakar.com/projects/lightbox2/
@@ -28,8 +31,13 @@
 // TODO
 // - is lb-cancel needed?
 // - it's a class, but use of # implies only one...
-// - need to images to blend between them?
+// - keyboard < > esc
 // - swiping
+// - not very smooth start-up
+// - thin black border around images
+// - very landscape images could be wider
+// - need new mechanism for setting options now that loading this js is deferred e.g. set an easter egg
+// - hide <> arrows on swipable / narrow screens 
 
 'use strict';
 
@@ -49,7 +57,7 @@
     }
 }(this, function ($) {
 
-class Lightbox {
+class LightboxSSA {
 
     // Descriptions of all options available on the demo site:
     // http://lokeshdhakar.com/projects/lightbox2/index.html#options
@@ -120,34 +128,6 @@ class Lightbox {
             return;
         }
 
-        var self = this;
-
-        /*
-        const xhtml = `
-            <div id="lb-overlay" tabindex="-1" class="lb-overlay"><!-- full width and height, grey background, click on it to close -->
-                    <div id="lb-container" class="lb-container"><!-- full width -->
-                            <div id="lb-prev" class="lb-prev" aria-label="Previous image"></div>
-                            <div id=lb-imagewrapper class="lb-image-wrapper">
-                                <img id=lb-imageA class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/>
-                                <img id=lb-imageB class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""/>
-                            </div>
-                            <div id=lb-next class="lb-next" aria-label="Next image"></div>
-                        </div>
-                        <div class="lb-loader" id=lb-loader>
-                            <a class="lb-cancel"></a>
-                        </div>
-                    </div>
-                    <div class="lb-dataContainer"><!-- maybe later -->
-                        <div class="lb-data">
-                            <div class="lb-details">
-                                <span class="lb-caption"></span>
-                                <span class="lb-number"></span>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-        `;
-        */
         const html = `
             <div id=lb-overlay></div>
             <div id=lb-nav>
@@ -171,16 +151,9 @@ class Lightbox {
         this.$image2    = $('#lb-image2');
         this.$lbElements = $('lb-overlay, #lb-nav, #lb-prev, #lb-next, #lb-container, #lb-image1, #lb-image2');
 
-        // FIXME these are zero anyway?
         // Store css values for future lookup
         // (use parseInt to get rid of trailing 'px')
-        this.containerPadding = {
-            top:    parseInt(this.$container.css('padding-top'), 10),
-            right:  parseInt(this.$container.css('padding-right'), 10),
-            bottom: parseInt(this.$container.css('padding-bottom'), 10),
-            left:   parseInt(this.$container.css('padding-left'), 10)
-        };
-        this.imageBorderWidth = {   // FIXME which image? or use class?
+        this.imageBorderWidth = {   // assume image1 and image2 are the same
             top:    parseInt(this.$image1.css('border-top-width'), 10),
             right:  parseInt(this.$image1.css('border-right-width'), 10),
             bottom: parseInt(this.$image1.css('border-bottom-width'), 10),
@@ -188,53 +161,42 @@ class Lightbox {
         };
 
         // Attach event handlers to the newly minted DOM elements
-        //?? this.$overlay.hide();
-        this.$overlay.on('click', function() {
-            self.end();
+        this.$overlay.on('click', () => {
+            this.end();
             return false;
         });
 
-        /*
-        this.$container.on('click', function(event) {
-            if ($(event.target).attr('id') === 'lb-container') {
-                self.end();
-            }
-            return false;
-        });
-        */
-
-        this.$prev.on('click', function() {
-            if (self.currentImageIndex === 0) {
-                self.changeImage(self.album.length - 1);
+        this.$prev.on('click', () => {
+            if (this.currentImageIndex === 0) {
+                this.changeImage(this.album.length - 1);
             } else {
-                self.changeImage(self.currentImageIndex - 1);
+                this.changeImage(this.currentImageIndex - 1);
             }
             return false;
         });
 
-        this.$next.on('click', function() {
-            if (self.currentImageIndex === self.album.length - 1) {
-                self.changeImage(0);
+        this.$next.on('click', () => {
+            if (this.currentImageIndex === this.album.length - 1) {
+                this.changeImage(0);
             } else {
-                self.changeImage(self.currentImageIndex + 1);
+                this.changeImage(this.currentImageIndex + 1);
             }
             return false;
         });
 
-        // TODO check that this works for both images
-        this.$image1.on('click', function(event) {
-            // self.currentImageIndex is evaluated at click time, so gives the correct URL.
-            if (self.album[self.currentImageIndex].url) {
+        this.$image1.on('click', (event) => {
+            // this.currentImageIndex is evaluated at click time, so gives the correct URL.
+            if (this.album[this.currentImageIndex].url) {
                 // Jump to the given URL
-                window.location = self.album[self.currentImageIndex].url;
+                window.location = this.album[this.currentImageIndex].url;
             }
             return false;
         });
-        this.$image2.on('click', function(event) {
-            // self.currentImageIndex is evaluated at click time, so gives the correct URL.
-            if (self.album[self.currentImageIndex].url) {
+        this.$image2.on('click', (event) => {
+            // this.currentImageIndex is evaluated at click time, so gives the correct URL.
+            if (this.album[this.currentImageIndex].url) {
                 // Jump to the given URL
-                window.location = self.album[self.currentImageIndex].url;
+                window.location = this.album[this.currentImageIndex].url;
             }
             return false;
         });
@@ -247,48 +209,20 @@ class Lightbox {
         */
     }; // end of build()
 
-    /* Fiddle:
-$('#image1').click(function(e) { 
-	//alert("image1") 
-	//e.preventDefault();
-  $('#image2').css({'opacity':"1", "pointer-events": "auto"});
-  $('#image1').css({'opacity':'0', "pointer-events": "none"});
-  // also need to adjust clickiness and/or set to display not after transitioning to 0 opacity
-});
-$('#image2').click(function(e) {
-	//alert("image2") 
-  $('#image1').css({'opacity':"1", "pointer-events": "auto"});
-  $('#image2').css({'opacity':'0', "pointer-events": "none"});
-});
-$('#prev').click(function() { alert("prev") });
-$('#next').click(function() { alert("next") });
-$('#overlay').click(function() { alert("close") });
-//$('#container').click(function() {
-//	// pass it to overlay underneath
-//  //$('#overlay').click();
-//})
-*/
-
     // User has clicked on an element with 'data-lightbox'.
     // Show lightbox. If the image is part of a set, add siblings to album array.
     start ($lbelement) {
         // $lbelement is the thing clicked on -- typically a <figure> or <image>.
-        var self    = this; // The Lightbox object
         var $window = $(window);
 
-        // CD moved this from above
-        self.build();
-
-        // FIXME what happens if window is resized? -- does it adjust automatically
-        //$window.on('resize', $.proxy(this.sizeOverlay, this));
-        // NOT NEEDED $window.on('resize', this.sizeOverlay.bind(this));
-
-        //this.sizeOverlay();
+        this.build();
+        this.$overlay.focus();
         this.showLightbox();
 
         this.album = [];
         var imageNumber = 0;
 
+        const self = this;
         function addToAlbum ($lbelement) {
             self.album.push({
                 alt: $lbelement.attr('data-alt'),
@@ -319,69 +253,42 @@ $('#overlay').click(function() { alert("close") });
     // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
     // (depends on length of album)
     changeImage (imageNumber) {
-        var self = this;
-        var filename = this.album[imageNumber].name;
-        console.log("changeImage: imageNumber=%d filename=%s", imageNumber, filename);
-        var filetype = filename.split('.').slice(-1)[0];
-        var $image = this.$otherImage;   // this.$overlay.find('.lb-image');   // FIXME already have this.$image defined
+        const filename = this.album[imageNumber].name;
+        const filetype = filename.split('.').slice(-1)[0];
+        const $image = this.$otherImage;
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
 
-        /*
-        // Show loading state
-        //this.$overlay.fadeIn(this.options.fadeDuration);
-        // fade from none to flex -- from https://stackoverflow.com/questions/28904698/how-fade-in-a-flex-box
-        // later in changeImage()
-        this.$overlay.css("display", "flex").hide().fadeIn(this.options.fadeDuration);
-        this.$loader.fadeIn('slow');
-        //this.$overlay.find('.lb-image, .lb-nav, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
-        // TODO use ids:
-        this.$overlay.find('.lb-image, .lb-prev, .lb-next, .lb-dataContainer, .lb-numbers, .lb-caption').hide();
-        this.$container.addClass('animating'); // NEEDED? FIXME
-        */
-
-        // FIXME is Image.onload still a thing?
-        var preloader = new Image();
+        const self = this;
+        const preloader = new Image();
         preloader.onload = function() {
-            //var $this = this;   // The preloaded image
-            var imageHeight;
-            var imageWidth;
-            var maxImageHeight;
-            var maxImageWidth;
-            var windowHeight;
-            var windowWidth;
 
             $image.attr({
                 'alt': self.album[imageNumber].alt,
                 'title': self.album[imageNumber].title,
                 'src': filename,
             });
-
             $image.width(this.width);
             $image.height(this.height);
-            windowWidth = $(window).width();
-            windowHeight = $(window).height();
 
             // Calculate the max image dimensions for the current viewport.
             // Take into account the border around the image and an additional 10px gutter on each side.
             // CD added minArrowWidth
             // New plan  'minArrowWidth' is whole block between left/right edge of image and edge of viewport
-            maxImageWidth  = windowWidth - 
-                self.containerPadding.left - self.containerPadding.right - 
+            const windowWidth = $(window).width();
+            const windowHeight = $(window).height();
+            const maxImageWidth  = windowWidth - 
                 self.imageBorderWidth.left - self.imageBorderWidth.right - 
-                /*20 -*/ self.options.minArrowWidth*2;
-            maxImageHeight = windowHeight - 
-                self.containerPadding.top - self.containerPadding.bottom - 
+                self.options.minArrowWidth*2;
+            const maxImageHeight = windowHeight - 
                 self.imageBorderWidth.top - self.imageBorderWidth.bottom - 
-                self.options.verticalMargin * 2; // - 70;
-            // above line -- without the -70 is fine for landscape, not room at the bottom for portrait
+                self.options.verticalMargin * 2;
 
             // SVGs that don't have width and height attributes specified are reporting width and height
             // values of 0 in Firefox 47 and IE11 on Windows. To fix, we set the width and height to the max
             // dimensions for the viewport rather than 0 x 0.
             // https://github.com/lokesh/lightbox2/issues/552
-
             if (filetype === 'svg') {
                 if ((this.width === 0) || this.height === 0) {
                     $image.width(maxImageWidth);
@@ -408,23 +315,19 @@ $('#overlay').click(function() { alert("close") });
             if ((this.width > maxImageWidth) || (this.height > maxImageHeight)) {
                 const widthFactor = this.width / maxImageWidth;
                 const heightFactor = this.height / maxImageHeight;
-                //if ((this.width / maxImageWidth) > (this.height / maxImageHeight)) {
+                //if ((this.width / maxImageWidth) > (this.height / maxImageHeight)) 
                 if (widthFactor > heightFactor) {
-                    imageWidth  = maxImageWidth;
-                    // CD imageHeight = parseInt(this.height / (this.width / imageWidth), 10);
-                    imageHeight = Math.round(this.height / widthFactor);
+                    const imageWidth  = maxImageWidth;
+                    const imageHeight = Math.round(this.height / widthFactor);
                     $image.width(imageWidth);
                     $image.height(imageHeight);
                 } else {
-                    imageHeight = maxImageHeight;
-                    //imageWidth = parseInt(this.width / (this.height / imageHeight), 10);
-                    imageWidth = Math.round(this.width / heightFactor);
+                    const imageHeight = maxImageHeight;
+                    const imageWidth = Math.round(this.width / heightFactor);
                     $image.width(imageWidth);
                     $image.height(imageHeight);
                 }
             }
-            //self.sizeContainer($image.width(), $image.height());
-            self.$overlay.focus();  // FIXME do this in start()?
             self.showImage();
             
             if (self.album[imageNumber].url) {
@@ -432,7 +335,7 @@ $('#overlay').click(function() { alert("close") });
             } else {
                 $image.css("cursor", "auto");
             }
-        };
+        }; // end of onload function
 
         // Preload image before showing
         preloader.src = this.album[imageNumber].name;
@@ -447,69 +350,6 @@ $('#overlay').click(function() { alert("close") });
         //this.$overlay.css({"opacity": "0.5"});
         this.$overlay.fadeIn(this.options.fadeDuration);
     }
-
-    // Stretch overlay to fit the viewport
-    // FIXME this is called on window resize and lots of other places
-        // -- need to change it to resize the new container/image etc.
-    sizeOverlay () {
-        return; // CD not needed
-        var self = this;
-        // We use a setTimeout 0 to pause JS execution and let the rendering catch-up.
-        // Why do this? If the `disableScrolling` option is set to true, a class is added to the body
-        // tag that disables scrolling and hides the scrollbar. We want to make sure the scrollbar is
-        // hidden before we measure the document width, as the presence of the scrollbar will affect the
-        // number.
-        setTimeout(function() {
-            self.$overlay
-                .width($(document).width())
-                .height($(document).height());
-                // CD These don't work -- don't get the lightbox when image is clicked
-                //.width("100vw")
-                //.height("100vh"));
-        }, 0);
-    };
-
-    // Animate the size of the lightbox to fit the image we are showing
-    // This method also shows the the image.
-    // FIXME not used
-    sizeContainer (imageWidth, imageHeight) {
-        const self = this;
-        const oldWidth  = 0;    //this.$wrapper.outerWidth();  // FIXME these are 0
-        const oldHeight = 0;    //this.$wrapper.outerHeight();
-        const newWidth  = imageWidth +
-            this.containerPadding.left + this.containerPadding.right + // FIXME not containerPadding?
-            this.imageBorderWidth.left + this.imageBorderWidth.right; 
-            //this.options.minArrowWidth*2;   // CD...  FIXME   rename minArrowWidth to minNavWidth or something
-        const newHeight = imageHeight + 
-            this.containerPadding.top + this.containerPadding.bottom + 
-            this.imageBorderWidth.top + this.imageBorderWidth.bottom;
-        const windowWidth = $(window).width();
-        const lbPrevWidth = Math.round((windowWidth - newWidth) / 2);
-        const lbNextWidth = windowWidth - newWidth - lbPrevWidth;
-
-        function postResize() {
-            //self.$overlay.find('.lb-dataContainer').width(newWidth);
-            //self.$prev.width(lbPrevWidth).height(newHeight/2);  // Just use the middle part of the sides of the screen for prev/next clicking
-            //self.$wrapper.width(newWidth).height(newHeight);
-            //self.$next.width(lbNextWidth).height(newHeight/2);
-            //self.$overlay.find('.lb-prev').width(lbPrevWidth).height(newHeight);
-            //self.$overlay.find('.lb-next').width(lbNextWidth).height(newHeight);
-            // Set focus on one of the two root nodes so keyboard events are captured.
-            self.$overlay.focus();
-            self.showImage();
-        }
-
-        // FIXME container resizing not needed -- just show the image!
-        //if (oldWidth !== newWidth || oldHeight !== newHeight) {
-        if (oldHeight !== newHeight) {
-            this.$container.animate({
-                //width: newWidth,
-                //height: newHeight
-            }, this.options.resizeDuration, 'swing', postResize);
-        } else {
-            postResize();
-        }
-    };
 
     // Display the image and its details and begin preload neighboring images.
     showImage () {
@@ -527,24 +367,22 @@ $('#overlay').click(function() { alert("close") });
             this.$currentImage = $temp;
             this.$currentImage.css({"pointer-events": "auto"});
             //this.updateNav();
-            //this.updateDetails();
             this.preloadNeighboringImages();
             this.enableKeyboardNav();  // FIXME move this start() or build() 
         }.bind(this));
     };
 
     // Display previous and next navigation if appropriate.
+    /* Still needed?
     updateNav () {
         // Check to see if the browser supports touch events. If so, we take the conservative approach
         // and assume that mouse hover events are not supported and always show prev/next navigation
         // arrows in image sets.
-        var alwaysShowNav = false;
+        let alwaysShowNav = false;
         try {
             document.createEvent('TouchEvent');
             alwaysShowNav = this.options.alwaysShowNavOnTouchDevices;   //) ? true : false;
         } catch (e) {}
-
-        // ???? this.$overlay.find('.lb-nav').show();
 
         // FIXME sort out arrow opacity -- is it still needed? yes, does .show() among other things.
         if (this.album.length > 1) {
@@ -568,38 +406,6 @@ $('#overlay').click(function() { alert("close") });
                 }
             }
         }
-    };
-
-    /*
-    // Display caption, image number, and closing button.
-    updateDetails () {
-        var self = this;
-
-        // Enable anchor clicks in the injected caption html.
-        // Thanks Nate Wright for the fix. @https://github.com/NateWr
-        if (typeof this.album[this.currentImageIndex].title !== 'undefined' &&
-            this.album[this.currentImageIndex].title !== '') {
-            var $caption = this.$overlay.find('.lb-caption');
-            if (this.options.sanitizeTitle) {
-                $caption.text(this.album[this.currentImageIndex].title);
-            } else {
-                $caption.html(this.album[this.currentImageIndex].title);
-            }
-            $caption.fadeIn('fast');
-        }
-
-        if (this.album.length > 1 && this.options.showImageNumberLabel) {
-            var labelText = this.imageCountLabel(this.currentImageIndex + 1, this.album.length);
-            this.$overlay.find('.lb-number').text(labelText).fadeIn('fast');
-        } else {
-            this.$overlay.find('.lb-number').hide();
-        }
-
-        //this.$container.removeClass('animating');
-
-        this.$overlay.find('.lb-dataContainer').fadeIn(this.options.resizeDuration, function() {
-            return self.sizeOverlay();
-        });
     };
     */
 
@@ -653,7 +459,6 @@ $('#overlay').click(function() { alert("close") });
 
     // Closing time. :-(
     end () {
-        $(window).off('resize', this.sizeOverlay);  // FIXME needed?
         this.$lbElements.fadeOut(this.options.fadeDuration);
         //this.$lbElements.css({"display": "none"});
         if (this.options.disableScrolling) {
@@ -666,5 +471,5 @@ $('#overlay').click(function() { alert("close") });
 
     } // end of class Lightbox
 
-    return new Lightbox();
+    return new LightboxSSA();
 }));
