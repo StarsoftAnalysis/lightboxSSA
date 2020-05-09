@@ -2,6 +2,8 @@
 
 This is yet another fork of Lokesh Dhakar's excellent lightbox2.
 
+I'm making various modifications, so this version isn't really ready for use yet.
+
 Lightbox is small javascript library used to overlay images on top of the current page. It's a snap to setup and works on all modern browsers.
 
 Lokesh's documentation is here:

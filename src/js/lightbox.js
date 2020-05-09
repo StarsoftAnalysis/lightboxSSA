@@ -38,6 +38,13 @@
 // - very landscape images could be wider
 // - need new mechanism for setting options now that loading this js is deferred e.g. set an easter egg
 // - hide <> arrows on swipable / narrow screens 
+// - hide <> if only one image
+// - use title as tool tip? or add details?
+// - deal with missing images, e.g. set default size, use placeholder
+// DONE
+// - if figure, use enclosed img for source
+// - if img, use its src
+// - if a, use its href and enclosed img
 
 'use strict';
 
@@ -224,11 +231,47 @@ class LightboxSSA {
 
         const self = this;
         function addToAlbum ($lbelement) {
+            const tag = $lbelement.prop("tagName");
+            // Image can be from: -- searched in this order
+            // - data-image
+            // - <img>'s src
+            // - <figure>'s (first) <img>'s src
+            // - <a>'s <img>'s src
+            var imageURL = $lbelement.attr('data-image');
+            if (!imageURL) {
+                if (tag == 'IMG') {
+                    imageURL = $lbelement.attr('src');
+                } else if (tag == 'FIGURE' || tag == 'A') {
+                    let $imgs = $lbelement.find('img');
+                    if ($imgs.length > 0) {
+                        imageURL = $imgs.attr('src');
+                    }
+                }
+            }
+            if (!imageURL) {
+                imageURL = 'missingImage.jpg';
+            }
+            console.log("imageURL: ", imageURL);
+            // Link URL is from data-url or <fig>'s <img>'s data-url or <a>'s href
+            // - <a>'s href - how to check if that is an image?
+            var linkURL = $lbelement.attr('data-url');
+            if (!linkURL) {
+                if (tag == 'FIGURE') {
+                    let $imgs = $lbelement.find('img');
+                    if ($imgs.length > 0) {
+                        linkURL = $imgs.attr('data-url');
+                    }
+                } else if (tag == 'A') {
+                    linkURL = $lbelement.attr('href');
+                }
+            }
+            // (no linkURL is OK)       
+            console.log("adding image ", $lbelement, ", imageURL is ", imageURL, ", linkURL is ", linkURL);
             self.album.push({
-                alt: $lbelement.attr('data-alt'),
-                name: $lbelement.attr('data-image'),   // FIXME or from the image within the fig
-                title: $lbelement.attr('data-title') || $lbelement.attr('title'),
-                url: $lbelement.attr('data-url'),
+                name:    imageURL,
+                url:     linkURL,
+                alt:     $lbelement.attr('data-alt'),
+                title:   $lbelement.attr('data-title') || $lbelement.attr('title'),
                 srclist: $lbelement.attr('data-imagelist'),
             });
         }
@@ -253,7 +296,7 @@ class LightboxSSA {
     // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
     // (depends on length of album)
     changeImage (imageNumber) {
-        const filename = this.album[imageNumber].name;
+        const filename = this.album[imageNumber].name || "unknown.jpg"; // Hmmm
         const filetype = filename.split('.').slice(-1)[0];
         const $image = this.$otherImage;
 
