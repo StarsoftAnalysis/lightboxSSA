@@ -29,7 +29,8 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - is lb-cancel needed?
+// - is lb-cancel needed? maybe reinstate lb-loader because it's slower on real server 
+// - preload next/prev images
 // - it's a class, but use of # implies only one...
 // - keyboard < > esc
 // - swiping
@@ -38,6 +39,7 @@
 // - very landscape images could be wider
 // - need new mechanism for setting options now that loading this js is deferred e.g. set an easter egg
 // - hide <> arrows on swipable / narrow screens 
+// - debounce prev/next clicks
 
 'use strict';
 
