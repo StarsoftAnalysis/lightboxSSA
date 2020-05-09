@@ -1,8 +1,10 @@
-# Lightbox2
+# LightboxSSA
 
-The original lightbox script. Eight years later — still going strong!
+This is yet another fork of Lokesh Dhakar's excellent lightbox2.
 
 Lightbox is small javascript library used to overlay images on top of the current page. It's a snap to setup and works on all modern browsers.
+
+Lokesh's documentation is here:
 
 - **Demos and usage instructions.** Visit the [Lightbox homepage](http://lokeshdhakar.com/projects/lightbox2/) to see examples, info on getting started, script options, how to get help, and more.
 - **Releases and Changelog**. Viewable on the [Github Releases page](https://github.com/lokesh/lightbox2/releases)
@@ -13,18 +15,6 @@ by [Lokesh Dhakar](http://www.lokeshdhakar.com)
 
 ---
 
-## Info for Maintainers
-
-- **Issues and PRs requiring review.** See items tagged with [\[status\] needs review](https://github.com/lokesh/lightbox2/labels/%5Bstatus%5D%20needs%20review)
-- **Questions on Stackoverflow.** See Questions tagged with [lightbox2](https://stackoverflow.com/questions/tagged/lightbox2).
-- **Release instructions.** See [DEPLOY.md](https://github.com/lokesh/lightbox2/blob/master/DEPLOY.md).
-
-
 ### Local development
 
-- Install [Bower](https://bower.io/) and [Grunt](https://gruntjs.com/).
-- Install jQuery dependency with Bower: `bower install`
-- Start local server: `grunt`
-- Navigate to `localhost:8000/examples`
-- Update `examples/index.html` to load `src/js/lightbox.js` and jQuery.
-
+I don't use things like Bower or Grunt, so there are just SCSS and JS files for people to use as they wish.
