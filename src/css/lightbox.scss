@@ -19,7 +19,7 @@ body.lb-disable-scrolling {
     height: 100vh;
     z-index: 10;
     background: gray;
-    opacity: 1;
+    opacity: 0; // initially
     // Could use transitions, but harder to control from JS
     //transition: opacity 1s ease-in-out;
     cursor: url(../images/close.png) 13 14, pointer;

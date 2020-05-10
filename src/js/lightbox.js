@@ -66,26 +66,27 @@
 
 class LightboxSSA {
 
-    // Descriptions of all options available on the demo site:
-    // http://lokeshdhakar.com/projects/lightbox2/index.html#options
+    // NOTE: these have to be lowercase or lower_case because of the way they can be
+    // set e.g. via Hugo params
     defaults = {
-        albumLabel: 'Image %1 of %2',
-        showImageNumberLabel: false,    // TODO not reimplemented
-        alwaysShowNavOnTouchDevices: false,
-        fadeDuration: 600,
-        imageFadeDuration: 600,
-        maxSize: 50000,
-        verticalMargin: 50,    // pixels needed for arithmetic  "5vh", 
-        resizeDuration: 700,
-        wrapAround: true,
-        disableScrolling: true, // false,  ??
+        album_label: 'Image %1 of %2',
+        show_image_number_label: false,    // TODO not reimplemented
+        always_show_nav_on_touch_devices: false,
+        fade_duration: 600,  // for overlay
+        overlay_opacity: 0.9,
+        image_fade_duration: 600,
+        max_size: 50000,
+        vertical_margin: 50,    // pixels needed for arithmetic  "5vh", 
+        //resizeDuration: 700,
+        wrap_around: true,
+        disable_scrolling: true, // false,  ??
         // Sanitize Title
         // If the caption data is trusted, for example you are hardcoding it in, then leave this to false.
         // This will free you to add html tags, such as links, in the caption.
         // If the caption data is user submitted or from some other untrusted source, then set this to true
         // to prevent xss and other injection attacks.
-        sanitizeTitle: false,
-        minNavWidth: 32, // Space for arrow *outside* the image area
+        sanitize_title: false,
+        min_nav_width: 32, // Space for arrow *outside* the image area
     };
 
     options = {};
@@ -97,15 +98,17 @@ class LightboxSSA {
         this.options = $.extend(this.options, this.defaults, options);
     }
 
-    // This can get called from top level script e.g. 'lightbox.option({fadeDuration: 42});'
+    // This can get called from top level script e.g. 'lightbox.option({fade_duration: 42});'
+    // FIXME no longer -- get rid of it
     option (options) {
         $.extend(this.options, options);
     };
 
     imageCountLabel (currentImageNum, totalImages) {
-        return this.options.albumLabel.replace(/%1/g, currentImageNum).replace(/%2/g, totalImages);
+        return this.options.album_label.replace(/%1/g, currentImageNum).replace(/%2/g, totalImages);
     };
 
+    // init() is called from constructor -- could be merged  TODO
     init () {
         var self = this;
         // Both enable and build methods require the body tag to be in the DOM.
@@ -220,6 +223,11 @@ class LightboxSSA {
         // $lbelement is the thing clicked on -- typically a <figure> or <image>.
         var $window = $(window);
 
+        // Apply user-supplied options 
+        if (typeof lightboxSSAOptions == "object") {
+            $.extend(this.options, lightboxSSAOptions);
+        }
+
         this.build();
         this.$overlay.focus();
         this.showLightbox();
@@ -321,22 +329,22 @@ class LightboxSSA {
 
             // Calculate the max image dimensions for the current viewport.
             // Take into account the border around the image and an additional 10px gutter on each side.
-            // CD added minNavWidth   TODO rename minNavWidth e.g minNavWidth
-            // New plan  'minNavWidth' is whole block between left/right edge of image and edge of viewport
+            // CD added min_nav_width   TODO rename min_nav_width e.g min_nav_width
+            // New plan  'min_nav_width' is whole block between left/right edge of image and edge of viewport
             const windowWidth = $(window).width();
             const windowHeight = $(window).height();
             let maxImageWidth = windowWidth - 
                 self.imageBorderWidth.left - self.imageBorderWidth.right - 
-                self.options.minNavWidth * 2;
+                self.options.min_nav_width * 2;
             let maxImageHeight = windowHeight - 
                 self.imageBorderWidth.top - self.imageBorderWidth.bottom - 
-                self.options.verticalMargin * 2;
+                self.options.vertical_margin * 2;
             // Apply overall maximum
-            if (maxImageWidth > this.maxSize) {
-                maxImageWidth = this.maxSize;
+            if (maxImageWidth > this.max_size) {
+                maxImageWidth = this.max_size;
             }
-            if (maxImageHeight > this.maxSize) {
-                maxImageHeight = this.maxSize;
+            if (maxImageHeight > this.max_size) {
+                maxImageHeight = this.max_size;
             }
 
             // SVGs that don't have width and height attributes specified are reporting width and height
@@ -351,17 +359,6 @@ class LightboxSSA {
                     bestHeight = maxImageHeight;
                 }
             }
-
-            /*
-            // Fit image inside the viewport.
-                // Check if image size is larger then maxWidth|maxHeight in settings
-                if (self.options.maxWidth && self.options.maxWidth < maxImageWidth) {
-                    maxImageWidth = self.options.maxWidth;
-                }
-                if (self.options.maxHeight && self.options.maxHeight < maxImageHeight) {
-                    maxImageHeight = self.options.maxHeight;
-                }
-            */
 
             // If the current image's width or height is greater than the maxImageWidth or maxImageHeight
             // option than we need to size down while maintaining the aspect ratio.
@@ -396,9 +393,11 @@ class LightboxSSA {
     // Make the lightbox stuff visible
     showLightbox () {
         //this.$lbElements.css({"display": "block"});
-        //this.$lbElements.fadeIn(this.options.fadeDuration);
+        //this.$lbElements.fadeIn(this.options.fade_duration);
         //this.$overlay.css({"opacity": "0.5"});
-        this.$overlay.fadeIn(this.options.fadeDuration);
+        this.$overlay.fadeTo(this.options.fade_duration, this.options.overlay_opacity, ()=>{
+            console.log("overlay fadeIn complete");
+        });
     }
 
     // Display the image and its details and begin preload neighbouring images.
@@ -409,10 +408,10 @@ class LightboxSSA {
         this.$currentImage.css({"pointer-events": "none"});
         // Don't forget: fadeOut adds 'display: none' at the end of the fade (aka .hide())
         //  (and fadeIn does the opposite)
-        this.$currentImage.fadeOut(this.options.imageFadeDuration);
+        this.$currentImage.fadeOut(this.options.image_fade_duration);
         this.$otherImage.width(width);
         this.$otherImage.height(height);
-        this.$otherImage.fadeIn(this.options.imageFadeDuration+10, function() {
+        this.$otherImage.fadeIn(this.options.image_fade_duration+10, function() {
             // Swap the images
             const $temp = this.$otherImage;
             this.$otherImage = this.$currentImage;
@@ -433,12 +432,12 @@ class LightboxSSA {
         let alwaysShowNav = false;
         try {
             document.createEvent('TouchEvent');
-            alwaysShowNav = this.options.alwaysShowNavOnTouchDevices;   //) ? true : false;
+            alwaysShowNav = this.options.always_show_nav_on_touch_devices;   //) ? true : false;
         } catch (e) {}
 
         // FIXME sort out arrow opacity -- is it still needed? yes, does .show() among other things.
         if (this.album.length > 1) {
-            if (this.options.wrapAround) {
+            if (this.options.wrap_around) {
                 if (alwaysShowNav) {
                     this.$overlay.find('.lb-prev, .lb-next').css('opacity', '1');
                 }
@@ -497,13 +496,13 @@ class LightboxSSA {
         } else if (keycode === KEYCODE_LEFTARROW) {
             if (this.currentImageIndex !== 0) {
                 this.changeImage(this.currentImageIndex - 1);
-            } else if (this.options.wrapAround && this.album.length > 1) {
+            } else if (this.options.wrap_around && this.album.length > 1) {
                 this.changeImage(this.album.length - 1);
             }
         } else if (keycode === KEYCODE_RIGHTARROW) {
             if (this.currentImageIndex !== this.album.length - 1) {
                 this.changeImage(this.currentImageIndex + 1);
-            } else if (this.options.wrapAround && this.album.length > 1) {
+            } else if (this.options.wrap_around && this.album.length > 1) {
                 this.changeImage(0);
             }
         }
@@ -511,9 +510,9 @@ class LightboxSSA {
 
     // Closing time. :-(
     end () {
-        this.$lbElements.fadeOut(this.options.fadeDuration);
+        this.$lbElements.fadeOut(this.options.fade_duration);
         //this.$lbElements.css({"display": "none"});
-        if (this.options.disableScrolling) {
+        if (this.options.disable_scrolling) {
             $('body').removeClass('lb-disable-scrolling');
         }
         this.$nav.remove();
