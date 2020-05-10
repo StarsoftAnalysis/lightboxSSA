@@ -73,10 +73,8 @@ class LightboxSSA {
         showImageNumberLabel: false,    // TODO not reimplemented
         alwaysShowNavOnTouchDevices: false,
         fadeDuration: 600,
-        fitImagesInViewport: true,
         imageFadeDuration: 600,
-        // maxWidth: 800,   // TODO get rid of these, or use maxSize and keep aspect ratio
-        // maxHeight: 600,
+        maxSize: 50000,
         verticalMargin: 50,    // pixels needed for arithmetic  "5vh", 
         resizeDuration: 700,
         wrapAround: true,
@@ -87,7 +85,7 @@ class LightboxSSA {
         // If the caption data is user submitted or from some other untrusted source, then set this to true
         // to prevent xss and other injection attacks.
         sanitizeTitle: false,
-        minArrowWidth: 32, // Space for arrow *outside* the image area
+        minNavWidth: 32, // Space for arrow *outside* the image area
     };
 
     options = {};
@@ -304,29 +302,42 @@ class LightboxSSA {
         this.disableKeyboardNav();
 
         const self = this;
-        const preloader = new Image();
-        preloader.onload = function() {
+        const newImage = new Image();
+        newImage.onload = function() {
+            // 'this' is the new image
+            // 'self' is the lightbox object
+            // '$image' is the DOM object (either lb-image1 or lb-image2)
 
             $image.attr({
                 'alt': self.album[imageNumber].alt,
                 'title': self.album[imageNumber].title,
                 'src': filename,
             });
-            $image.width(this.width);
-            $image.height(this.height);
+            // TODO don't set width here -- wait until ... or is this just a problem the first time -- opacity should be 0
+            //$image.width(this.width);
+            //$image.height(this.height);
+            let bestWidth = this.width;
+            let bestHeight = this.height;
 
             // Calculate the max image dimensions for the current viewport.
             // Take into account the border around the image and an additional 10px gutter on each side.
-            // CD added minArrowWidth
-            // New plan  'minArrowWidth' is whole block between left/right edge of image and edge of viewport
+            // CD added minNavWidth   TODO rename minNavWidth e.g minNavWidth
+            // New plan  'minNavWidth' is whole block between left/right edge of image and edge of viewport
             const windowWidth = $(window).width();
             const windowHeight = $(window).height();
-            const maxImageWidth  = windowWidth - 
+            let maxImageWidth = windowWidth - 
                 self.imageBorderWidth.left - self.imageBorderWidth.right - 
-                self.options.minArrowWidth*2;
-            const maxImageHeight = windowHeight - 
+                self.options.minNavWidth * 2;
+            let maxImageHeight = windowHeight - 
                 self.imageBorderWidth.top - self.imageBorderWidth.bottom - 
                 self.options.verticalMargin * 2;
+            // Apply overall maximum
+            if (maxImageWidth > this.maxSize) {
+                maxImageWidth = this.maxSize;
+            }
+            if (maxImageHeight > this.maxSize) {
+                maxImageHeight = this.maxSize;
+            }
 
             // SVGs that don't have width and height attributes specified are reporting width and height
             // values of 0 in Firefox 47 and IE11 on Windows. To fix, we set the width and height to the max
@@ -334,13 +345,15 @@ class LightboxSSA {
             // https://github.com/lokesh/lightbox2/issues/552
             if (filetype === 'svg') {
                 if ((this.width === 0) || this.height === 0) {
-                    $image.width(maxImageWidth);
-                    $image.height(maxImageHeight);
+                    //$image.width(maxImageWidth);
+                    //$image.height(maxImageHeight);
+                    bestWidth = maxImageWidth;
+                    bestHeight = maxImageHeight;
                 }
             }
 
+            /*
             // Fit image inside the viewport.
-            if (self.options.fitImagesInViewport) {
                 // Check if image size is larger then maxWidth|maxHeight in settings
                 if (self.options.maxWidth && self.options.maxWidth < maxImageWidth) {
                     maxImageWidth = self.options.maxWidth;
@@ -348,30 +361,24 @@ class LightboxSSA {
                 if (self.options.maxHeight && self.options.maxHeight < maxImageHeight) {
                     maxImageHeight = self.options.maxHeight;
                 }
-            } else {
-                maxImageWidth = self.options.maxWidth || this.width || maxImageWidth;
-                maxImageHeight = self.options.maxHeight || this.height || maxImageHeight;
-            }
+            */
 
-            // Is the current image's width or height is greater than the maxImageWidth or maxImageHeight
+            // If the current image's width or height is greater than the maxImageWidth or maxImageHeight
             // option than we need to size down while maintaining the aspect ratio.
             if ((this.width > maxImageWidth) || (this.height > maxImageHeight)) {
-                const widthFactor = this.width / maxImageWidth;
-                const heightFactor = this.height / maxImageHeight;
-                //if ((this.width / maxImageWidth) > (this.height / maxImageHeight)) 
-                if (widthFactor > heightFactor) {
-                    const imageWidth  = maxImageWidth;
-                    const imageHeight = Math.round(this.height / widthFactor);
-                    $image.width(imageWidth);
-                    $image.height(imageHeight);
+                const imageAspect = this.width / this.height;
+                const maxAspect = maxImageWidth / maxImageHeight;
+                if (imageAspect > maxAspect) {
+                    // image is more landscape: reduce its height
+                    bestWidth = maxImageWidth;
+                    bestHeight = bestWidth / imageAspect;
                 } else {
-                    const imageHeight = maxImageHeight;
-                    const imageWidth = Math.round(this.width / heightFactor);
-                    $image.width(imageWidth);
-                    $image.height(imageHeight);
+                    // image is more portrait
+                    bestHeight = maxImageHeight;
+                    bestWidth = bestHeight * imageAspect;
                 }
             }
-            self.showImage();
+            self.showImage(bestWidth, bestHeight);
             
             if (self.album[imageNumber].url) {
                 $image.css("cursor", "pointer");
@@ -381,7 +388,7 @@ class LightboxSSA {
         }; // end of onload function
 
         // Preload image before showing
-        preloader.src = this.album[imageNumber].name;
+        newImage.src = this.album[imageNumber].name;
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
@@ -394,8 +401,8 @@ class LightboxSSA {
         this.$overlay.fadeIn(this.options.fadeDuration);
     }
 
-    // Display the image and its details and begin preload neighboring images.
-    showImage () {
+    // Display the image and its details and begin preload neighbouring images.
+    showImage (width, height) {
         //this.$loader.stop(true).hide();
         // TODO ? also disable other clicks and keyboard events before the swap?
         // TODO ?? swap z-index values
@@ -403,6 +410,8 @@ class LightboxSSA {
         // Don't forget: fadeOut adds 'display: none' at the end of the fade (aka .hide())
         //  (and fadeIn does the opposite)
         this.$currentImage.fadeOut(this.options.imageFadeDuration);
+        this.$otherImage.width(width);
+        this.$otherImage.height(height);
         this.$otherImage.fadeIn(this.options.imageFadeDuration+10, function() {
             // Swap the images
             const $temp = this.$otherImage;
