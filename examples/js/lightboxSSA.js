@@ -29,25 +29,21 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - flex - div for each image
 // - is lb-cancel needed?
 // - it's a class, but use of # implies only one...
 // - keyboard < > esc
 // - swiping
-// - thin black border around images ? related to border vs transform/translate
+// - thin black border around images
 // - hide <> arrows on swipable / narrow screens 
-// - hide prev or nav if only two images?
+// - hide <> if only one image
 // - use title as tool tip? or add details?
 // - deal with missing images, e.g. set default size, use placeholder
-// - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
-//   a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
 // DONE
 // - if figure, use enclosed img for source
 // - if img, use its src
 // - if a, use its href and enclosed img
 // - not very smooth start-up
 // - need new mechanism for setting options now that loading this js is deferred e.g. set an easter egg
-// - hide <> if only one image
 
 'use strict';
 
@@ -89,7 +85,7 @@ class LightboxSSA {
         // If the caption data is user submitted or from some other untrusted source, then set this to true
         // to prevent xss and other injection attacks.
         sanitize_title: false,
-        min_nav_width: 50, // Space for arrow *outside* the image area.  Arrow images are 50px wide.
+        min_nav_width: 32, // Space for arrow *outside* the image area
     };
 
     options = {};
@@ -99,7 +95,6 @@ class LightboxSSA {
         this.currentImageIndex = 0;
         this.init();
         this.options = $.extend(this.options, this.defaults, options);
-        this.placeholderImage = '/images/imageNotFound.png';    // TODO? put this in options
     }
 
     imageCountLabel (currentImageNum, totalImages) {
@@ -291,38 +286,32 @@ class LightboxSSA {
         }
 
         this.albumLen = this.album.length;
-        if (this.albumLen == 1) {
-            // nowhere to navigate to
-            this.$nav.hide();
-        }
-        if (this.albumLen == 2 && !this.options.wrap_around) {
-            // TODO adjust arrows by hiding prev or next
-        }
-        this.$currentImage = this.$image2;
-        this.$otherImage = this.$image1;
+        this.$currentImage = this.$image1;
+        this.$otherImage = this.$image2;
         this.changeImage(imageNumber);
     }; // end of start()
 
     // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
     // (depends on length of album)
-    // Load the specified image as this.$otherImage, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {
-        const self = this;
+        const filename = this.album[imageNumber].name || "unknown.jpg"; // Hmmm
+        const filetype = filename.split('.').slice(-1)[0];
         const $image = this.$otherImage;
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
 
-        function onLoad () {
-            console.log("onLoad - src =", this.src);
-            // 'this' is the new image  !!!!!!!! now == $image
+        const self = this;
+        const newImage = new Image();
+        newImage.onload = function() {
+            // 'this' is the new image
             // 'self' is the lightbox object
             // '$image' is the DOM object (either lb-image1 or lb-image2)
 
             $image.attr({
                 'alt': self.album[imageNumber].alt,
                 'title': self.album[imageNumber].title,
-                // 'src': this.src,
+                'src': filename,
             });
             let bestWidth = this.width;
             let bestHeight = this.height;
@@ -351,7 +340,6 @@ class LightboxSSA {
             // values of 0 in Firefox 47 and IE11 on Windows. To fix, we set the width and height to the max
             // dimensions for the viewport rather than 0 x 0.
             // https://github.com/lokesh/lightbox2/issues/552
-            const filetype = this.src.split('.').slice(-1)[0];
             if (filetype === 'svg') {
                 if ((this.width === 0) || this.height === 0) {
                     bestWidth = maxImageWidth;
@@ -383,30 +371,8 @@ class LightboxSSA {
             }
         }; // end of onload function
 
-        function onError () {
-            // Expected image not found -- use placeholder
-            // but avoid looping!
-            console.log("onError - src =", this.src);
-            this.removeEventListener('error', onError);
-            // FIXME thought the timeout would help, it doesn't
-            //setTimeout(() => {
-                this.src = self.placeholderImage;
-            //}, 0);
-        }
-
-        /*
-        const newImage = new Image();
-        newImage.addEventListener('load', onLoad);
-        newImage.addEventListener('error', onError);
-        */
-        // FIXME this new plan works, not sure if it reduces the number of times the image is downloaded. -- try in test
-
-        $image.one('load', onLoad); // !! fires with 1x1 gif data?
-        $image.one('error', onError);
-
         // Preload image before showing
-        //newImage.src = this.album[imageNumber].name;
-        $image.attr("src", this.album[imageNumber].name);
+        newImage.src = this.album[imageNumber].name;
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()

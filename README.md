@@ -1,10 +1,11 @@
 # LightboxSSA
 
-This is yet another fork of Lokesh Dhakar's excellent lightbox2.
+This is yet another fork of 
+[Lokesh Dhakar](http://www.lokeshdhakar.com)'s excellent [lightbox2](https://github.com/lokesh/lightbox2).
 
 I'm making various modifications, so this version isn't really ready for use yet.
 
-Lightbox is small javascript library used to overlay images on top of the current page. It's a snap to setup and works on all modern browsers.
+LightboxSSA is small javascript script used to overlay images on top of the current page.
 
 Lokesh's documentation is here:
 
@@ -13,19 +14,23 @@ Lokesh's documentation is here:
 - **Roadmap.** View the [Roadmap](https://github.com/lokesh/lightbox2/blob/master/ROADMAP.md) for a peek at what is being planned for future releases.
 - **License.** Lightbox is licensed under the MIT License. [Learn more about the license.](http://lokeshdhakar.com/projects/lightbox2/#license)
 
-by [Lokesh Dhakar](http://www.lokeshdhakar.com)
+## Major changes from Lightbox2
+
+* Next/previous arrows are in fixed positions for easier clicking.
 
 ---
 
 ## Options
 
 The appearance of the lightbox can be tuned with a number of parameters, set via a Javascript object.  Include something
-like this in the HTML, either in the <head> or at the end of the <body>.
+like this in the HTML, either in the `<head>` or at the end of the `<body>`.
 
-	const lightboxSSA = {
-		vertical_margin: 50,
-		wrap_around: false,
-	};
+```javascript
+const lightboxSSA = {
+	vertical_margin: 50,
+	wrap_around: false,
+};
+```
 
 The settable options are:
 
@@ -36,18 +41,27 @@ The settable options are:
 
 LightboxSSA can be used with Hugo.  
 
-...how to put JS and CSS in assets, and then do the stuff in <head>  TODO
+...how to put JS and CSS in assets, and then do the stuff in `<head>`  TODO
 
 To include the JS and CSS for LightboxSSA on a page, add this to the frontmatter:
 
-	lightboxSSA: true
+```yaml
+---
+...
+lightboxSSA: true
+---
+```
 
 If you want to adjust any options, use something like this:
 
-	lightboxSSA: 
-		vertical_margin: 20
-		wrap_around: true
-
+```yaml
+---
+...
+lightboxSSA: 
+	vertical_margin: 20
+	wrap_around: true
+---
+```
 
 ---
 

@@ -42,7 +42,7 @@ body.lb-disable-scrolling {
     height: 50%;
     width: 50%;
     pointer-events: auto;
-    background: url(../images/prev.png) left 48% no-repeat;
+    background: url(../images/prev.png) left center no-repeat;
     cursor: url(../images/prev-cursor.png) 2 17, pointer;
 }
 #lb-next {
@@ -50,7 +50,7 @@ body.lb-disable-scrolling {
     height: 50%;
     width: 50%;
     pointer-events: auto;
-    background: url(../images/next.png) right 48% no-repeat;
+    background: url(../images/next.png) right center no-repeat;
     cursor: url(../images/next-cursor.png) 18 17, pointer;
 }
 #lb-container {
