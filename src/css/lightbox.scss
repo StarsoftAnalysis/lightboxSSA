@@ -20,8 +20,6 @@ body.lb-disable-scrolling {
     z-index: 10;
     background: gray;
     opacity: 0; // initially
-    // Could use transitions, but harder to control from JS
-    //transition: opacity 1s ease-in-out;
     cursor: url(../images/close.png) 13 14, pointer;
 }
 #lb-nav {
@@ -53,36 +51,36 @@ body.lb-disable-scrolling {
     background: url(../images/next.png) right center no-repeat;
     cursor: url(../images/next-cursor.png) 18 17, pointer;
 }
-#lb-container {
+
+.lb-flex {
     position: fixed;
     left: 0;
     top: 0;
-    width: 100vw;
+    width: 100vw;  // FIXME 100vw doesn't adjust for the scroll bar -- try to remove the scroll bar
     height: 100vh;
-    z-index: 12;
-    opacity: 1; // has to be 1 because its children can't be less transparent.   could use rgba.  see https://css-tricks.com/non-transparent-elements-inside-transparent-elements/   S0.2;  // 0
+    display: flex;
+    justify-content: center;
+    align-items: center;
     pointer-events: none;
+}
+#lb-flex1 {
+    z-index: 13;
+}
+#lb-flex2 {
+    z-index: 14;
 }
 
 #lb-image1, #lb-image2 {
     border: white 8px solid;
     border-radius: 4px;
+    max-width: 90%;     // These may get adjusted by JS
+    max-height: 90%;
 }
 #lb-image1 {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 13;
-    //height: 90vw;   // TODO 70%;
+    z-index: 15;
     pointer-events: auto;
 }
 #lb-image2 {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 14;
-    //height: calc(100% - 10vw); /* 60%; */   // FIXME in JS -- make max size -- possibly already done
-    pointer-events: none; /* initially */
+    z-index: 16;
+    pointer-events: none; /* initially */ // FIXME check which is used first -- is this needed?
 }

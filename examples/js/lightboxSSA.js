@@ -29,21 +29,28 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
+// - not working on mobile!
 // - is lb-cancel needed?
 // - it's a class, but use of # implies only one...
 // - keyboard < > esc
 // - swiping
-// - thin black border around images
 // - hide <> arrows on swipable / narrow screens 
-// - hide <> if only one image
+// - hide prev or nav if only two images?
 // - use title as tool tip? or add details?
-// - deal with missing images, e.g. set default size, use placeholder
+// - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
+//     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
+// - disable scroll thing - to get rid of scroll bar
+// - more Aria stuff?
 // DONE
 // - if figure, use enclosed img for source
 // - if img, use its src
 // - if a, use its href and enclosed img
 // - not very smooth start-up
 // - need new mechanism for setting options now that loading this js is deferred e.g. set an easter egg
+// - hide <> if only one image
+// - deal with missing images, e.g. set default size, use placeholder
+// - thin black border around images ? related to border vs transform/translate - fixed by using flex instead
+// - flex - div for each image
 
 'use strict';
 
@@ -65,7 +72,7 @@
 
 class LightboxSSA {
 
-    // NOTE: these have to be lowercase or lower_case because of the way they can be
+    // NOTE: these have to be lowercase or snake_case because of the way they can be
     // set e.g. via Hugo params
     defaults = {
         album_label: 'Image %1 of %2',
@@ -75,7 +82,8 @@ class LightboxSSA {
         overlay_opacity: 0.9,
         image_fade_duration: 600,
         max_size: 50000,
-        vertical_margin: 50,    // pixels needed for arithmetic  "5vh", 
+        max_width: "90%",
+        max_height: "90%",
         //resizeDuration: 700,
         wrap_around: true,
         disable_scrolling: true, // false,  ??
@@ -85,7 +93,7 @@ class LightboxSSA {
         // If the caption data is user submitted or from some other untrusted source, then set this to true
         // to prevent xss and other injection attacks.
         sanitize_title: false,
-        min_nav_width: 32, // Space for arrow *outside* the image area
+        min_nav_width: 50, // Space for arrow *outside* the image area.  Arrow images are 50px wide.
     };
 
     options = {};
@@ -95,6 +103,7 @@ class LightboxSSA {
         this.currentImageIndex = 0;
         this.init();
         this.options = $.extend(this.options, this.defaults, options);
+        this.placeholderImage = '/images/imageNotFound.png';    // TODO? put this in options
     }
 
     imageCountLabel (currentImageNum, totalImages) {
@@ -134,8 +143,10 @@ class LightboxSSA {
                 <div id=lb-prev aria-label="Previous image"></div>
                 <div id=lb-next aria-label="Next image"></div>
             </div>
-            <div id=lb-container>
+            <div id=lb-flex1 class=lb-flex>
                 <img id=lb-image1 src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+            </div>
+            <div id=lb-flex2 class=lb-flex>
                 <img id=lb-image2 src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
             </div>
         `;
@@ -146,19 +157,17 @@ class LightboxSSA {
         this.$nav       = $('#lb-nav');
         this.$prev      = $('#lb-prev');
         this.$next      = $('#lb-next');
-        this.$container = $('#lb-container');
+        this.$flex1     = $('#lb-flex1');
+        this.$flex2     = $('#lb-flex2');
         this.$image1    = $('#lb-image1');
         this.$image2    = $('#lb-image2');
-        this.$lbElements = $('lb-overlay, #lb-nav, #lb-prev, #lb-next, #lb-container, #lb-image1, #lb-image2');
+        this.$lbElements = $('lb-overlay, #lb-nav, #lb-prev, #lb-next, #lb-flex1, #lb-flex2, #lb-image1, #lb-image2');
 
-        // Store css values for future lookup
-        // (use parseInt to get rid of trailing 'px')
-        this.imageBorderWidth = {   // assume image1 and image2 are the same
-            top:    parseInt(this.$image1.css('border-top-width'), 10),
-            right:  parseInt(this.$image1.css('border-right-width'), 10),
-            bottom: parseInt(this.$image1.css('border-bottom-width'), 10),
-            left:   parseInt(this.$image1.css('border-left-width'), 10)
-        };
+        // Adjust CSS depending on options
+        this.$image1.css("max-width", this.options.max_width);
+        this.$image1.css("max-height", this.options.max_height);
+        this.$image2.css("max-width", this.options.max_width);
+        this.$image2.css("max-height", this.options.max_height);
 
         // Attach event handlers to the newly minted DOM elements
         this.$overlay.on('click', () => {
@@ -286,6 +295,13 @@ class LightboxSSA {
         }
 
         this.albumLen = this.album.length;
+        if (this.albumLen == 1) {
+            // nowhere to navigate to
+            this.$nav.hide();
+        }
+        if (this.albumLen == 2 && !this.options.wrap_around) {
+            // TODO adjust arrows by hiding prev or next
+        }
         this.$currentImage = this.$image1;
         this.$otherImage = this.$image2;
         this.changeImage(imageNumber);
@@ -293,87 +309,50 @@ class LightboxSSA {
 
     // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
     // (depends on length of album)
+    // Load the specified image as this.$otherImage, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {
-        const filename = this.album[imageNumber].name || "unknown.jpg"; // Hmmm
-        const filetype = filename.split('.').slice(-1)[0];
+        const self = this;
         const $image = this.$otherImage;
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
 
-        const self = this;
-        const newImage = new Image();
-        newImage.onload = function() {
-            // 'this' is the new image
+        function onLoad () {
+            console.log("onLoad - src =", this.src);
+            // 'this' is the new image  !!!!!!!! now == $image
             // 'self' is the lightbox object
             // '$image' is the DOM object (either lb-image1 or lb-image2)
 
             $image.attr({
                 'alt': self.album[imageNumber].alt,
                 'title': self.album[imageNumber].title,
-                'src': filename,
+                // 'src': this.src,
             });
-            let bestWidth = this.width;
-            let bestHeight = this.height;
-
-            // Calculate the max image dimensions for the current viewport.
-            // Take into account the border around the image and an additional 10px gutter on each side.
-            // CD added min_nav_width   TODO rename min_nav_width e.g min_nav_width
-            // New plan  'min_nav_width' is whole block between left/right edge of image and edge of viewport
-            const windowWidth = $(window).width();
-            const windowHeight = $(window).height();
-            let maxImageWidth = windowWidth - 
-                self.imageBorderWidth.left - self.imageBorderWidth.right - 
-                self.options.min_nav_width * 2;
-            let maxImageHeight = windowHeight - 
-                self.imageBorderWidth.top - self.imageBorderWidth.bottom - 
-                self.options.vertical_margin * 2;
-            // Apply overall maximum
-            if (maxImageWidth > this.max_size) {
-                maxImageWidth = this.max_size;
-            }
-            if (maxImageHeight > this.max_size) {
-                maxImageHeight = this.max_size;
-            }
-
-            // SVGs that don't have width and height attributes specified are reporting width and height
-            // values of 0 in Firefox 47 and IE11 on Windows. To fix, we set the width and height to the max
-            // dimensions for the viewport rather than 0 x 0.
-            // https://github.com/lokesh/lightbox2/issues/552
-            if (filetype === 'svg') {
-                if ((this.width === 0) || this.height === 0) {
-                    bestWidth = maxImageWidth;
-                    bestHeight = maxImageHeight;
-                }
-            }
-
-            // If the current image's width or height is greater than the maxImageWidth or maxImageHeight
-            // option than we need to size down while maintaining the aspect ratio.
-            if ((this.width > maxImageWidth) || (this.height > maxImageHeight)) {
-                const imageAspect = this.width / this.height;
-                const maxAspect = maxImageWidth / maxImageHeight;
-                if (imageAspect > maxAspect) {
-                    // image is more landscape: reduce its height
-                    bestWidth = maxImageWidth;
-                    bestHeight = bestWidth / imageAspect;
-                } else {
-                    // image is more portrait
-                    bestHeight = maxImageHeight;
-                    bestWidth = bestHeight * imageAspect;
-                }
-            }
-            self.showImage(bestWidth, bestHeight);
             
             if (self.album[imageNumber].url) {
                 $image.css("cursor", "pointer");
             } else {
                 $image.css("cursor", "auto");
             }
+
+            self.showImage();
+
+            // not needed with .one    this.removeEventListener('load', onLoad);
         }; // end of onload function
 
-        // Preload image before showing
-        newImage.src = this.album[imageNumber].name;
-        this.currentImageIndex = imageNumber;
+        function onError () {
+            // Expected image not found -- use placeholder
+            console.log("onError - src =", this.src);
+            // not needed with .one    this.removeEventListener('error', onError);
+            this.src = self.placeholderImage;
+        }
+
+        $image.one('load', onLoad); // !! fires with 1x1 gif data?
+        $image.one('error', onError);
+
+        // Load the new image -- it will have opacity 0 at first
+        $image.attr("src", this.album[imageNumber].name);
+        this.currentImageIndex = imageNumber;   // FIXME is this the right place/time to update cII ?
 
     }; // end of changeImage()
 
@@ -385,16 +364,15 @@ class LightboxSSA {
     }
 
     // Display the image and its details and begin preload neighbouring images.
-    showImage (width, height) {
-        //this.$loader.stop(true).hide();
+    // Fades out the current image, fades in the other one, then swaps the pointers.
+    showImage () {  // (width, height) {
+        //this.$loader.stop(true).hide();   // FIXME reinstate this
         // TODO ? also disable other clicks and keyboard events before the swap?
         // TODO ?? swap z-index values
         this.$currentImage.css({"pointer-events": "none"});
         // Don't forget: fadeOut adds 'display: none' at the end of the fade (aka .hide())
         //  (and fadeIn does the opposite)
         this.$currentImage.fadeOut(this.options.image_fade_duration);
-        this.$otherImage.width(width);
-        this.$otherImage.height(height);
         this.$otherImage.fadeIn(this.options.image_fade_duration+10, function() {
             // Swap the images
             const $temp = this.$otherImage;
@@ -403,7 +381,7 @@ class LightboxSSA {
             this.$currentImage.css({"pointer-events": "auto"});
             //this.updateNav();
             this.preloadNeighboringImages();
-            this.enableKeyboardNav();  // FIXME move this start() or build() 
+            this.enableKeyboardNav();  // FIXME move this start() or build() -- no, need to disable nav during changeImage 
         }.bind(this));
     };
 
@@ -500,7 +478,8 @@ class LightboxSSA {
             $('body').removeClass('lb-disable-scrolling');
         }
         this.$nav.remove();
-        this.$container.remove();
+        this.$flex1.remove();
+        this.$flex2.remove();
         this.$overlay.remove();
     };
 

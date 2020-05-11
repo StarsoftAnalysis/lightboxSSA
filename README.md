@@ -17,6 +17,9 @@ Lokesh's documentation is here:
 ## Major changes from Lightbox2
 
 * Next/previous arrows are in fixed positions for easier clicking.
+* Simpler DOM.
+* Use flex and CSS to reduce the need to do image size calculations in Javascript,
+  and make the whole thing much more responsive.
 
 ---
 
@@ -27,14 +30,14 @@ like this in the HTML, either in the `<head>` or at the end of the `<body>`.
 
 ```javascript
 const lightboxSSA = {
-	vertical_margin: 50,
+        overlay_opacity: 0.9,
 	wrap_around: false,
 };
 ```
 
 The settable options are:
 
-* vertical_margin [pixels]  default: 50
+* overlay_opacity: 0.9,
 * etc. TODO
 
 ## Hugo
@@ -58,7 +61,7 @@ If you want to adjust any options, use something like this:
 ---
 ...
 lightboxSSA: 
-	vertical_margin: 20
+        overlay_opacity: 0.9
 	wrap_around: true
 ---
 ```
