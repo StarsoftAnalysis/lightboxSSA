@@ -35,12 +35,15 @@
 // - keyboard < > esc
 // - swiping
 // - hide <> arrows on swipable / narrow screens 
+//   - and/or allow prev/next touches on edges of image
 // - hide prev or nav if only two images?
 // - use title as tool tip? or add details?
 // - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
 //     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
 // - disable scroll thing - to get rid of scroll bar
 // - more Aria stuff?
+// - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
+// - touch-action didn't help -- remove from here and css
 // DONE
 // - if figure, use enclosed img for source
 // - if img, use its src
@@ -120,11 +123,51 @@ class LightboxSSA {
         });
     };
 
+    // enable() is called via init() when page (i.e. JS) is loaded
     enable () {
         var self = this;
-        $('body').on('click', '[data-lightbox]', function(event) {
+        /*
+        $('body').on('click', '[data-lightbox]', function(event) {    // FIXME or touchstart?
+    //            alert("c/t on a d-t item");
             self.start($(event.currentTarget));
             return false;
+        });
+        */
+        
+        // Attach click/touch/pointer listeners to every element on the page
+        // that has [data-lightbox] in its attributes.
+        // (This requires that DOM is ready, but happens before the lightbox has been built)
+
+        // NEXT: http://jsfiddle.net/f4he2y9d/ shows that tapping a button works on android, but not if I change it to an img.  what about a figure?
+
+        // pointer-events are a bit new? -- might not be the answer
+
+//        document.body.addEventListener('touchstart', function (e) {alert("ouch!")});  // see stackoverflow.com/questions/44928042
+        const matches = document.querySelectorAll("[data-lightbox]");
+        //  FIXME how to delegate without jquery? -- matches gets my 35 images though.
+        matches.forEach(function(match) {
+            // try this as suggested by https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
+            // works on desktop/emulator, not android
+            //match.onpointerdown = function (e) {
+            /*
+            match.addEventListener('pointerdown', function (e) {
+                alert("pointer down");
+                self.start(e.currentTarget);
+                //return false;
+            }, true); // true -- usecapture
+            */
+            match.addEventListener('touchstart', function (e) {
+                // This works on emualtor -- and bubbles to say ouch!
+                alert("touchstart on a d-l");
+                //e.preventDefaults();    // apparently stops the /emulated/ mouse events being triggered too
+                //  See developer.mozilla.org ... "supporting both touch and mouse events" (but mouse events (i.e. movements) are not clicks)
+                self.start(e.currentTarget);
+            }, true);
+            match.addEventListener('click', function (e) {
+                alert("click on a d-l");
+                //e.preventDefaults();  // e.g. to stop an <a data-lightbox=x> doing the <a>'s href
+                self.start(e.currentTarget);
+            }, true);
         });
     };
 
@@ -163,7 +206,7 @@ class LightboxSSA {
         this.$image2    = $('#lb-image2');
         this.$lbElements = $('lb-overlay, #lb-nav, #lb-prev, #lb-next, #lb-flex1, #lb-flex2, #lb-image1, #lb-image2');
 
-        // Adjust CSS depending on options
+        // Override CSS depending on options
         this.$image1.css("max-width", this.options.max_width);
         this.$image1.css("max-height", this.options.max_height);
         this.$image2.css("max-width", this.options.max_width);
@@ -220,9 +263,8 @@ class LightboxSSA {
 
     // User has clicked on an element with 'data-lightbox'.
     // Show lightbox. If the image is part of a set, add siblings to album array.
-    start ($lbelement) {
-        // $lbelement is the thing clicked on -- typically a <figure> or <image>.
-        var $window = $(window);
+    start (lbelement) {
+        // lbelement is the thing clicked on -- typically a <figure> or <image>. -- no longer a $jquery thing!
 
         // Apply user-supplied options 
         if (typeof lightboxSSAOptions == "object") {
@@ -258,7 +300,7 @@ class LightboxSSA {
             if (!imageURL) {
                 imageURL = 'missingImage.jpg';
             }
-            console.log("imageURL: ", imageURL);
+            //console.log("imageURL: ", imageURL);
             // Link URL is from data-url or <fig>'s <img>'s data-url or <a>'s href
             // - <a>'s href - how to check if that is an image?
             var linkURL = $lbelement.attr('data-url');
@@ -273,7 +315,7 @@ class LightboxSSA {
                 }
             }
             // (no linkURL is OK)       
-            console.log("adding image ", $lbelement, ", imageURL is ", imageURL, ", linkURL is ", linkURL);
+            //console.log("adding image ", $lbelement, ", imageURL is ", imageURL, ", linkURL is ", linkURL);
             self.album.push({
                 name:    imageURL,
                 url:     linkURL,
@@ -281,15 +323,17 @@ class LightboxSSA {
                 title:   $lbelement.attr('data-title') || $lbelement.attr('title'),
                 srclist: $lbelement.attr('data-imagelist'),
             });
-        }
+        } // end of addToAlbum
 
-        var dataLightboxValue = $lbelement.attr('data-lightbox');    // dLV gets 'lightbox' or the name of the gallery
+        //var dataLightboxValue = $lbelement.attr('data-lightbox');    // dLV gets 'lightbox' or the name of the gallery
+        const dataLightboxValue = lbelement.getAttribute('data-lightbox');
         var $lbelements;
         // Find all elements with the same gallery name
         $lbelements = $('[data-lightbox="' + dataLightboxValue + '"]');
         for (var i = 0; i < $lbelements.length; i += 1) {
             addToAlbum($($lbelements[i]));
-            if ($lbelements[i] === $lbelement[0]) {
+            //if ($lbelements[i] === $lbelement[0]) {
+            if ($lbelements[i] === lbelement) {
                 imageNumber = i;
             }
         }
@@ -318,7 +362,7 @@ class LightboxSSA {
         this.disableKeyboardNav();
 
         function onLoad () {
-            console.log("onLoad - src =", this.src);
+            //console.log("onLoad - src =", this.src);
             // 'this' is the new image  !!!!!!!! now == $image
             // 'self' is the lightbox object
             // '$image' is the DOM object (either lb-image1 or lb-image2)
@@ -342,7 +386,7 @@ class LightboxSSA {
 
         function onError () {
             // Expected image not found -- use placeholder
-            console.log("onError - src =", this.src);
+            //console.log("onError - src =", this.src);
             // not needed with .one    this.removeEventListener('error', onError);
             this.src = self.placeholderImage;
         }
@@ -359,7 +403,7 @@ class LightboxSSA {
     // Make the lightbox stuff visible
     showLightbox () {
         this.$overlay.fadeTo(this.options.fade_duration, this.options.overlay_opacity, ()=>{
-            console.log("overlay fadeIn complete");
+            //console.log("overlay fadeIn complete");
         });
     }
 
@@ -370,6 +414,7 @@ class LightboxSSA {
         // TODO ? also disable other clicks and keyboard events before the swap?
         // TODO ?? swap z-index values
         this.$currentImage.css({"pointer-events": "none"});
+        this.$currentImage.css({"touch-action": "none"});
         // Don't forget: fadeOut adds 'display: none' at the end of the fade (aka .hide())
         //  (and fadeIn does the opposite)
         this.$currentImage.fadeOut(this.options.image_fade_duration);
@@ -379,6 +424,7 @@ class LightboxSSA {
             this.$otherImage = this.$currentImage;
             this.$currentImage = $temp;
             this.$currentImage.css({"pointer-events": "auto"});
+            this.$currentImage.css({"touch-action": "auto"});
             //this.updateNav();
             this.preloadNeighboringImages();
             this.enableKeyboardNav();  // FIXME move this start() or build() -- no, need to disable nav during changeImage 

@@ -1,18 +1,12 @@
 # LightboxSSA
 
 This is yet another fork of 
-[Lokesh Dhakar](http://www.lokeshdhakar.com)'s excellent [lightbox2](https://github.com/lokesh/lightbox2).
+[Lokesh Dhakar](http://www.lokeshdhakar.com)'s excellent [Lightbox2](https://github.com/lokesh/lightbox2).
 
 I'm making various modifications, so this version isn't really ready for use yet.
 
-LightboxSSA is small javascript script used to overlay images on top of the current page.
+LightboxSSA is small Javascript module used to overlay images on top of the current page for viewing as a lightbox.
 
-Lokesh's documentation is here:
-
-- **Demos and usage instructions.** Visit the [Lightbox homepage](http://lokeshdhakar.com/projects/lightbox2/) to see examples, info on getting started, script options, how to get help, and more.
-- **Releases and Changelog**. Viewable on the [Github Releases page](https://github.com/lokesh/lightbox2/releases)
-- **Roadmap.** View the [Roadmap](https://github.com/lokesh/lightbox2/blob/master/ROADMAP.md) for a peek at what is being planned for future releases.
-- **License.** Lightbox is licensed under the MIT License. [Learn more about the license.](http://lokeshdhakar.com/projects/lightbox2/#license)
 
 ## Major changes from Lightbox2
 
@@ -20,6 +14,8 @@ Lokesh's documentation is here:
 * Simpler DOM.
 * Use flex and CSS to reduce the need to do image size calculations in Javascript,
   and make the whole thing much more responsive.
+* Uses 'proper' Javascript classes.
+* Still uses JQuery.
 
 ---
 
