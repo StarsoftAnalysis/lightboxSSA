@@ -15,7 +15,11 @@ LightboxSSA is small Javascript module used to overlay images on top of the curr
 * Use flex and CSS to reduce the need to do image size calculations in Javascript,
   and make the whole thing much more responsive.
 * Uses 'proper' Javascript classes.
-* Still uses JQuery.
+* No more jQuery.  And it's no longer a module.
+
+## Requirements
+
+* ES6
 
 ---
 
