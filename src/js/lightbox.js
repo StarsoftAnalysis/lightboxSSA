@@ -29,9 +29,7 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - not working on mobile!
 // - is lb-cancel needed?
-// - it's a class, but use of # implies only one...
 // - keyboard < > esc
 // - swiping
 // - hide <> arrows on swipable / narrow screens 
@@ -43,8 +41,8 @@
 // - disable scroll thing - to get rid of scroll bar
 // - more Aria stuff?
 // - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
-// - touch-action didn't help -- remove from here and css
 // - get caption from figcaption
+// - window resize (e.g. pressing F12) breaks aspect ratio
 // DONE
 // - if figure, use enclosed img for source
 // - if img, use its src
@@ -55,32 +53,10 @@
 // - deal with missing images, e.g. set default size, use placeholder
 // - thin black border around images ? related to border vs transform/translate - fixed by using flex instead
 // - flex - div for each image
-
-'use strict';
-
-// No jQuery, no module!:
-/*
-// Uses Node, AMD, or browser globals to create a module.
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(['jquery'], factory);
-    } else if (typeof exports === 'object') {
-        // Node. Does not work with strict CommonJS, but
-        // only CommonJS-like environments that support module.exports,
-        // like Node.
-        module.exports = factory(require('jquery'));
-    } else {
-        // Browser globals (root is window)
-        root.lightbox = factory(root.jQuery);
-    }
-
-}(this, function ($) {
-*/
+// - not working on mobile!
+// - touch-action didn't help -- remove from here and css
 
 class LightboxSSA {
-
-
 
     constructor (options) {
         this.album = [];
@@ -99,7 +75,7 @@ class LightboxSSA {
             max_height: "90%",
             //resizeDuration: 700,
             wrap_around: true,
-            disable_scrolling: true, // false,  ??
+            disable_scrolling: true, // hide scrollbar so that lightbox uses full area of window
             // Sanitize Title
             // If the caption data is trusted, for example you are hardcoding it in, then leave this to false.
             // This will free you to add html tags, such as links, in the caption.
@@ -134,8 +110,6 @@ class LightboxSSA {
     // init() is called from constructor -- could be merged  TODO
     init () {
         var self = this;
-        // Both enable and build methods require the body tag to be in the DOM.
-        //$(document).ready(function() {
         this.docReady(function() {
             // Now in start():  self.build();
             self.enable();
@@ -191,13 +165,18 @@ class LightboxSSA {
     };
 
     // Build html for the lightbox and the overlay.
-    // Attach event handlers to the new DOM elements. click click click
-    // NOTE This happens when page is loaded, NOT when an image is clicked.
+    // Attach event handlers to the new DOM elements.
+    // NOTE This happens as part of start(), after user has clicked an image.
     build () {
         // FIXME what's this?
         //if ($('#lb-overlay').length > 0) {  // Presumably avoiding reentry
         //    return;
         //}
+
+        if (this.options.disable_scrolling) {
+            this.oldBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+        }
 
         const html = `
             <div id=lb-overlay class=lb-element></div>
@@ -238,12 +217,12 @@ class LightboxSSA {
 
         // Attach event handlers
         //this.$overlay.on('click', () => {
-        //    this.end();
+        //    this.dismantle();
         //    return false;
         //});
         self = this;
-        this.overlay.addEventListener('click', this.end, false);
-        this.overlay.addEventListener('touchstart', this.end, false);
+        this.overlay.addEventListener('click', this.dismantle.bind(this), false);
+        this.overlay.addEventListener('touchstart', this.dismantle.bind(this), false);
 
         /*
         this.$prev.on('click', () => {
@@ -320,18 +299,23 @@ class LightboxSSA {
 
         /*
         this.$loader.on('click', function() {
-            self.end();
+            self.dismantle();
             return false;
         });
         */
     }; // end of build()
 
-    fadeTo (element, opacity, time, completeFn = null) {
+    fadeTo (element, duration, opacity, completeFn = null) {
         if (completeFn) {
-            element.addEventListener('transitionend', completeFn, { once: true });
+            element.addEventListener('transitionend', completeFn, { once: true, capture: true });
+            //setTimeout(completeFn, duration);
         }
-        element.style.transition = `opacity {time}ms`;
-        element.style.opacity = opacity;
+        element.style['transition-property'] = 'opacity';
+        element.style['transition-duration'] = '3s';    //duration + 'ms';
+        // Do the fade after a short delay to let the CSS changes take effect:
+        setTimeout(function() {
+            element.style.opacity = opacity;
+        }, 50);
     }
 
     // User has clicked on an element with 'data-lightbox'.
@@ -433,7 +417,7 @@ class LightboxSSA {
         if (this.albumLen == 1) {
             // nowhere to navigate to
             //this.$nav.hide();
-            this.fadeTo(this.nav, 0, this.options.fadeDuration);
+            this.fadeTo(this.nav, this.options.fadeDuration, 0);
         }
         if (this.albumLen == 2 && !this.options.wrap_around) {
             // TODO adjust arrows by hiding prev or next
@@ -483,31 +467,32 @@ class LightboxSSA {
 
     // Make the lightbox stuff visible
     showLightbox () {
-        this.fadeTo(this.overlay, this.options.overlay_opacity, this.options.fade_duration, ()=>{
+        this.fadeTo(this.overlay, this.options.fade_duration, this.options.overlay_opacity, ()=>{
             //console.log("overlay fadeIn complete");
         });
     }
 
     // Display the image and its details and begin preload neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.
-    showImage () {  // (width, height) {
+    showImage () {  // (width, height) 
         //this.$loader.stop(true).hide();   // FIXME reinstate this
         // TODO ? also disable other clicks and keyboard events before the swap?
         // TODO ?? swap z-index values
         this.currentImage.style["pointer-events"] = "none";
-        this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
-        this.fadeTo(this.currentImage, 0, this.options.image_fade_duration);
-        this.fadeTo(this.otherImage, 1, this.options.image_fade_duration+10, function() {
+        //this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
+        this.fadeTo(this.currentImage, this.options.image_fade_duration, 0);
+        this.fadeTo(this.otherImage, this.options.image_fade_duration+10, 1, () => {    // function() {
             // Swap the images
             const temp = this.otherImage;
             this.otherImage = this.currentImage;
             this.currentImage = temp;
             this.currentImage.style["pointer-events"] = "auto";
-            this.currentImage.style["touch-action"] = "auto";
+            //this.currentImage.style["touch-action"] = "auto";
             //this.updateNav();
             this.preloadNeighboringImages();
             this.enableKeyboardNav();  // FIXME move this start() or build() -- no, need to disable nav during changeImage 
-        }.bind(this));
+        });
+        //}.bind(this));
     }
 
     // Display previous and next navigation if appropriate.
@@ -581,7 +566,7 @@ class LightboxSSA {
         if (keycode === KEYCODE_ESC) {
             // Prevent bubbling so as to not affect other components on the page.
             event.stopPropagation();
-            this.end();
+            this.dismantle();
         } else if (keycode === KEYCODE_LEFTARROW) {
             if (this.currentImageIndex !== 0) {
                 this.changeImage(this.currentImageIndex - 1);
@@ -598,43 +583,34 @@ class LightboxSSA {
     };
 
     remove (element) {
-        this.fadeOut(element, 0, this.options.fade_duration, function() {
+        this.fadeTo(element, this.options.fade_duration, 0, function() {
             //element.parentNode.removeChild(element);
+            // FIXME why don't we get here?
             element.remove();
         });
+        /* FIXME not needed
+        // Hack!
+        setTimeout(function () {
+            element.remove();
+        }, this.options.fade_duration);
+        */
     }
 
-    // Closing time. :-(
-    end () {
-        //this.$lbElements.fadeOut(this.options.fade_duration);
-        /* Now done via remove():
-        if (this.lbelements) {
-            this.lbelements.forEach(function (element) {
-                this.fadeOut(element, 0, this.options.fade_duration);
-            });
+    // Unbuild the DOM structure
+    dismantle () {
+        for (let lbelement of this.lbelements) {
+            this.remove(lbelement);
+        };
+        if (this.options.disable_scrolling) {
+            document.body.style.overflow = this.oldBodyOverflow;
         }
-        */
-        //this.$lbElements.css({"display": "none"});
-        // TODO non jquery version:
-        //if (this.options.disable_scrolling) {
-        //    $('body').removeClass('lb-disable-scrolling');
-       // }
-        // FIXME -- need to remove images etc. too
-        this.remove(this.overlay);
-        this.remove(this.prev);
-        this.remove(this.next);
-        this.remove(this.nav);
-        this.remove(this.image1);
-        this.remove(this.flex1);
-        this.remove(this.image2);
-        this.remove(this.flex2);
     };
 
-    } // end of class LightboxSSA
+} // end of class LightboxSSA
 
-    // Create an (the only) instance of our Class.
-    // Can set options here.
-    const lbSSA = new LightboxSSA({});
+// Create an (the only) instance of our Class.
+// Can set options here.
+const lbSSA = new LightboxSSA({});
 
 /*
     return new LightboxSSA();
