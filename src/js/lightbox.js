@@ -29,6 +29,7 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
+// - preload neighbours
 // - is lb-cancel needed?
 // - keyboard < > esc
 // - swiping
@@ -38,7 +39,6 @@
 // - use title as tool tip? or add details?
 // - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
 //     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
-// - disable scroll thing - to get rid of scroll bar
 // - more Aria stuff?
 // - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
 // - get caption from figcaption
@@ -55,6 +55,7 @@
 // - flex - div for each image
 // - not working on mobile!
 // - touch-action didn't help -- remove from here and css
+// - disable scroll thing - to get rid of scroll bar
 
 class LightboxSSA {
 
@@ -82,7 +83,7 @@ class LightboxSSA {
             // If the caption data is user submitted or from some other untrusted source, then set this to true
             // to prevent xss and other injection attacks.
             sanitize_title: false,
-            min_nav_width: 50, // Space for arrow *outside* the image area.  Arrow images are 50px wide.
+            min_nav_width: 31, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
             placeholderImage: '/images/imageNotFound.png',
         };
         this.options = {};
@@ -113,52 +114,27 @@ class LightboxSSA {
         this.docReady(function() {
             // Now in start():  self.build();
             self.enable();
-            alert('lbssa ready and enabled');
+            //alert('lbssa ready and enabled');
         });
     };
 
     // enable() is called via init() when page (i.e. JS) is loaded
     enable () {
         var self = this;
-        /*
-        $('body').on('click', '[data-lightbox]', function(event) {    // FIXME or touchstart?
-    //            alert("c/t on a d-t item");
-            self.start($(event.currentTarget));
-            return false;
-        });
-        */
         
         // Attach click/touch/pointer listeners to every element on the page
         // that has [data-lightbox] in its attributes.
         // (This requires that DOM is ready, but happens before the lightbox has been built)
-
-        // NEXT: http://jsfiddle.net/f4he2y9d/ shows that tapping a button works on android, but not if I change it to an img.  what about a figure?
-
-        // pointer-events are a bit new? -- might not be the answer
-
-//        document.body.addEventListener('touchstart', function (e) {alert("ouch!")});  // see stackoverflow.com/questions/44928042
         const matches = document.querySelectorAll("[data-lightbox]");
         matches.forEach(function(match) {
-            // try this as suggested by https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
-            // works on desktop/emulator, not android
-            //match.onpointerdown = function (e) {
-            /*
-            match.addEventListener('pointerdown', function (e) {
-                alert("pointer down");
-                self.start(e.currentTarget);
-                //return false;
-            }, true); // true -- usecapture
-            */
             match.addEventListener('touchstart', function (e) {
-                // This works on emualtor -- and bubbles to say ouch!
-                alert("touchstart on a d-l");
-                //e.preventDefaults();    // apparently stops the /emulated/ mouse events being triggered too
-                //  See developer.mozilla.org ... "supporting both touch and mouse events" (but mouse events (i.e. movements) are not clicks)
+                e.preventDefault();
+                e.stopPropagation();
                 self.start(e.currentTarget);
             }, true);
             match.addEventListener('click', function (e) {
-                alert("click on a d-l");
-                //e.preventDefaults();  // e.g. to stop an <a data-lightbox=x> doing the <a>'s href
+                e.preventDefault();  // e.g. to stop an <a data-lightbox=x> doing the <a>'s href
+                e.stopPropagation();
                 self.start(e.currentTarget);
             }, true);
         });
@@ -206,6 +182,8 @@ class LightboxSSA {
         this.lbelements = document.getElementsByClassName('lb-element');
 
         // Override CSS depending on options
+        // TODO get window width, make sure there's room for the <> arrows -- add a bit of spacing if possible.
+        //  - need to get current window width...  and redo the calculation on window resize.  Pity -- it's all automatic at the moment.
         this.image1.style['max-width'] = this.options.max_width;
         this.image1.style['max-height'] = this.options.max_height;
         this.image2.style['max-width'] = this.options.max_width;

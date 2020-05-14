@@ -1,4 +1,4 @@
-/* lightboxSSA.css */
+/* lightboxSSA.scss */
 
 // TODO
 // -- see https://freebiesupply.com/blog/css-arrows/ for fancy responsive < > arrows
@@ -40,15 +40,18 @@ body.lb-disable-scrolling {
     opacity: 1;
     height: 50%;
     width: 50%;
+    z-index: 12;
     pointer-events: auto;
     //touch-action: auto;
     background: url(../images/prev.png) left center no-repeat;
     cursor: url(../images/prev-cursor.png) 2 17, pointer;
 }
 #lb-next {
+	/* This should be there */
     opacity: 1;
     height: 50%;
     width: 50%;
+    z-index: 12;
     pointer-events: auto;
     //touch-action: auto;
     background: url(../images/next.png) right center no-repeat;
