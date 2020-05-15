@@ -40,10 +40,10 @@ body.lb-disable-scrolling {
     opacity: 1;
     height: 50%;
     width: 50%;
-    z-index: 12;
+    //z-index: 12;
     pointer-events: auto;
     //touch-action: auto;
-    background: url(../images/prev.png) left center no-repeat;
+    background: url(../images/prev.png) left 20px center no-repeat;
     cursor: url(../images/prev-cursor.png) 2 17, pointer;
 }
 #lb-next {
@@ -51,10 +51,10 @@ body.lb-disable-scrolling {
     opacity: 1;
     height: 50%;
     width: 50%;
-    z-index: 12;
+    //z-index: 12;
     pointer-events: auto;
     //touch-action: auto;
-    background: url(../images/next.png) right center no-repeat;
+    background: url(../images/next.png) right 20px center no-repeat;
     cursor: url(../images/next-cursor.png) 18 17, pointer;
 }
 
@@ -84,12 +84,12 @@ body.lb-disable-scrolling {
     max-height: 90%;
 }
 #lb-image1 {
-    z-index: 15;
-    pointer-events: auto;
+    //z-index: 15;
+    pointer-events: none;
     //touch-action: auto;
 }
 #lb-image2 {
-    z-index: 16;
-    pointer-events: none; /* initially */ // FIXME check which is used first -- is this needed?
+    //z-index: 16;
+    pointer-events: auto; /* initially */ // FIXME check which is used first -- is this needed?
     //touch-action: none;
 }
