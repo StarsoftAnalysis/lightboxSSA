@@ -29,6 +29,7 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
+// - fix fadeTo and jumpy timing sometimes
 // - preload neighbours
 // - is lb-cancel needed?
 // - keyboard < > esc -- also back button to close lb
@@ -37,8 +38,6 @@
 //   - and/or allow prev/next touches on edges of image
 // - hide prev or nav if only two images?
 // - use title as tool tip? or add details?
-// - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
-//     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
 // - more Aria stuff?
 // - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
 // - get caption from figcaption
@@ -58,6 +57,8 @@
 // - not working on mobile!
 // - touch-action didn't help -- remove from here and css
 // - disable scroll thing - to get rid of scroll bar
+// - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
+//     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
 
 class LightboxSSA {
 
@@ -264,7 +265,9 @@ class LightboxSSA {
         this.overlay.addEventListener('click', this.dismantle.bind(this), false);
         this.overlay.addEventListener('touchstart', this.dismantle.bind(this), false);
 
-        function prevImage () {
+        function prevImage (e) {
+            e.preventDefault();
+            e.stopPropagation();
             // TODO check wrap_around
             if (this.currentImageIndex == 0) {
                 this.changeImage(this.album.length - 1);
@@ -279,7 +282,9 @@ class LightboxSSA {
         this.image2prev.addEventListener('click', prevImage.bind(this), false);
         this.image2prev.addEventListener('touchstart', prevImage.bind(this), false);
 
-        function nextImage () {
+        function nextImage (e) {
+            e.preventDefault();
+            e.stopPropagation();
             if (this.currentImageIndex === this.album.length - 1) {
                 this.changeImage(0);
             } else {
@@ -295,7 +300,9 @@ class LightboxSSA {
 
         // Honour a click on the current lightbox image (either 1 or 2).
         // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
-        function clickThroughImage () {
+        function clickThroughImage (e) {
+            e.preventDefault();
+            e.stopPropagation();
             // this.currentImageIndex is evaluated at click time, so gives the correct URL.
             if (this.album[this.currentImageIndex].url) {
                 // Jump to the given URL
@@ -484,10 +491,11 @@ class LightboxSSA {
         });
     }
 
+    // From https://gomakethings.com/how-to-get-all-of-an-elements-siblings-with-vanilla-js/
     getSiblings (elem, includeSelf = true) {
         // Setup siblings array and get the first sibling
-        var siblings = [];
-        var sibling = elem.parentNode.firstChild;
+        const siblings = [];
+        let sibling = elem.parentNode.firstChild;
         // Loop through each sibling and push to the array
         while (sibling) {
             if (sibling.nodeType === 1 && (includeSelf || (sibling !== elem))) {
