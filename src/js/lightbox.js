@@ -31,7 +31,7 @@
 // TODO
 // - preload neighbours
 // - is lb-cancel needed?
-// - keyboard < > esc
+// - keyboard < > esc -- also back button to close lb
 // - swiping
 // - hide <> arrows on swipable / narrow screens 
 //   - and/or allow prev/next touches on edges of image
@@ -43,6 +43,8 @@
 // - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
 // - get caption from figcaption
 // - window resize (e.g. pressing F12) breaks aspect ratio
+//  - validate option values from 'user'
+
 // DONE
 // - if figure, use enclosed img for source
 // - if img, use its src
@@ -62,6 +64,11 @@ class LightboxSSA {
     constructor (options) {
         this.album = [];
         this.currentImageIndex = 0;
+        this.constants = {
+            // 'constants' defined e.g. in CSS
+            arrowInset: 20, // distance of <> arrows from edge of window, in px
+            arrowWidth: 31,
+        };
         // NOTE: these have to be lowercase or snake_case because of the way they can be
         // set e.g. via Hugo params
         this.defaults = {
@@ -72,8 +79,8 @@ class LightboxSSA {
             overlay_opacity: 0.9,
             image_fade_duration: 600,
             max_size: 50000,
-            max_width: "90%",
-            max_height: "90%",
+            max_width: 90,
+            max_height: 90,
             //resizeDuration: 700,
             wrap_around: true,
             disable_scrolling: true, // hide scrollbar so that lightbox uses full area of window
@@ -83,14 +90,43 @@ class LightboxSSA {
             // If the caption data is user submitted or from some other untrusted source, then set this to true
             // to prevent xss and other injection attacks.
             sanitize_title: false,
-            min_nav_width: 31, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
+            min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
             placeholderImage: '/images/imageNotFound.png',
         };
-        this.options = {};
+        this.options = Object.assign({}, this.defaults);
         //this.options = $.extend(this.options, this.defaults, options);
-        this.options = {...this.options, ...this.defaults, ...options}
+        //this.options = {...this.options, ...this.defaults, ...options}
+        this.applyOptions(options);
 
         this.init();
+    }
+
+    // Add the user-supplied options to this.options, doing a bit of validation, convert strings to numbers, etc.
+    // (Just makes values usable -- doesn't give any feedback) 
+    applyOptions (options) {
+        for (let key in options) {
+            //console.log(key, options[key]);
+            switch (key) {
+                case 'max_width':
+                case 'max_height':
+                    // Need a number to use as a percentage.
+                    const val = parseInt(options[key], 10);
+                    if (isNaN(val)) {
+                        // Leave previous/default value
+                    } else {
+                        if (val < 10) {
+                            val = 10;
+                        } else if (val > 100) {
+                            val = 100;
+                        }
+                        this.options[key] = val;
+                    }
+                    break;
+                default:
+                    // Just copy it
+                    this.options[key] = options[key]
+            }
+        }
     }
 
     // TODO not used
@@ -140,6 +176,12 @@ class LightboxSSA {
         });
     };
 
+    windowWidth () { // from https://stackoverflow.com/questions/6942785/
+        return window.innerWidth && document.documentElement.clientWidth ? 
+            Math.min(window.innerWidth, document.documentElement.clientWidth) : 
+            window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth;
+    }
+
     // Build html for the lightbox and the overlay.
     // Attach event handlers to the new DOM elements.
     // NOTE This happens as part of start(), after user has clicked an image.
@@ -161,10 +203,18 @@ class LightboxSSA {
                 <div id=lb-next aria-label="Next image" class=lb-element></div>
             </div>
             <div id=lb-flex1 class="lb-flex lb-element">
-                <img id=lb-image1 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                <div id=lb-wrapper1 class=lb-element>
+                    <img id=lb-image1 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                    <div id=lb-image1-prev class=lb-element></div>
+                    <div id=lb-image1-next class=lb-element></div>
+                </div>
             </div>
             <div id=lb-flex2 class="lb-flex lb-element">
-                <img id=lb-image2 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                <div id=lb-wrapper2 class=lb-element>
+                    <img id=lb-image2 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                    <div id=lb-image2-prev class=lb-element></div>
+                    <div id=lb-image2-next class=lb-element></div>
+                </div>
             </div>
         `;
         //$(html).appendTo($('body'));
@@ -177,41 +227,43 @@ class LightboxSSA {
         this.next       = document.getElementById('lb-next');
         this.flex1      = document.getElementById('lb-flex1');
         this.flex2      = document.getElementById('lb-flex2');
+        this.wrapper1   = document.getElementById('lb-wrapper1');
+        this.wrapper2   = document.getElementById('lb-wrapper2');
         this.image1     = document.getElementById('lb-image1');
         this.image2     = document.getElementById('lb-image2');
+        this.image1prev = document.getElementById('lb-image1-prev');
+        this.image1next = document.getElementById('lb-image1-next');
+        this.image2prev = document.getElementById('lb-image2-prev');
+        this.image2next = document.getElementById('lb-image2-next');
         this.lbelements = document.getElementsByClassName('lb-element');
 
+        /*??
         // Override CSS depending on options
         // TODO get window width, make sure there's room for the <> arrows -- add a bit of spacing if possible.
         //  - need to get current window width...  and redo the calculation on window resize.  Pity -- it's all automatic at the moment.
-        this.image1.style['max-width'] = this.options.max_width;
+        const winWidth = this.windowWidth();
+        const maxWidthPixels = winWidth * this.options.max_width / 100;
+        if ((winWidth - maxWidthPixels) < (2 * (this.constants.arrowWidth + this.constants.arrowInset))) {
+            // remove the arrow inset
+            this.prev['background-position'] = 'left  center';
+            this.next['background-position'] = 'right center';
+        } else {
+            // include the inset
+            this.prev['background-position'] = 'left '  + (this.constants.arrowInset) + 'px center';
+            this.next['background-position'] = 'right ' + (this.constants.arrowInset) + 'px center';
+        }
+        const max_width = (Math.min(maxWidthPixels, winWidth - 2*this.constants.arrowWidth)) + "px";
+        this.image1.style['max-width']  = max_width; // "calc(90% - 51px)";   //this.percentString(this.options.max_width);
         this.image1.style['max-height'] = this.options.max_height;
-        this.image2.style['max-width'] = this.options.max_width;
+        this.image2.style['max-width']  = max_width; //this.percentString(this.options.max_width);
         this.image2.style['max-height'] = this.options.max_height;
-        //this.$image1.css("max-width", this.options.max_width);
-        //this.$image1.css("max-height", this.options.max_height);
-        //this.$image2.css("max-width", this.options.max_width);
-        //this.$image2.css("max-height", this.options.max_height);
+        */
 
         // Attach event handlers
-        //this.$overlay.on('click', () => {
-        //    this.dismantle();
-        //    return false;
-        //});
         self = this;
         this.overlay.addEventListener('click', this.dismantle.bind(this), false);
         this.overlay.addEventListener('touchstart', this.dismantle.bind(this), false);
 
-        /*
-        this.$prev.on('click', () => {
-            if (this.currentImageIndex === 0) {
-                this.changeImage(this.album.length - 1);
-            } else {
-                this.changeImage(this.currentImageIndex - 1);
-            }
-            return false;
-        });
-        */
         function prevImage () {
             // TODO check wrap_around
             if (this.currentImageIndex == 0) {
@@ -222,17 +274,11 @@ class LightboxSSA {
         }
         this.prev.addEventListener('click', prevImage.bind(this), false);
         this.prev.addEventListener('touchstart', prevImage.bind(this), false);
+        this.image1prev.addEventListener('click', prevImage.bind(this), false);
+        this.image1prev.addEventListener('touchstart', prevImage.bind(this), false);
+        this.image2prev.addEventListener('click', prevImage.bind(this), false);
+        this.image2prev.addEventListener('touchstart', prevImage.bind(this), false);
 
-        /*
-        this.$next.on('click', () => {
-            if (this.currentImageIndex === this.album.length - 1) {
-                this.changeImage(0);
-            } else {
-                this.changeImage(this.currentImageIndex + 1);
-            }
-            return false;
-        });
-        */
         function nextImage () {
             if (this.currentImageIndex === this.album.length - 1) {
                 this.changeImage(0);
@@ -242,25 +288,11 @@ class LightboxSSA {
         }
         this.next.addEventListener('click', nextImage.bind(this), false);
         this.next.addEventListener('touchstart', nextImage.bind(this), false);
+        this.image1next.addEventListener('click', nextImage.bind(this), false);
+        this.image1next.addEventListener('touchstart', nextImage.bind(this), false);
+        this.image2next.addEventListener('click', nextImage.bind(this), false);
+        this.image2next.addEventListener('touchstart', nextImage.bind(this), false);
 
-        /*
-        this.$image1.on('click', (event) => {
-            // this.currentImageIndex is evaluated at click time, so gives the correct URL.
-            if (this.album[this.currentImageIndex].url) {
-                // Jump to the given URL
-                window.location = this.album[this.currentImageIndex].url;
-            }
-            return false;
-        });
-        this.$image2.on('click', (event) => {
-            // this.currentImageIndex is evaluated at click time, so gives the correct URL.
-            if (this.album[this.currentImageIndex].url) {
-                // Jump to the given URL
-                window.location = this.album[this.currentImageIndex].url;
-            }
-            return false;
-        });
-        */
         // Honour a click on the current lightbox image (either 1 or 2).
         // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
         function clickThroughImage () {
@@ -285,11 +317,12 @@ class LightboxSSA {
 
     fadeTo (element, duration, opacity, completeFn = null) {
         if (completeFn) {
-            element.addEventListener('transitionend', completeFn, { once: true, capture: true });
-            //setTimeout(completeFn, duration);
+            // FIXME can't get transitionend to work, just use a timeout
+            //element.addEventListener('transitionend', completeFn, { once: true, capture: true });
+            setTimeout(completeFn, duration);
         }
         element.style['transition-property'] = 'opacity';
-        element.style['transition-duration'] = '3s';    //duration + 'ms';
+        element.style['transition-duration'] = duration + 'ms';
         // Do the fade after a short delay to let the CSS changes take effect:
         setTimeout(function() {
             element.style.opacity = opacity;
@@ -304,7 +337,8 @@ class LightboxSSA {
         // Apply user-supplied options 
         if (typeof lightboxSSAOptions == "object") {
             //$.extend(this.options, lightboxSSAOptions);
-            this.options = {...this.options, ...lightboxSSAOptions}
+            //this.options = {...this.options, ...lightboxSSAOptions}
+            this.applyOptions(lightboxSSAOptions);
         }
 
         this.build();
@@ -450,13 +484,32 @@ class LightboxSSA {
         });
     }
 
+    getSiblings (elem, includeSelf = true) {
+        // Setup siblings array and get the first sibling
+        var siblings = [];
+        var sibling = elem.parentNode.firstChild;
+        // Loop through each sibling and push to the array
+        while (sibling) {
+            if (sibling.nodeType === 1 && (includeSelf || (sibling !== elem))) {
+                siblings.push(sibling);
+            }
+            sibling = sibling.nextSibling
+        }
+        return siblings;
+    };
+
     // Display the image and its details and begin preload neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.
     showImage () {  // (width, height) 
         //this.$loader.stop(true).hide();   // FIXME reinstate this
         // TODO ? also disable other clicks and keyboard events before the swap?
-        // TODO ?? swap z-index values
-        this.currentImage.style["pointer-events"] = "none";
+        //this.currentImage.style["pointer-events"] = "none";
+        const siblings = this.getSiblings(this.currentImage);
+        //console.log("1. siblings:", siblings);
+        for (let i = 0; i < siblings.length; i++) {
+            //console.log("siblings[i]:", siblings[i]);
+            siblings[i].style['pointer-events'] = 'none';
+        }
         //this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
         this.fadeTo(this.currentImage, this.options.image_fade_duration, 0);
         this.fadeTo(this.otherImage, this.options.image_fade_duration+10, 1, () => {    // function() {
@@ -464,7 +517,13 @@ class LightboxSSA {
             const temp = this.otherImage;
             this.otherImage = this.currentImage;
             this.currentImage = temp;
-            this.currentImage.style["pointer-events"] = "auto";
+            //this.currentImage.style["pointer-events"] = "auto";
+            const siblings = this.getSiblings(this.currentImage);
+            //console.log("2. siblings:", siblings);
+            for (let i = 0; i < siblings.length; i++) {
+                //console.log("siblings[i]:", siblings[i]);
+                siblings[i].style['pointer-events'] = 'auto';
+            }
             //this.currentImage.style["touch-action"] = "auto";
             //this.updateNav();
             this.preloadNeighboringImages();
@@ -590,7 +649,3 @@ class LightboxSSA {
 // Can set options here.
 const lbSSA = new LightboxSSA({});
 
-/*
-    return new LightboxSSA();
-}));
-*/
