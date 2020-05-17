@@ -31,17 +31,18 @@
 // TODO
 // - fix fadeTo and jumpy timing sometimes
 // - preload neighbours
-// - is lb-cancel needed?
+// - loading spinner
 // - keyboard < > esc -- also back button to close lb
 // - swiping
-// - hide prev or nav if only two images?
+//  - highlight something during touchmove
+// - hide/disable prev or nav if only two images?
 // - use title as tool tip? or add details?
 // - more Aria stuff?
-// - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
 // - get caption from figcaption
-// - window resize (e.g. pressing F12) breaks aspect ratio
-//  - validate option values from 'user'
+// - validate option values from 'user' and document user-settable ones
 // - maybe put X in corner of non-hover screens
+// - still get multiple jumps esp on phone
+// - nav heights -- make secondary ones same height as main; all should be e.g. 50vh
 
 // DONE
 // - if figure, use enclosed img for source
@@ -56,10 +57,12 @@
 // - not working on mobile!
 // - touch-action didn't help -- remove from here and css
 // - disable scroll thing - to get rid of scroll bar
+// - window resize (e.g. pressing F12) breaks aspect ratio
 // - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
 //     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
 // - hide <> arrows on swipable / narrow screens 
 //   - and/or allow prev/next touches on edges of image
+// - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
 
 class LightboxSSA {
 
