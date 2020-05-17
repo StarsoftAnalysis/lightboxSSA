@@ -33,7 +33,6 @@
 // - preload neighbours
 // - loading spinner
 // - keyboard < > esc -- also back button to close lb
-// - swiping
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
 // - use title as tool tip? or add details?
@@ -63,6 +62,7 @@
 // - hide <> arrows on swipable / narrow screens 
 //   - and/or allow prev/next touches on edges of image
 // - on click/mouse/pointer events should return quickley -- maybe just prevent further clicks, and then call start() from a timeout.
+// - swiping
 
 class LightboxSSA {
 
@@ -203,6 +203,49 @@ class LightboxSSA {
             Math.min(window.innerWidth, document.documentElement.clientWidth) : 
             window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth;
     }
+ 
+    // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
+    swipedetect (touchsurface, callback) {
+        let swipedir, startX, startY, distX, distY, elapsedTime, startTime;
+        let handleswipe = callback; // || function(swipedir) {};
+        const threshold = 100;  // required min distance traveled to be considered swipe
+        const restraint = 70;   // maximum distance allowed at the same time in perpendicular direction
+        const allowedTime = 400; // maximum time allowed to travel that distance
+
+        touchsurface.addEventListener('touchstart', function(e) {
+            const touchobj = e.changedTouches[0];
+            swipedir = 'none';
+            dist = 0;
+            startX = touchobj.pageX;
+            startY = touchobj.pageY;
+            startTime = new Date().getTime(); // record time when finger first makes contact with surface
+            e.preventDefault();
+        }, false)
+
+        touchsurface.addEventListener('touchmove', function(e) {
+            e.preventDefault(); // prevent scrolling when inside DIV
+        }, false)
+
+        touchsurface.addEventListener('touchend', function(e) {
+            let touchobj = e.changedTouches[0];
+            distX = touchobj.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
+            distY = touchobj.pageY - startY; // get vertical dist traveled by finger while in contact with surface
+            elapsedTime = new Date().getTime() - startTime; // get time elapsed
+            //console.log("swipe: ", distX, distY, elapsedTime);
+            //alert("swipe: X=" + distX + " Y=" + distY + "time=" + elapsedTime);
+            if (elapsedTime <= allowedTime) {                                               // first condition for swipe met
+                if (Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) {         // 2nd condition for horizontal swipe met
+                    swipedir = (distX < 0) ? 'left' : 'right';                              // if dist travelled is negative, it indicates left swipe
+                } else if (Math.abs(distY) >= threshold && Math.abs(distX) <= restraint) {  // 2nd condition for vertical swipe met
+                    swipedir = (distY < 0) ? 'up' : 'down';                                 // if dist travelled is negative, it indicates up swipe
+                }
+            }
+            if (handleswipe) {
+                handleswipe(swipedir, e);
+            }
+            e.preventDefault();
+        }, false)
+    }
 
     // Build html for the lightbox and the overlay.
     // Attach event handlers to the new DOM elements.
@@ -287,8 +330,10 @@ class LightboxSSA {
         this.overlay.addEventListener('touchstart', this.dismantle.bind(this), false);
 
         function prevImage (e) {
-            e.preventDefault();
-            e.stopPropagation();
+            if (e) {    // e is null if via swipe
+                e.preventDefault();
+                e.stopPropagation();
+            }
             // TODO check wrap_around
             if (this.currentImageIndex == 0) {
                 this.changeImage(this.album.length - 1);
@@ -304,8 +349,10 @@ class LightboxSSA {
         this.image2prev.addEventListener('touchstart', prevImage.bind(this), false);
 
         function nextImage (e) {
-            e.preventDefault();
-            e.stopPropagation();
+            if (e) {    // e is null if via swipe
+                e.preventDefault();
+                e.stopPropagation();
+            }
             if (this.currentImageIndex === this.album.length - 1) {
                 this.changeImage(0);
             } else {
@@ -321,9 +368,12 @@ class LightboxSSA {
 
         // Honour a click on the current lightbox image (either 1 or 2).
         // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
+        // If via swipe, e is null.
         function clickThroughImage (e) {
-            e.preventDefault();
-            e.stopPropagation();
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             // this.currentImageIndex is evaluated at click time, so gives the correct URL.
             if (this.album[this.currentImageIndex].url) {
                 // Jump to the given URL
@@ -331,9 +381,35 @@ class LightboxSSA {
             }
         }
         this.image1.addEventListener('click', clickThroughImage.bind(this), false);
-        this.image1.addEventListener('touchstart', clickThroughImage.bind(this), false);
+        //this.image1.addEventListener('touchstart', clickThroughImage.bind(this), false);
         this.image2.addEventListener('click', clickThroughImage.bind(this), false);
-        this.image2.addEventListener('touchstart', clickThroughImage.bind(this), false);
+        //this.image2.addEventListener('touchstart', clickThroughImage.bind(this), false);
+
+        this.swipedetect(this.image1, function (swipedir, e) {
+            // swipedir contains either "none", "left", "right", "top", or "down"
+            //console.log("image1 detected swipe", swipedir);
+            //alert("image1 detected swipe: " + swipedir);
+            if (swipedir == 'right' || swipedir == 'down') {
+                prevImage.bind(self)(e);
+            } else if (swipedir == 'left' || swipedir == 'up') {
+                nextImage.bind(self)(e);
+            } else {    // no swipe, just simple touch
+                clickThroughImage.bind(self)(e);
+            }
+        });
+
+        this.swipedetect(this.image2, function (swipedir, e) {
+            // swipedir contains either "none", "left", "right", "top", or "down"
+            //console.log("image2 detected swipe", swipedir);
+            //alert("image2 detected swipe:" + swipedir);
+            if (swipedir == 'right' || swipedir == 'down') {
+                prevImage.bind(self)(e);
+            } else if (swipedir == 'left' || swipedir == 'up') {
+                nextImage.bind(self)(e);
+            } else {    // no swipe, just simple touch
+                clickThroughImage.bind(self)(e);
+            }
+        });
 
         /*
         this.$loader.on('click', function() {
