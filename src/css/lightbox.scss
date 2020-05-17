@@ -1,4 +1,4 @@
-/* lightboxSSA.css */
+/* lightboxSSA.scss */
 
 // TODO
 // -- see https://freebiesupply.com/blog/css-arrows/ for fancy responsive < > arrows
@@ -19,9 +19,7 @@ body.lb-disable-scrolling {
     height: 100vh;
     z-index: 10;
     background: gray;
-    opacity: 1;
-    // Could use transitions, but harder to control from JS
-    //transition: opacity 1s ease-in-out;
+    opacity: 0; // initially
     cursor: url(../images/close.png) 13 14, pointer;
 }
 #lb-nav {
@@ -35,54 +33,92 @@ body.lb-disable-scrolling {
     justify-content: center;
     align-items: center;
     pointer-events: none;
+    //touch-action: none;
     opacity: 1;
 }
 #lb-prev {
     opacity: 1;
     height: 50%;
     width: 50%;
+    //z-index: 12;
     pointer-events: auto;
-    background: url(../images/prev.png) left 48% no-repeat;
+    //touch-action: auto;
+    //background: url(../images/prev.png) left 20px center no-repeat;
     cursor: url(../images/prev-cursor.png) 2 17, pointer;
 }
 #lb-next {
     opacity: 1;
     height: 50%;
     width: 50%;
+    //z-index: 12;
     pointer-events: auto;
-    background: url(../images/next.png) right 48% no-repeat;
+    //touch-action: auto;
+    //background: url(../images/next.png) right 20px center no-repeat;
     cursor: url(../images/next-cursor.png) 18 17, pointer;
 }
-#lb-container {
+
+.lb-flex {
     position: fixed;
     left: 0;
     top: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 12;
-    opacity: 1; // has to be 1 because its children can't be less transparent.   could use rgba.  see https://css-tricks.com/non-transparent-elements-inside-transparent-elements/   S0.2;  // 0
+    display: flex;
+    justify-content: center;
+    align-items: center;
     pointer-events: none;
+    //touch-action: none;
+}
+#lb-flex1 {
+    z-index: 13;
+}
+#lb-flex2 {
+    z-index: 14;
+}
+
+#lb-wrapper1, #lb-wrapper2 {
+    position: relative; // to allow positioning of lb-image1prev etc.
+    //max-width: 90vw;     // These may get adjusted by JS
+    //max-height: 90vh;
+    //border: 1px green solid;
 }
 
 #lb-image1, #lb-image2 {
     border: white 8px solid;
     border-radius: 4px;
+    // no position: absolute;
+    max-width: 90vw;     // These may get adjusted by JS
+    max-height: 90vh;
 }
 #lb-image1 {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 13;
-    //height: 90vw;   // TODO 70%;
-    pointer-events: auto;
+    //z-index: 15;
+    pointer-events: none;
+    //touch-action: auto;
 }
 #lb-image2 {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 14;
-    //height: calc(100% - 10vw); /* 60%; */   // FIXME in JS -- make max size -- possibly already done
-    pointer-events: none; /* initially */
+    //z-index: 16;
+    pointer-events: auto; /* initially */ // FIXME check which is used first -- is this needed?
+    //touch-action: none;
+}
+
+#lb-image1-prev, #lb-image2-prev {
+  position: absolute;
+  //border: 1px blue solid;
+  width: 20%;
+  height: 30%;
+  left: 0;
+  top: 35%;     // = (100% - height%) / 2
+  cursor: url(../images/prev-cursor.png) 2 17, pointer;
+  z-index: 17;
+}
+
+#lb-image1-next, #lb-image2-next {
+  position: absolute;
+  //border: 1px red solid;
+  width: 20%;
+  height: 30%;
+  right: 0;
+  top: 35%;     // = (100% - height%) / 2
+  cursor: url(../images/next-cursor.png) 18 17, pointer;
+  z-index: 17;
 }
