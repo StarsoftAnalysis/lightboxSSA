@@ -34,8 +34,6 @@
 // - is lb-cancel needed?
 // - keyboard < > esc -- also back button to close lb
 // - swiping
-// - hide <> arrows on swipable / narrow screens 
-//   - and/or allow prev/next touches on edges of image
 // - hide prev or nav if only two images?
 // - use title as tool tip? or add details?
 // - more Aria stuff?
@@ -43,6 +41,7 @@
 // - get caption from figcaption
 // - window resize (e.g. pressing F12) breaks aspect ratio
 //  - validate option values from 'user'
+// - maybe put X in corner of non-hover screens
 
 // DONE
 // - if figure, use enclosed img for source
@@ -59,6 +58,8 @@
 // - disable scroll thing - to get rid of scroll bar
 // - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
 //     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
+// - hide <> arrows on swipable / narrow screens 
+//   - and/or allow prev/next touches on edges of image
 
 class LightboxSSA {
 
@@ -84,7 +85,7 @@ class LightboxSSA {
             max_height: 90,
             //resizeDuration: 700,
             wrap_around: true,
-            disable_scrolling: true, // hide scrollbar so that lightbox uses full area of window
+            disable_scrolling: false, // hide scrollbar so that lightbox uses full area of window
             // Sanitize Title
             // If the caption data is trusted, for example you are hardcoding it in, then leave this to false.
             // This will free you to add html tags, such as links, in the caption.
@@ -155,6 +156,15 @@ class LightboxSSA {
         });
     };
 
+    imageClickHandler (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const lbelement = e.currentTarget;
+        setTimeout(() => {  // Use timeout to return from event quickly
+            this.start(lbelement);
+        }, 0);
+    }
+
     // enable() is called via init() when page (i.e. JS) is loaded
     enable () {
         var self = this;
@@ -164,16 +174,24 @@ class LightboxSSA {
         // (This requires that DOM is ready, but happens before the lightbox has been built)
         const matches = document.querySelectorAll("[data-lightbox]");
         matches.forEach(function(match) {
-            match.addEventListener('touchstart', function (e) {
+            match.addEventListener('touchstart', self.imageClickHandler.bind(self), true);
+            /*match.addEventListener('touchstart', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
-                self.start(e.currentTarget);
-            }, true);
-            match.addEventListener('click', function (e) {
+                const lbelement = e.currentTarget;
+                setTimeout(() => {  // Use timeout to return from event quickly
+                    self.start(e.currentTarget);
+                }, 0);
+            }, true);*/
+            match.addEventListener('click', self.imageClickHandler.bind(self), true);
+            /*match.addEventListener('click', function (e) {
                 e.preventDefault();  // e.g. to stop an <a data-lightbox=x> doing the <a>'s href
                 e.stopPropagation();
-                self.start(e.currentTarget);
-            }, true);
+                const lbelement = e.currentTarget;
+                setTimeout(function () {  // Use timeout to return from event quickly
+                    self.start(lbelement);
+                }, 0);
+            }, true);*/
         });
     };
 
