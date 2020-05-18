@@ -107,7 +107,7 @@ class LightboxSSA {
             // to prevent xss and other injection attacks.
             sanitize_title: false,
             min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
-            placeholderImage: '/images/imageNotFound.png',
+            placeholderImage: '/images/imageNotFoundSSA.png',
         };
         this.options = Object.assign({}, this.defaults);
         //this.options = $.extend(this.options, this.defaults, options);

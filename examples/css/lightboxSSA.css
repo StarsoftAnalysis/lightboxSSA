@@ -1,0 +1,95 @@
+/* lightboxSSA.scss */
+body.lb-disable-scrolling {
+  overflow: hidden; }
+
+[data-lightbox] {
+  cursor: pointer; }
+
+#lb-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10;
+  background: gray;
+  opacity: 0;
+  cursor: url(../images/closeCursorSSA.png) 13 14, pointer; }
+
+#lb-nav {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 11;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  opacity: 1; }
+
+#lb-prev {
+  opacity: 1;
+  height: 50%;
+  width: 50%;
+  pointer-events: auto;
+  cursor: url(../images/prevCursorSSA.png) 2 17, pointer; }
+
+#lb-next {
+  opacity: 1;
+  height: 50%;
+  width: 50%;
+  pointer-events: auto;
+  cursor: url(../images/nextCursorSSA.png) 18 17, pointer; }
+
+.lb-flex {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none; }
+
+#lb-flex1 {
+  z-index: 13; }
+
+#lb-flex2 {
+  z-index: 14; }
+
+#lb-wrapper1, #lb-wrapper2 {
+  position: relative; }
+
+#lb-image1, #lb-image2 {
+  border: white 8px solid;
+  border-radius: 4px;
+  max-width: 90vw;
+  max-height: 90vh; }
+
+#lb-image1 {
+  pointer-events: none; }
+
+#lb-image2 {
+  pointer-events: auto;
+  /* initially */ }
+
+#lb-image1-prev, #lb-image2-prev {
+  position: absolute;
+  width: 20%;
+  height: 30%;
+  left: 0;
+  top: 35%;
+  cursor: url(../images/prev-cursor.png) 2 17, pointer;
+  z-index: 17; }
+
+#lb-image1-next, #lb-image2-next {
+  position: absolute;
+  width: 20%;
+  height: 30%;
+  right: 0;
+  top: 35%;
+  cursor: url(../images/next-cursor.png) 18 17, pointer;
+  z-index: 17; }
