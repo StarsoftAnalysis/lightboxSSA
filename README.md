@@ -10,16 +10,17 @@ LightboxSSA is small Javascript module used to overlay images on top of the curr
 
 ## Major changes from Lightbox2
 
-* Next/previous arrows are in fixed positions for easier clicking.
-* Simpler DOM.
 * Use flex and CSS to reduce the need to do image size calculations in Javascript,
   and make the whole thing much more responsive.
+* Replaced arrow images with dynamic cursors.  Cursors don't show in phones or other
+  touch screens, but phone users can guess that swiping should be possible, so:
+* Added swiping for touch screens.
 * Uses 'proper' Javascript classes.
 * No more jQuery.  And it's no longer a module.
 
 ## Requirements
 
-* ES6
+* ES6 (but you can transpile to more widely compatible versions of Javascript if required).
 
 ---
 
