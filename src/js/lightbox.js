@@ -1,21 +1,27 @@
-//
 // LightboxSSA v2.50
-// Modified by Chris Dennis...
-// - changed DOM -- simplified, data-lightbox now works on any element, not just <a>, I use <figure>
-// - fancy cursors indicate where prev/next clickable areas are -- now outside the image
-// - added link-through for clicking on the image.
+// Copyright 2020 Chris Dennis
 
-// Forked May 2020 from:
-// Lightbox v2.11.1
-// by Lokesh Dhakar
+//    This file is part of LightboxSSA.
 //
-// More info:
-// http://lokeshdhakar.com/projects/lightbox2/
+//    LightboxSSA is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
 //
+//    LightboxSSA is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with Foobar.  If not, see <https://www.gnu.org/licenses/>.
+
+// LightboxSSA was forked in May 2020 from:
+// Lightbox v2.11.1 by Lokesh Dhakar
 // Copyright Lokesh Dhakar
 // Released under the MIT license
 // https://github.com/lokesh/lightbox2/blob/master/LICENSE
-//
+// More info: http://lokeshdhakar.com/projects/lightbox2/
 
 // data- attributes
 // - data-lightbox="galleryname"

@@ -71,3 +71,9 @@ lightboxSSA:
 ### Local development
 
 I don't use things like Bower or Grunt, so there are just SCSS and JS files for people to use as they wish.
+
+### Licence
+
+This project is licensed under the terms of the GNU Public Licence version 3.0.  Please see
+the file 'COPYING' for details.
+
