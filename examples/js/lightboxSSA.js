@@ -484,7 +484,7 @@ class LightboxSSA {
                     //if ($imgs.length > 0) {
                     //    imageURL = $imgs.attr('src');
                     //}
-                    let img = lbelement.querySelector('img');
+                    let img = lbe.querySelector('img');
                     if (img) {
                         imageURL = img.getAttribute('src');
                     }
@@ -496,19 +496,19 @@ class LightboxSSA {
             //console.log("imageURL: ", imageURL);
             // Link URL is from data-url or <fig>'s <img>'s data-url or <a>'s href
             // - <a>'s href - how to check if that is an image?
-            let linkURL = lbelement.getAttribute('data-url');
+            let linkURL = lbe.getAttribute('data-url');
             if (!linkURL) {
                 if (tag == 'FIGURE') {
                     //let $imgs = $lbelement.find('img');
                     //if ($imgs.length > 0) {
                     //   linkURL = $imgs.attr('data-url');
                     //}
-                    let img = lbelement.querySelector('img');
+                    let img = lbe.querySelector('img');
                     if (img) {
                         linkURL = img.getAttribute('data-url');
                     }
                 } else if (tag == 'A') {
-                    linkURL = lbelement.getAttribute('href');
+                    linkURL = lbe.getAttribute('href');
                 }
             }
             // (no linkURL is OK)       
@@ -517,9 +517,9 @@ class LightboxSSA {
             self.album.push({
                 name:    imageURL,
                 url:     linkURL,
-                alt:     lbelement.getAttribute('data-alt'),
-                title:   lbelement.getAttribute('data-title') || lbelement.getAttribute('title'),
-                srclist: lbelement.getAttribute('data-imagelist'),
+                alt:     lbe.getAttribute('data-alt'),
+                title:   lbe.getAttribute('data-title') || lbe.getAttribute('title'),
+                srclist: lbe.getAttribute('data-imagelist'),
             });
         } // end of addToAlbum
 
