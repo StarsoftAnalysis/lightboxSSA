@@ -63,8 +63,8 @@ If you want to adjust any options, use something like this:
 ---
 ...
 lightboxSSA: 
-        overlay_opacity: 0.9
-	wrap_around: true
+    overlay_opacity: 0.9
+    wrap_around: true
 ---
 ```
 
