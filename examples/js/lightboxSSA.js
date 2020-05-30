@@ -126,7 +126,7 @@ class LightboxSSA {
                 case 'max_width':
                 case 'max_height':
                     // Need a number to use as a percentage.
-                    const val = parseInt(options[key], 10);
+                    let val = parseInt(options[key], 10);
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
@@ -140,7 +140,7 @@ class LightboxSSA {
                     break;
                 default:
                     // Just copy it
-                    this.options[key] = options[key]
+                    this.options[key] = options[key];
             }
         }
     }
@@ -148,7 +148,7 @@ class LightboxSSA {
     // TODO not used
     imageCountLabel (currentImageNum, totalImages) {
         return this.options.album_label.replace(/%1/g, currentImageNum).replace(/%2/g, totalImages);
-    };
+    }
 
     docReady (fn) {
         // see if DOM is already available
@@ -168,7 +168,7 @@ class LightboxSSA {
             self.enable();
             //alert('lbssa ready and enabled');
         });
-    };
+    }
 
     imageClickHandler (e) {
         e.preventDefault();
@@ -207,7 +207,7 @@ class LightboxSSA {
                 }, 0);
             }, true);*/
         });
-    };
+    }
 
     windowWidth () { // from https://stackoverflow.com/questions/6942785/
         return window.innerWidth && document.documentElement.clientWidth ? 
@@ -226,16 +226,15 @@ class LightboxSSA {
         touchsurface.addEventListener('touchstart', function(e) {
             const touchobj = e.changedTouches[0];
             swipedir = 'none';
-            dist = 0;
             startX = touchobj.pageX;
             startY = touchobj.pageY;
             startTime = new Date().getTime(); // record time when finger first makes contact with surface
             e.preventDefault();
-        }, false)
+        }, false);
 
         touchsurface.addEventListener('touchmove', function(e) {
             e.preventDefault(); // prevent scrolling when inside DIV
-        }, false)
+        }, false);
 
         touchsurface.addEventListener('touchend', function(e) {
             let touchobj = e.changedTouches[0];
@@ -255,7 +254,7 @@ class LightboxSSA {
                 handleswipe(swipedir, e);
             }
             e.preventDefault();
-        }, false)
+        }, false);
     }
 
     // Build html for the lightbox and the overlay.
@@ -280,14 +279,14 @@ class LightboxSSA {
             </div>
             <div id=lb-flex1 class="lb-flex lb-element">
                 <div id=lb-wrapper1 class=lb-element>
-                    <img id=lb-image1 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                    <img id=lb-image1 class=lb-element src="/images/Spin-1s-71px.gif">
                     <div id=lb-image1-prev class=lb-element></div>
                     <div id=lb-image1-next class=lb-element></div>
                 </div>
             </div>
             <div id=lb-flex2 class="lb-flex lb-element">
                 <div id=lb-wrapper2 class=lb-element>
-                    <img id=lb-image2 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                    <img id=lb-image2 class=lb-element src="/images/Spin-1s-71px.gif">
                     <div id=lb-image2-prev class=lb-element></div>
                     <div id=lb-image2-next class=lb-element></div>
                 </div>
@@ -336,7 +335,7 @@ class LightboxSSA {
         */
 
         // Attach event handlers
-        self = this;
+        const self = this;
         this.overlay.addEventListener('click', this.dismantle.bind(this), false);
         this.overlay.addEventListener('touchstart', this.dismantle.bind(this), false);
 
@@ -588,7 +587,7 @@ class LightboxSSA {
 
         // Load the new image -- it will have opacity 0 at first
         image.setAttribute("src", this.album[imageNumber].name);
-        this.currentImageIndex = imageNumber;   // FIXME is this the right place/time to update cII ?
+        this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
 

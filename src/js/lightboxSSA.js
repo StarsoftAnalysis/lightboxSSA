@@ -279,14 +279,14 @@ class LightboxSSA {
             </div>
             <div id=lb-flex1 class="lb-flex lb-element">
                 <div id=lb-wrapper1 class=lb-element>
-                    <img id=lb-image1 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                    <img id=lb-image1 class=lb-element src="/images/Spin-1s-71px.gif">
                     <div id=lb-image1-prev class=lb-element></div>
                     <div id=lb-image1-next class=lb-element></div>
                 </div>
             </div>
             <div id=lb-flex2 class="lb-flex lb-element">
                 <div id=lb-wrapper2 class=lb-element>
-                    <img id=lb-image2 class=lb-element src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+                    <img id=lb-image2 class=lb-element src="/images/Spin-1s-71px.gif">
                     <div id=lb-image2-prev class=lb-element></div>
                     <div id=lb-image2-next class=lb-element></div>
                 </div>
