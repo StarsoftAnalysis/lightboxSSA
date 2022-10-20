@@ -246,8 +246,9 @@ class LightboxSSA {
             if (elapsedTime <= allowedTime) {                                               // first condition for swipe met
                 if (Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) {         // 2nd condition for horizontal swipe met
                     swipedir = (distX < 0) ? 'left' : 'right';                              // if dist travelled is negative, it indicates left swipe
-                } else if (Math.abs(distY) >= threshold && Math.abs(distX) <= restraint) {  // 2nd condition for vertical swipe met
-                    swipedir = (distY < 0) ? 'up' : 'down';                                 // if dist travelled is negative, it indicates up swipe
+                // Don't do vertical swiping!
+                //} else if (Math.abs(distY) >= threshold && Math.abs(distX) <= restraint) {  // 2nd condition for vertical swipe met
+                //    swipedir = (distY < 0) ? 'up' : 'down';                                 // if dist travelled is negative, it indicates up swipe
                 }
             }
             if (handleswipe) {
