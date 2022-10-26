@@ -143,3 +143,25 @@ body.lb-disable-scrolling {
   cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
   z-index: 17;
 }
+
+figure.lb-figure {
+  display: block;
+  position: relative;
+  //img { display: table-cell; }
+  figcaption {
+    //display: table-caption; 
+    //caption-side: bottom;
+    position: absolute;
+    left: 0;
+    bottom: 8px;
+    background-color: rgba(255, 255, 255, 0.6);
+    //height: 1.2em;
+    width: 100%;
+    //margin-top: -2.4em;
+    //float: right;
+    text-align: center;
+    //color: white;
+    z-index: 1;
+    //font-family: 'Open Sans', sans;
+  }
+}
