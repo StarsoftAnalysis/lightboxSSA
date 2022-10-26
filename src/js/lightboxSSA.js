@@ -38,7 +38,7 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - captions / titles
+// - captions / titles   s
 //  * lightbox=true not finished -- e.g. with height=100, lightbox is also only 100 -- use maxwidth or something?
 //    * FIXME: small images (thumbnails) are still small in carousel  (Can't reproduce that now)
 // - is lb-cancel needed? maybe reinstate lb-loader because it's slower on real server 
@@ -92,7 +92,7 @@
  *
  * JS Parser for the string value that appears in markup <img srcset="here">
  *
- * @returns Array [{url: _, d: _, w: _, h:_}, ...]
+ * @returns Array [{url: _, d: _, w: _, h:_}, ...]    what about x?
  *
  * Based super duper closely on the reference algorithm at:
  * https://html.spec.whatwg.org/multipage/embedded-content.html#parse-a-srcset-attribute
@@ -101,303 +101,319 @@
  * (except for comments in parens).
  */
 
-    function parseSrcset(input) {
+function parseSrcset(input) {
 
-		// UTILITY FUNCTIONS
+    // UTILITY FUNCTIONS
 
-		// Manual is faster than RegEx
-		// http://bjorn.tipling.com/state-and-regular-expressions-in-javascript
-		// http://jsperf.com/whitespace-character/5
-		function isSpace(c) {
-			return (c === "\u0020" || // space
-			c === "\u0009" || // horizontal tab
-			c === "\u000A" || // new line
-			c === "\u000C" || // form feed
-			c === "\u000D");  // carriage return
-		}
+    // Manual is faster than RegEx
+    // http://bjorn.tipling.com/state-and-regular-expressions-in-javascript
+    // http://jsperf.com/whitespace-character/5
+    function isSpace(c) {
+        return (c === "\u0020" || // space
+            c === "\u0009" || // horizontal tab
+            c === "\u000A" || // new line
+            c === "\u000C" || // form feed
+            c === "\u000D");  // carriage return
+    }
 
-		function collectCharacters(regEx) {
-			var chars,
-				match = regEx.exec(input.substring(pos));
-			if (match) {
-				chars = match[ 0 ];
-				pos += chars.length;
-				return chars;
-			}
-		}
+    function collectCharacters(regEx) {
+        var chars,
+            match = regEx.exec(input.substring(pos));
+        if (match) {
+            chars = match[ 0 ];
+            pos += chars.length;
+            return chars;
+        }
+    }
 
-		var inputLength = input.length,
+    var inputLength = input.length,
 
-			// (Don't use \s, to avoid matching non-breaking space)
-			regexLeadingSpaces = /^[ \t\n\r\u000c]+/,
-			regexLeadingCommasOrSpaces = /^[, \t\n\r\u000c]+/,
-			regexLeadingNotSpaces = /^[^ \t\n\r\u000c]+/,
-			regexTrailingCommas = /[,]+$/,
-			regexNonNegativeInteger = /^\d+$/,
+        // (Don't use \s, to avoid matching non-breaking space)
+        regexLeadingSpaces = /^[ \t\n\r\u000c]+/,
+        regexLeadingCommasOrSpaces = /^[, \t\n\r\u000c]+/,
+        regexLeadingNotSpaces = /^[^ \t\n\r\u000c]+/,
+        regexTrailingCommas = /[,]+$/,
+        regexNonNegativeInteger = /^\d+$/,
 
-			// ( Positive or negative or unsigned integers or decimals, without or without exponents.
-			// Must include at least one digit.
-			// According to spec tests any decimal point must be followed by a digit.
-			// No leading plus sign is allowed.)
-			// https://html.spec.whatwg.org/multipage/infrastructure.html#valid-floating-point-number
-			regexFloatingPoint = /^-?(?:[0-9]+|[0-9]*\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/,
+        // ( Positive or negative or unsigned integers or decimals, without or without exponents.
+        // Must include at least one digit.
+        // According to spec tests any decimal point must be followed by a digit.
+        // No leading plus sign is allowed.)
+        // https://html.spec.whatwg.org/multipage/infrastructure.html#valid-floating-point-number
+        regexFloatingPoint = /^-?(?:[0-9]+|[0-9]*\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/,
 
-			url,
-			descriptors,
-			currentDescriptor,
-			state,
-			c,
+        url,
+        descriptors,
+        currentDescriptor,
+        state,
+        c,
 
-			// 2. Let position be a pointer into input, initially pointing at the start
-			//    of the string.
-			pos = 0,
+        // 2. Let position be a pointer into input, initially pointing at the start
+        //    of the string.
+        pos = 0,
 
-			// 3. Let candidates be an initially empty source set.
-			candidates = [];
+        // 3. Let candidates be an initially empty source set.
+        candidates = [];
 
-		// 4. Splitting loop: Collect a sequence of characters that are space
-		//    characters or U+002C COMMA characters. If any U+002C COMMA characters
-		//    were collected, that is a parse error.
-		while (true) {
-			collectCharacters(regexLeadingCommasOrSpaces);
+    // 4. Splitting loop: Collect a sequence of characters that are space
+    //    characters or U+002C COMMA characters. If any U+002C COMMA characters
+    //    were collected, that is a parse error.
+    while (true) {
+        collectCharacters(regexLeadingCommasOrSpaces);
 
-			// 5. If position is past the end of input, return candidates and abort these steps.
-			if (pos >= inputLength) {
-				return candidates; // (we're done, this is the sole return path)
-			}
+        // 5. If position is past the end of input, return candidates and abort these steps.
+        if (pos >= inputLength) {
+            return candidates; // (we're done, this is the sole return path)
+        }
 
-			// 6. Collect a sequence of characters that are not space characters,
-			//    and let that be url.
-			url = collectCharacters(regexLeadingNotSpaces);
+        // 6. Collect a sequence of characters that are not space characters,
+        //    and let that be url.
+        url = collectCharacters(regexLeadingNotSpaces);
 
-			// 7. Let descriptors be a new empty list.
-			descriptors = [];
+        // 7. Let descriptors be a new empty list.
+        descriptors = [];
 
-			// 8. If url ends with a U+002C COMMA character (,), follow these substeps:
-			//		(1). Remove all trailing U+002C COMMA characters from url. If this removed
-			//         more than one character, that is a parse error.
-			if (url.slice(-1) === ",") {
-				url = url.replace(regexTrailingCommas, "");
-				// (Jump ahead to step 9 to skip tokenization and just push the candidate).
-				parseDescriptors();
+        // 8. If url ends with a U+002C COMMA character (,), follow these substeps:
+        //		(1). Remove all trailing U+002C COMMA characters from url. If this removed
+        //         more than one character, that is a parse error.
+        if (url.slice(-1) === ",") {
+            url = url.replace(regexTrailingCommas, "");
+            // (Jump ahead to step 9 to skip tokenization and just push the candidate).
+            parseDescriptors();
 
-				//	Otherwise, follow these substeps:
-			} else {
-				tokenize();
-			} // (close else of step 8)
+            //	Otherwise, follow these substeps:
+        } else {
+            tokenize();
+        } // (close else of step 8)
 
-			// 16. Return to the step labeled splitting loop.
-		} // (Close of big while loop.)
+        // 16. Return to the step labeled splitting loop.
+    } // (Close of big while loop.)
 
-		/**
-		 * Tokenizes descriptor properties prior to parsing
-		 * Returns undefined.
-		 */
-		function tokenize() {
+    /**
+     * Tokenizes descriptor properties prior to parsing
+     * Returns undefined.
+     */
+    function tokenize() {
 
-			// 8.1. Descriptor tokeniser: Skip whitespace
-			collectCharacters(regexLeadingSpaces);
+        // 8.1. Descriptor tokeniser: Skip whitespace
+        collectCharacters(regexLeadingSpaces);
 
-			// 8.2. Let current descriptor be the empty string.
-			currentDescriptor = "";
+        // 8.2. Let current descriptor be the empty string.
+        currentDescriptor = "";
 
-			// 8.3. Let state be in descriptor.
-			state = "in descriptor";
+        // 8.3. Let state be in descriptor.
+        state = "in descriptor";
 
-			while (true) {
+        while (true) {
 
-				// 8.4. Let c be the character at position.
-				c = input.charAt(pos);
+            // 8.4. Let c be the character at position.
+            c = input.charAt(pos);
 
-				//  Do the following depending on the value of state.
-				//  For the purpose of this step, "EOF" is a special character representing
-				//  that position is past the end of input.
+            //  Do the following depending on the value of state.
+            //  For the purpose of this step, "EOF" is a special character representing
+            //  that position is past the end of input.
 
-				// In descriptor
-				if (state === "in descriptor") {
-					// Do the following, depending on the value of c:
+            // In descriptor
+            if (state === "in descriptor") {
+                // Do the following, depending on the value of c:
 
-					// Space character
-					// If current descriptor is not empty, append current descriptor to
-					// descriptors and let current descriptor be the empty string.
-					// Set state to after descriptor.
-					if (isSpace(c)) {
-						if (currentDescriptor) {
-							descriptors.push(currentDescriptor);
-							currentDescriptor = "";
-							state = "after descriptor";
-						}
+                // Space character
+                // If current descriptor is not empty, append current descriptor to
+                // descriptors and let current descriptor be the empty string.
+                // Set state to after descriptor.
+                if (isSpace(c)) {
+                    if (currentDescriptor) {
+                        descriptors.push(currentDescriptor);
+                        currentDescriptor = "";
+                        state = "after descriptor";
+                    }
 
-						// U+002C COMMA (,)
-						// Advance position to the next character in input. If current descriptor
-						// is not empty, append current descriptor to descriptors. Jump to the step
-						// labeled descriptor parser.
-					} else if (c === ",") {
-						pos += 1;
-						if (currentDescriptor) {
-							descriptors.push(currentDescriptor);
-						}
-						parseDescriptors();
-						return;
+                    // U+002C COMMA (,)
+                    // Advance position to the next character in input. If current descriptor
+                    // is not empty, append current descriptor to descriptors. Jump to the step
+                    // labeled descriptor parser.
+                } else if (c === ",") {
+                    pos += 1;
+                    if (currentDescriptor) {
+                        descriptors.push(currentDescriptor);
+                    }
+                    parseDescriptors();
+                    return;
 
-						// U+0028 LEFT PARENTHESIS (()
-						// Append c to current descriptor. Set state to in parens.
-					} else if (c === "\u0028") {
-						currentDescriptor = currentDescriptor + c;
-						state = "in parens";
+                    // U+0028 LEFT PARENTHESIS (()
+                    // Append c to current descriptor. Set state to in parens.
+                } else if (c === "\u0028") {
+                    currentDescriptor = currentDescriptor + c;
+                    state = "in parens";
 
-						// EOF
-						// If current descriptor is not empty, append current descriptor to
-						// descriptors. Jump to the step labeled descriptor parser.
-					} else if (c === "") {
-						if (currentDescriptor) {
-							descriptors.push(currentDescriptor);
-						}
-						parseDescriptors();
-						return;
+                    // EOF
+                    // If current descriptor is not empty, append current descriptor to
+                    // descriptors. Jump to the step labeled descriptor parser.
+                } else if (c === "") {
+                    if (currentDescriptor) {
+                        descriptors.push(currentDescriptor);
+                    }
+                    parseDescriptors();
+                    return;
 
-						// Anything else
-						// Append c to current descriptor.
-					} else {
-						currentDescriptor = currentDescriptor + c;
-					}
-					// (end "in descriptor"
+                    // Anything else
+                    // Append c to current descriptor.
+                } else {
+                    currentDescriptor = currentDescriptor + c;
+                }
+                // (end "in descriptor"
 
-					// In parens
-				} else if (state === "in parens") {
+                // In parens
+            } else if (state === "in parens") {
 
-					// U+0029 RIGHT PARENTHESIS ())
-					// Append c to current descriptor. Set state to in descriptor.
-					if (c === ")") {
-						currentDescriptor = currentDescriptor + c;
-						state = "in descriptor";
+                // U+0029 RIGHT PARENTHESIS ())
+                // Append c to current descriptor. Set state to in descriptor.
+                if (c === ")") {
+                    currentDescriptor = currentDescriptor + c;
+                    state = "in descriptor";
 
-						// EOF
-						// Append current descriptor to descriptors. Jump to the step labeled
-						// descriptor parser.
-					} else if (c === "") {
-						descriptors.push(currentDescriptor);
-						parseDescriptors();
-						return;
+                    // EOF
+                    // Append current descriptor to descriptors. Jump to the step labeled
+                    // descriptor parser.
+                } else if (c === "") {
+                    descriptors.push(currentDescriptor);
+                    parseDescriptors();
+                    return;
 
-						// Anything else
-						// Append c to current descriptor.
-					} else {
-						currentDescriptor = currentDescriptor + c;
-					}
+                    // Anything else
+                    // Append c to current descriptor.
+                } else {
+                    currentDescriptor = currentDescriptor + c;
+                }
 
-					// After descriptor
-				} else if (state === "after descriptor") {
+                // After descriptor
+            } else if (state === "after descriptor") {
 
-					// Do the following, depending on the value of c:
-					// Space character: Stay in this state.
-					if (isSpace(c)) {
+                // Do the following, depending on the value of c:
+                // Space character: Stay in this state.
+                if (isSpace(c)) {
 
-						// EOF: Jump to the step labeled descriptor parser.
-					} else if (c === "") {
-						parseDescriptors();
-						return;
+                    // EOF: Jump to the step labeled descriptor parser.
+                } else if (c === "") {
+                    parseDescriptors();
+                    return;
 
-						// Anything else
-						// Set state to in descriptor. Set position to the previous character in input.
-					} else {
-						state = "in descriptor";
-						pos -= 1;
+                    // Anything else
+                    // Set state to in descriptor. Set position to the previous character in input.
+                } else {
+                    state = "in descriptor";
+                    pos -= 1;
 
-					}
-				}
+                }
+            }
 
-				// Advance position to the next character in input.
-				pos += 1;
+            // Advance position to the next character in input.
+            pos += 1;
 
-				// Repeat this step.
-			} // (close while true loop)
-		}
+            // Repeat this step.
+        } // (close while true loop)
+    }
 
-		/**
-		 * Adds descriptor properties to a candidate, pushes to the candidates array
-		 * @return undefined
-		 */
-		// Declared outside of the while loop so that it's only created once.
-		function parseDescriptors() {
+    /**
+     * Adds descriptor properties to a candidate, pushes to the candidates array
+     * @return undefined
+     */
+    // Declared outside of the while loop so that it's only created once.
+    function parseDescriptors() {
 
-			// 9. Descriptor parser: Let error be no.
-			var pError = false,
+        // 9. Descriptor parser: Let error be no.
+        var pError = false,
 
-				// 10. Let width be absent.
-				// 11. Let density be absent.
-				// 12. Let future-compat-h be absent. (We're implementing it now as h)
-				w, d, h, i,
-				candidate = {},
-				desc, lastChar, value, intVal, floatVal;
+            // 10. Let width be absent.
+            // 11. Let density be absent.
+            // 12. Let future-compat-h be absent. (We're implementing it now as h)
+            w, d, h, i,
+            candidate = {},
+            desc, lastChar, value, intVal, floatVal;
 
-			// 13. For each descriptor in descriptors, run the appropriate set of steps
-			// from the following list:
-			for (i = 0 ; i < descriptors.length; i++) {
-				desc = descriptors[ i ];
+        // 13. For each descriptor in descriptors, run the appropriate set of steps
+        // from the following list:
+        for (i = 0 ; i < descriptors.length; i++) {
+            desc = descriptors[ i ];
 
-				lastChar = desc[ desc.length - 1 ];
-				value = desc.substring(0, desc.length - 1);
-				intVal = parseInt(value, 10);
-				floatVal = parseFloat(value);
+            lastChar = desc[ desc.length - 1 ];
+            value = desc.substring(0, desc.length - 1);
+            intVal = parseInt(value, 10);
+            floatVal = parseFloat(value);
 
-				// If the descriptor consists of a valid non-negative integer followed by
-				// a U+0077 LATIN SMALL LETTER W character
-				if (regexNonNegativeInteger.test(value) && (lastChar === "w")) {
+            // If the descriptor consists of a valid non-negative integer followed by
+            // a U+0077 LATIN SMALL LETTER W character
+            if (regexNonNegativeInteger.test(value) && (lastChar === "w")) {
 
-					// If width and density are not both absent, then let error be yes.
-					if (w || d) {pError = true;}
+                // If width and density are not both absent, then let error be yes.
+                if (w || d) {pError = true;}
 
-					// Apply the rules for parsing non-negative integers to the descriptor.
-					// If the result is zero, let error be yes.
-					// Otherwise, let width be the result.
-					if (intVal === 0) {pError = true;} else {w = intVal;}
+                // Apply the rules for parsing non-negative integers to the descriptor.
+                // If the result is zero, let error be yes.
+                // Otherwise, let width be the result.
+                if (intVal === 0) {pError = true;} else {w = intVal;}
 
-					// If the descriptor consists of a valid floating-point number followed by
-					// a U+0078 LATIN SMALL LETTER X character
-				} else if (regexFloatingPoint.test(value) && (lastChar === "x")) {
+                // If the descriptor consists of a valid floating-point number followed by
+                // a U+0078 LATIN SMALL LETTER X character
+            } else if (regexFloatingPoint.test(value) && (lastChar === "x")) {
 
-					// If width, density and future-compat-h are not all absent, then let error
-					// be yes.
-					if (w || d || h) {pError = true;}
+                // If width, density and future-compat-h are not all absent, then let error
+                // be yes.
+                if (w || d || h) {pError = true;}
 
-					// Apply the rules for parsing floating-point number values to the descriptor.
-					// If the result is less than zero, let error be yes. Otherwise, let density
-					// be the result.
-					if (floatVal < 0) {pError = true;} else {d = floatVal;}
+                // Apply the rules for parsing floating-point number values to the descriptor.
+                // If the result is less than zero, let error be yes. Otherwise, let density
+                // be the result.
+                if (floatVal < 0) {pError = true;} else {d = floatVal;}
 
-					// If the descriptor consists of a valid non-negative integer followed by
-					// a U+0068 LATIN SMALL LETTER H character
-				} else if (regexNonNegativeInteger.test(value) && (lastChar === "h")) {
+                // If the descriptor consists of a valid non-negative integer followed by
+                // a U+0068 LATIN SMALL LETTER H character
+            } else if (regexNonNegativeInteger.test(value) && (lastChar === "h")) {
 
-					// If height and density are not both absent, then let error be yes.
-					if (h || d) {pError = true;}
+                // If height and density are not both absent, then let error be yes.
+                if (h || d) {pError = true;}
 
-					// Apply the rules for parsing non-negative integers to the descriptor.
-					// If the result is zero, let error be yes. Otherwise, let future-compat-h
-					// be the result.
-					if (intVal === 0) {pError = true;} else {h = intVal;}
+                // Apply the rules for parsing non-negative integers to the descriptor.
+                // If the result is zero, let error be yes. Otherwise, let future-compat-h
+                // be the result.
+                if (intVal === 0) {pError = true;} else {h = intVal;}
 
-					// Anything else, Let error be yes.
-				} else {pError = true;}
-			} // (close step 13 for loop)
+                // Anything else, Let error be yes.
+            } else {pError = true;}
+        } // (close step 13 for loop)
 
-			// 15. If error is still no, then append a new image source to candidates whose
-			// URL is url, associated with a width width if not absent and a pixel
-			// density density if not absent. Otherwise, there is a parse error.
-			if (!pError) {
-				candidate.url = url;
-				if (w) { candidate.w = w;}
-				if (d) { candidate.d = d;}
-				if (h) { candidate.h = h;}
-				candidates.push(candidate);
-			} else if (console && console.log) {
-				console.log("Invalid srcset descriptor found in '" +
-					input + "' at '" + desc + "'.");
-			}
-		} // (close parseDescriptors fn)
+        // 15. If error is still no, then append a new image source to candidates whose
+        // URL is url, associated with a width width if not absent and a pixel
+        // density density if not absent. Otherwise, there is a parse error.
+        if (!pError) {
+            candidate.url = url;
+            if (w) { candidate.w = w;}
+            if (d) { candidate.d = d;}
+            if (h) { candidate.h = h;}
+            candidates.push(candidate);
+        } else if (console && console.log) {
+            console.log("Invalid srcset descriptor found in '" +
+                input + "' at '" + desc + "'.");
+        }
+    } // (close parseDescriptors fn)
 
-	}
+}
+
+// New function added by CD 26/10/2022
+function filterSrcset (srcset, types) {
+    // types is e.g. "wd" -- get rid of items that don't match
+    const newSrcset = srcset.filter(src => {
+        let matched = false;
+        for (let type of types) {
+            if (src.hasOwnProperty(type)) {
+                matched = true;
+            }
+        }
+        return matched; 
+    });
+    return newSrcset;
+}
+
 //+++++++++++++++++++++++++++++
 
 class LightboxSSA {
@@ -602,7 +618,7 @@ class LightboxSSA {
                 <div id=lb-wrapper1 class=lb-element>
                     <figure id=lb-figure1 class="lb-element lb-figure">
                         <img id=lb-image1 class=lb-element src="/images/spinnerSSA.gif">
-                        <figcaption>Dummy caption 1</figcaption>
+                        <figcaption id=lb-figcap1></figcaption>
                     </figure>
                     <div id=lb-image1-prev class=lb-element></div>
                     <div id=lb-image1-next class=lb-element></div>
@@ -612,7 +628,7 @@ class LightboxSSA {
                 <div id=lb-wrapper2 class=lb-element>
                     <figure id=lb-figure2 class="lb-element lb-figure">
                         <img id=lb-image2 class=lb-element src="/images/spinnerSSA.gif">
-                        <figcaption>Dummy caption 2 which is long enough to require wrapping</figcaption>
+                        <figcaption id=lb-figcap2></figcaption>
                     </figure>
                     <div id=lb-image2-prev class=lb-element></div>
                     <div id=lb-image2-next class=lb-element></div>
@@ -631,12 +647,16 @@ class LightboxSSA {
         this.flex2      = document.getElementById('lb-flex2');
         this.wrapper1   = document.getElementById('lb-wrapper1');
         this.wrapper2   = document.getElementById('lb-wrapper2');
+        this.figure1    = document.getElementById('lb-figure1');
+        this.figure2    = document.getElementById('lb-figure2');
         this.image1     = document.getElementById('lb-image1');
         this.image2     = document.getElementById('lb-image2');
         this.image1prev = document.getElementById('lb-image1-prev');
         this.image1next = document.getElementById('lb-image1-next');
         this.image2prev = document.getElementById('lb-image2-prev');
         this.image2next = document.getElementById('lb-image2-next');
+        this.figcap1    = document.getElementById('lb-figcap1');
+        this.figcap2    = document.getElementById('lb-figcap2');
         this.lbelements = document.getElementsByClassName('lb-element');
 
         /*??
@@ -867,7 +887,12 @@ class LightboxSSA {
             let srcsetString, srcset;
             if (img) {
                 srcsetString = img.getAttribute('srcset');
-                srcset = parseSrcset(srcsetString);
+                if (srcsetString) {
+                    // Parse the string, and filter to just leave the "w" entries
+                    srcset = parseSrcset(srcsetString);
+                    srcset = filterSrcset(srcset, "w");
+                }
+                // TODO filter for just the 'w' ones
                 //console.log("lbSSA: srcset = %o", srcset)
             }
             console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o", imageURL, linkURL, title, alt, caption, srcset);
@@ -903,8 +928,12 @@ class LightboxSSA {
         if (this.albumLen == 2 && !this.options.wrap_around) {
             // TODO adjust arrows by hiding prev or next
         }
+        this.currentFigure = this.figure1;
+        this.otherFigure = this.figure2;
         this.currentImage = this.image1;
         this.otherImage = this.image2;
+        this.currentFigcap = this.figcap1;
+        this.otherFigcap = this.figcap2;
         this.changeImage(imageNumber);
     }; // end of start()
 
@@ -913,7 +942,9 @@ class LightboxSSA {
     // Load the specified image as this.$otherImage, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {
         const self = this;
+        const figure = this.otherFigure;
         const image = this.otherImage;
+        const figcap = this.otherFigcap;
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
@@ -921,12 +952,18 @@ class LightboxSSA {
         function onLoad () {
             // 'self' is the lightbox object
             // 'image' is the DOM object (either lb-image1 or lb-image2)
-
-            image.setAttribute('alt', self.album[imageNumber].alt);
-            image.setAttribute('title', self.album[imageNumber].title);
-            // TODO Caption?
+            const albumItem = self.album[imageNumber]
+            if (albumItem.alt) {
+                image.setAttribute('alt', albumItem.alt);
+            }
+            if (albumItem.title) {
+                image.setAttribute('title', albumItem.title);
+            }
+            if (albumItem.caption) {
+                figcap.innerHTML = albumItem.caption;
+            }
             
-            image.style.cursor = (self.album[imageNumber].url ? "pointer" : "auto");
+            image.style.cursor = (albumItem.url ? "pointer" : "auto");
 
             self.showImage();
 
@@ -981,12 +1018,18 @@ class LightboxSSA {
             siblings[i].style['pointer-events'] = 'none';
         }
         //this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
-        this.fadeTo(this.currentImage, this.options.image_fade_duration, 0);
-        this.fadeTo(this.otherImage, this.options.image_fade_duration+10, 1, () => {    // function() {
+        this.fadeTo(this.currentFigure, this.options.image_fade_duration, 0);
+        this.fadeTo(this.otherFigure, this.options.image_fade_duration+10, 1, () => {    // function() {
             // Swap the images
-            const temp = this.otherImage;
+            const tempF = this.otherFigure;
+            this.otherFigure = this.currentFigure;
+            this.currentFigure = tempF;
+            const tempI = this.otherImage;
             this.otherImage = this.currentImage;
-            this.currentImage = temp;
+            this.currentImage = tempI;
+            const tempC = this.otherFigcap;
+            this.otherFigcap = this.currentFigcap;
+            this.currentFigcap = tempC;
             //this.currentImage.style["pointer-events"] = "auto";
             const siblings = this.getSiblings(this.currentImage);
             //console.log("2. siblings:", siblings);

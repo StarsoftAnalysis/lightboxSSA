@@ -152,16 +152,16 @@ figure.lb-figure {
     //display: table-caption; 
     //caption-side: bottom;
     position: absolute;
-    left: 0;
-    bottom: 8px;
+    left: 8px;
+    bottom: 8px;  // allow for image border
     background-color: rgba(255, 255, 255, 0.6);
     //height: 1.2em;
-    width: 100%;
+    width: calc(100% - 2*8px);  // adjust for image border  
     //margin-top: -2.4em;
     //float: right;
     text-align: center;
     //color: white;
-    z-index: 1;
+    // z-index: 1;
     //font-family: 'Open Sans', sans;
   }
 }
