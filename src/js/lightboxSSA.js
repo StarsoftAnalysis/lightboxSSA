@@ -38,24 +38,21 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - captions / titles   s
+// - use srcset that we've carefully parsed
 //  * lightbox=true not finished -- e.g. with height=100, lightbox is also only 100 -- use maxwidth or something?
 //    * FIXME: small images (thumbnails) are still small in carousel  (Can't reproduce that now)
 // - is lb-cancel needed? maybe reinstate lb-loader because it's slower on real server 
-// - use srcset that we've carefully parsed
 // - minimise (and/or separate out) parseSrcset.
+// - sort on onError/placeholder
 // - preload next/prev images
 // - it's a class, but use of # implies only one...
 // - keyboard < > esc
 // - fix fadeTo and jumpy timing sometimes
 // - preload neighbours
-// - loading spinner
 // - keyboard < > esc -- also back button to close lb
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
-// - use title as tool tip? or add details?
 // - more Aria stuff?
-// - get caption from figcaption
 // - validate option values from 'user' and document user-settable ones
 // - maybe put X in corner of non-hover screens
 // - still get multiple jumps esp on phone
@@ -82,6 +79,9 @@
 //   - and/or allow prev/next touches on edges of image
 // - on click/mouse/pointer events should return quickly -- maybe just prevent further clicks, and then call start() from a timeout.
 // - swiping
+// - get caption from figcaption
+// - use title as tool tip? or add details?
+// - loading spinner
 
 //+++++++++++++++++++++++++++++
 // from https://github.com/albell/parse-srcset/blob/master/src/parse-srcset.js
@@ -412,6 +412,22 @@ function filterSrcset (srcset, types) {
         return matched; 
     });
     return newSrcset;
+}
+
+// Sort function for srcset ascending by width
+function srcsetAscendingW (a, b) {
+    return a.w - b.w;
+    /*
+    const wa = a.w;
+    const wb = b.w;
+    if (wa < wb) {
+        return -1;
+    }
+    if (wa > wb) {
+        return 1;
+    }
+    return 0;
+    */
 }
 
 //+++++++++++++++++++++++++++++
@@ -883,19 +899,30 @@ class LightboxSSA {
                     caption = figcaption.textContent;
                 }
             }
-            // srcset -- from img
+            // srcset -- from data-srcset or img
             let srcsetString, srcset;
-            if (img) {
-                srcsetString = img.getAttribute('srcset');
-                if (srcsetString) {
-                    // Parse the string, and filter to just leave the "w" entries
-                    srcset = parseSrcset(srcsetString);
-                    srcset = filterSrcset(srcset, "w");
+            srcsetString = lbe.getAttribute('data-srcset');
+            if (!srcsetString) {
+                if (img) {
+                    srcsetString = img.getAttribute('srcset');
                 }
-                // TODO filter for just the 'w' ones
-                //console.log("lbSSA: srcset = %o", srcset)
             }
-            console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o", imageURL, linkURL, title, alt, caption, srcset);
+            if (srcsetString) {
+                // Parse the string, and filter to just leave the "w" entries
+                srcset = parseSrcset(srcsetString);
+                srcset = filterSrcset(srcset, "w");
+                srcset.sort(srcsetAscendingW);
+            }
+            //console.log("lbSSA: srcset = %o", srcset)
+            // aspect ratio -- from data-aspect
+            let aspect = lbe.getAttribute('data-aspect');
+            if (aspect) {
+                aspect = parseFloat(aspect);
+            }
+            if (!aspect || isNaN(aspect)) {
+                aspect = 1.0; // arbitrary default
+            }
+            console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcset, aspect);
             self.album.push({
                 name:    imageURL,
                 url:     linkURL,
@@ -903,6 +930,7 @@ class LightboxSSA {
                 alt:     alt,
                 caption: caption,
                 srcset:  srcset,  // NOT USED!!! FIXME
+                aspect:  aspect,
             });
         } // end of addToAlbum
 
@@ -941,10 +969,13 @@ class LightboxSSA {
     // (depends on length of album)
     // Load the specified image as this.$otherImage, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {
-        const self = this;
+        const self = this;  // for use within functions -- NEEDED?
+        // The DOM figure/image/figcap we're about to modify:
         const figure = this.otherFigure;
         const image = this.otherImage;
         const figcap = this.otherFigcap;
+        // The album entry we're going to load:
+        const albumEntry = this.album[imageNumber];
 
         // Disable keyboard nav during transitions
         this.disableKeyboardNav();
@@ -971,14 +1002,55 @@ class LightboxSSA {
 
         function onError () {
             // Expected image not found -- use placeholder
+            // FIXME this doesn't look right -- need to try again with the placeholder???
+            // It's not called yet anyway
             this.src = self.options.placeholder_image;
         }
 
         image.addEventListener('load', onLoad, { once: true });
-        image.addEventListener('error', onLoad, { once: true });
+        image.addEventListener('error', onLoad, { once: true });  // FIXME call onError -- when it's working
+
+        // Decide which image from the srcset to use...
+        // FIXME we're assuming that if srcset exists, we'll use it rather than src
+        let newImageURL = albumEntry.name; // fallback value from src
+        const srcset = albumEntry.srcset;
+        if (srcset) {
+            if (srcset.length == 1) {
+                // Hobson's choice
+                newImageURL = srcset[0].url;
+            } else {
+                // Need to get current window dimensions
+                const winWidth = window.innerWidth;
+                const winHeight = window.innerHeight;
+                // then use aspect to work out the limiting direction
+                const winAspect = winWidth / winHeight;
+                const imageAspect = this.album[imageNumber].aspect;
+                let usableWidth;
+                if (imageAspect > winAspect) {
+                    // image is more landscape -- we're limited by width
+                    usableWidth = winWidth;
+                } else {
+                    // image is more portraint -- we're limited by height
+                    usableWidth = winHeight / imageAspect;
+                }
+                const targetWidth = usableWidth * self.options.max_width / 100;  // max_width is percentage
+                // loop through srcset -- it's already in ascending order by width
+                // FIXME we're choosing the smallest that at least as big to avoid enlarging,
+                // but maybe a nearly-big enough image would be better than going for a much bigger one.
+                for (const src of srcset) {
+                    if (src.w >= targetWidth) {
+                        newImageURL = src.url;
+                        break;
+                    }
+                }
+                // If we didn't choose any from srcset, they're all too small.
+                // Is the src image better?  Would it be easier if src were in srcset?
+                // FIXME For now, we'll stick with the fallback src assigned above if none from srcset were chosen.
+            }
+        }
 
         // Load the new image -- it will have opacity 0 at first
-        image.setAttribute("src", this.album[imageNumber].name);
+        image.setAttribute("src", newImageURL);
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
