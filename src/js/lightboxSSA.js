@@ -26,8 +26,9 @@
 // https://github.com/lokesh/lightbox2/blob/master/LICENSE
 // More info: http://lokeshdhakar.com/projects/lightbox2/
 
-// data- attributes
+// data- attributes   -- get them from the img or figure or anchor if not data-
 // - data-lightbox="galleryname"
+// - data-aspect
 // - data-title="image title"
 // - data-alt="alt info"
 // - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
@@ -38,7 +39,7 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - use srcset that we've carefully parsed
+// !! tallest image in gallery sets the max, even when not visible?    'other' image needs to be sjrunk, or hidden...??
 //  * lightbox=true not finished -- e.g. with height=100, lightbox is also only 100 -- use maxwidth or something?
 //    * FIXME: small images (thumbnails) are still small in carousel  (Can't reproduce that now)
 // - is lb-cancel needed? maybe reinstate lb-loader because it's slower on real server 
@@ -82,6 +83,7 @@
 // - get caption from figcaption
 // - use title as tool tip? or add details?
 // - loading spinner
+// - use srcset that we've carefully parsed
 
 //+++++++++++++++++++++++++++++
 // from https://github.com/albell/parse-srcset/blob/master/src/parse-srcset.js
@@ -429,14 +431,14 @@ class LightboxSSA {
         // NOTE: these have to be lowercase or snake_case because of the way they can be
         // set e.g. via Hugo params
         this.defaults = {
-            album_label: 'Image %1 of %2',
-            show_image_number_label: false,    // TODO not reimplemented
-            always_show_nav_on_touch_devices: false,
+            //album_label: 'Image %1 of %2',
+            //show_image_number_label: false,    // TODO not reimplemented
+            //always_show_nav_on_touch_devices: false,
             fade_duration: 600,  // for overlay
             overlay_opacity: 0.9,
             image_fade_duration: 600,
-            max_size: 50000,
-            max_width: 90,
+            //max_size: 50000,
+            max_width: 90,  // %
             max_height: 90,
             //resizeDuration: 700,
             wrap_around: true,
@@ -447,7 +449,7 @@ class LightboxSSA {
             // If the caption data is user submitted or from some other untrusted source, then set this to true
             // to prevent xss and other injection attacks.
             sanitize_title: false,
-            min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
+            //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
             placeholder_image: '/images/imageNotFoundSSA.png',
         };
         this.options = Object.assign({}, this.defaults);
@@ -477,6 +479,17 @@ class LightboxSSA {
                             val = 100;
                         }
                         this.options[key] = val;
+                        /* doesn't exist yet!
+                        const image1 = document.getElementById('lb-image1');
+                        const image2 = document.getElementById('lb-image2');
+                        if (key == 'max_width') {
+                            image1.style.maxWidth = "" + val + "vw"
+                            image2.style.maxWidth = "" + val + "vw"
+                        } else {
+                            image1.style.maxHeight = "" + val + "vh"
+                            image2.style.maxHeight = "" + val + "vh"
+                        }
+                        */
                     }
                     break;
                 default:
@@ -515,6 +528,13 @@ class LightboxSSA {
         }, 0);
     }
 
+    handleKey (e) {
+        //console.log("******** pressed", e);
+        if (e.keyCode == 27) { // escape
+            this.dismantle();
+        }
+    }
+
     // enable() is called via init() when page (i.e. JS) is loaded
     enable () {
         var self = this;
@@ -545,11 +565,13 @@ class LightboxSSA {
         });
     }
 
+    /*
     windowWidth () { // from https://stackoverflow.com/questions/6942785/
         return window.innerWidth && document.documentElement.clientWidth ? 
             Math.min(window.innerWidth, document.documentElement.clientWidth) : 
             window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth;
     }
+    */
  
     // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
     swipedetect (touchsurface, callback) {
@@ -598,10 +620,6 @@ class LightboxSSA {
     // Attach event handlers to the new DOM elements.
     // NOTE This happens as part of start(), after user has clicked an image.
     build () {
-        // FIXME what's this?
-        //if ($('#lb-overlay').length > 0) {  // Presumably avoiding reentry
-        //    return;
-        //}
 
         if (this.options.disable_scrolling) {
             this.oldBodyOverflow = document.body.style.overflow;
@@ -659,8 +677,12 @@ class LightboxSSA {
         this.figcap2    = document.getElementById('lb-figcap2');
         this.lbelements = document.getElementsByClassName('lb-element');
 
-        /*??
         // Override CSS depending on options
+        this.image1.style.maxWidth = "" + this.options.max_width + "vw";
+        this.image2.style.maxWidth = "" + this.options.max_width + "vw";
+        this.image1.style.maxHeight = "" + this.options.max_height + "vh";
+        this.image2.style.maxHeight = "" + this.options.max_height + "vh";
+        /*??
         // TODO get window width, make sure there's room for the <> arrows -- add a bit of spacing if possible.
         //  - need to get current window width...  and redo the calculation on window resize.  Pity -- it's all automatic at the moment.
         const winWidth = this.windowWidth();
@@ -683,8 +705,11 @@ class LightboxSSA {
 
         // Attach event handlers
         const self = this;
+        // Close lightbox if clicked/touched other than on navigation areas:
         this.overlay.addEventListener('click', this.dismantle.bind(this), false);
         this.overlay.addEventListener('touchstart', this.dismantle.bind(this), false);
+        // Intercept key presses (looking for 'escape')
+        document.addEventListener('keydown', this.handleKey.bind(this), false);
 
         function prevImage (e) {
             if (e) {    // e is null if via swipe
@@ -1210,6 +1235,7 @@ class LightboxSSA {
         if (this.options.disable_scrolling) {
             document.body.style.overflow = this.oldBodyOverflow;
         }
+        document.removeEventListener('keydown', this.handleKey);
     };
 
 } // end of class LightboxSSA

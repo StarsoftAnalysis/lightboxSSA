@@ -104,6 +104,13 @@ body.lb-disable-scrolling {
     //border: 1px green solid;
 }
 
+#lb-figure1, #lb-figure2 {
+    /*
+    max-width: 90vw;     // These may get adjusted by JS
+    max-height: 90vh;
+    */
+}
+
 #lb-image1, #lb-image2 {
     border: white 8px solid;
     border-radius: 4px;
@@ -147,6 +154,7 @@ body.lb-disable-scrolling {
 figure.lb-figure {
   display: block;
   position: relative;
+  margin: 0;
   //img { display: table-cell; }
   figcaption {
     //display: table-caption; 
