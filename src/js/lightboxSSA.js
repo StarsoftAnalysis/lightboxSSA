@@ -414,22 +414,6 @@ function filterSrcset (srcset, types) {
     return newSrcset;
 }
 
-// Sort function for srcset ascending by width
-function srcsetAscendingW (a, b) {
-    return a.w - b.w;
-    /*
-    const wa = a.w;
-    const wb = b.w;
-    if (wa < wb) {
-        return -1;
-    }
-    if (wa > wb) {
-        return 1;
-    }
-    return 0;
-    */
-}
-
 //+++++++++++++++++++++++++++++
 
 class LightboxSSA {
@@ -911,7 +895,7 @@ class LightboxSSA {
                 // Parse the string, and filter to just leave the "w" entries
                 srcset = parseSrcset(srcsetString);
                 srcset = filterSrcset(srcset, "w");
-                srcset.sort(srcsetAscendingW);
+                srcset.sort((a, b) => a.w - b.w);
             }
             //console.log("lbSSA: srcset = %o", srcset)
             // aspect ratio -- from data-aspect
