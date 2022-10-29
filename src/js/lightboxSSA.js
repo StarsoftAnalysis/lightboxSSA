@@ -473,12 +473,10 @@ class LightboxSSA {
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
-                        // Have to limit width to 90% so leave room for < > arrows.
-                        const widthlimit = (key == 'max_width' ? 90 : 100);
                         if (val < 10) {
                             val = 10;
-                        } else if (val > widthlimit) {
-                            val = widthlimit;
+                        } else if (val > 100) {
+                            val = 100;
                         }
                         this.options[key] = val;
                     }
@@ -672,26 +670,6 @@ class LightboxSSA {
         this.image2.style.maxWidth = "" + this.options.max_width + "vw";
         this.image1.style.maxHeight = "" + this.options.max_height + "vh";
         this.image2.style.maxHeight = "" + this.options.max_height + "vh";
-        /*??
-        // TODO get window width, make sure there's room for the <> arrows -- add a bit of spacing if possible.
-        //  - need to get current window width...  and redo the calculation on window resize.  Pity -- it's all automatic at the moment.
-        const winWidth = this.windowWidth();
-        const maxWidthPixels = winWidth * this.options.max_width / 100;
-        if ((winWidth - maxWidthPixels) < (2 * (this.constants.arrowWidth + this.constants.arrowInset))) {
-            // remove the arrow inset
-            this.prev['background-position'] = 'left  center';
-            this.next['background-position'] = 'right center';
-        } else {
-            // include the inset
-            this.prev['background-position'] = 'left '  + (this.constants.arrowInset) + 'px center';
-            this.next['background-position'] = 'right ' + (this.constants.arrowInset) + 'px center';
-        }
-        const max_width = (Math.min(maxWidthPixels, winWidth - 2*this.constants.arrowWidth)) + "px";
-        this.image1.style['max-width']  = max_width; // "calc(90% - 51px)";   //this.percentString(this.options.max_width);
-        this.image1.style['max-height'] = this.options.max_height;
-        this.image2.style['max-width']  = max_width; //this.percentString(this.options.max_width);
-        this.image2.style['max-height'] = this.options.max_height;
-        */
 
         // Attach event handlers
         const self = this;
@@ -1033,15 +1011,11 @@ class LightboxSSA {
                     // image is more portraint -- we're limited by height
                     usableWidth = winHeight * (self.options.max_height / 100) * imageAspect;
                 }
-                // Need to limit width to allow room for < > arrows (sadly)
-                const targetWidth = Math.min(usableWidth, winWidth * 0.9);
-                // See elsewhere re actually limiting the width to 90%.
-
-                // loop through srcset -- it's already in ascending order by width
+                // Loop through srcset -- it's already in ascending order by width
                 // FIXME we're choosing the smallest that at least as big to avoid enlarging,
                 // but maybe a nearly-big enough image would be better than going for a much bigger one.
                 for (const src of srcset) {
-                    if (src.w >= targetWidth) {
+                    if (src.w >= usableWidth) {
                         newImageURL = src.url;
                         break;
                     }
