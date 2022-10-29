@@ -473,23 +473,14 @@ class LightboxSSA {
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
+                        // Have to limit width to 90% so leave room for < > arrows.
+                        const widthlimit = (key == 'max_width' ? 90 : 100);
                         if (val < 10) {
                             val = 10;
-                        } else if (val > 100) {
-                            val = 100;
+                        } else if (val > widthlimit) {
+                            val = widthlimit;
                         }
                         this.options[key] = val;
-                        /* doesn't exist yet!
-                        const image1 = document.getElementById('lb-image1');
-                        const image2 = document.getElementById('lb-image2');
-                        if (key == 'max_width') {
-                            image1.style.maxWidth = "" + val + "vw"
-                            image2.style.maxWidth = "" + val + "vw"
-                        } else {
-                            image1.style.maxHeight = "" + val + "vh"
-                            image2.style.maxHeight = "" + val + "vh"
-                        }
-                        */
                     }
                     break;
                 default:
@@ -636,7 +627,7 @@ class LightboxSSA {
                 <div id=lb-wrapper1 class=lb-element>
                     <figure id=lb-figure1 class="lb-element lb-figure">
                         <img id=lb-image1 class=lb-element src="/images/spinnerSSA.gif">
-                        <figcaption id=lb-figcap1></figcaption>
+                        <figcaption id=lb-figcap1 class=lb-element></figcaption>
                     </figure>
                     <div id=lb-image1-prev class=lb-element></div>
                     <div id=lb-image1-next class=lb-element></div>
@@ -646,14 +637,13 @@ class LightboxSSA {
                 <div id=lb-wrapper2 class=lb-element>
                     <figure id=lb-figure2 class="lb-element lb-figure">
                         <img id=lb-image2 class=lb-element src="/images/spinnerSSA.gif">
-                        <figcaption id=lb-figcap2></figcaption>
+                        <figcaption id=lb-figcap2 class=lb-element></figcaption>
                     </figure>
                     <div id=lb-image2-prev class=lb-element></div>
                     <div id=lb-image2-next class=lb-element></div>
                 </div>
             </div>
         `;
-        //$(html).appendTo($('body'));
         document.body.insertAdjacentHTML('beforeend', html);
 
         // Cache DOM objects
@@ -987,7 +977,7 @@ class LightboxSSA {
         const albumEntry = this.album[imageNumber];
 
         // Disable keyboard nav during transitions
-        this.disableKeyboardNav();
+        //??this.disableKeyboardNav();
 
         function onLoad () {
             // 'self' is the lightbox object
@@ -1037,12 +1027,16 @@ class LightboxSSA {
                 let usableWidth;
                 if (imageAspect > winAspect) {
                     // image is more landscape -- we're limited by width
-                    usableWidth = winWidth;
+                    // and need a bit of space for < > arrows (sadly).
+                    usableWidth = winWidth * (self.options.max_width / 100);
                 } else {
                     // image is more portraint -- we're limited by height
-                    usableWidth = winHeight * imageAspect;
+                    usableWidth = winHeight * (self.options.max_height / 100) * imageAspect;
                 }
-                const targetWidth = usableWidth * self.options.max_width / 100;  // max_width is percentage
+                // Need to limit width to allow room for < > arrows (sadly)
+                const targetWidth = Math.min(usableWidth, winWidth * 0.9);
+                // See elsewhere re actually limiting the width to 90%.
+
                 // loop through srcset -- it's already in ascending order by width
                 // FIXME we're choosing the smallest that at least as big to avoid enlarging,
                 // but maybe a nearly-big enough image would be better than going for a much bigger one.
