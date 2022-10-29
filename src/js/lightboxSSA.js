@@ -39,18 +39,14 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// !! tallest image in gallery sets the max, even when not visible?    'other' image needs to be sjrunk, or hidden...??
-//  * lightbox=true not finished -- e.g. with height=100, lightbox is also only 100 -- use maxwidth or something?
-//    * FIXME: small images (thumbnails) are still small in carousel  (Can't reproduce that now)
+// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
+// - keyboard < > esc -- reinstate previous effort
+    // - keyboard < > esc -- also back button to close lb
 // - is lb-cancel needed? maybe reinstate lb-loader because it's slower on real server 
 // - minimise (and/or separate out) parseSrcset.
+// - more configuration e.g. image margin/radius/colour, caption styling, etc.
 // - sort on onError/placeholder
-// - preload next/prev images
-// - it's a class, but use of # implies only one...
-// - keyboard < > esc
-// - fix fadeTo and jumpy timing sometimes
 // - preload neighbours
-// - keyboard < > esc -- also back button to close lb
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
 // - more Aria stuff?
@@ -622,24 +618,20 @@ class LightboxSSA {
                 <div id=lb-next aria-label="Next image" class=lb-element></div>
             </div>
             <div id=lb-flex1 class="lb-flex lb-element">
-                <div id=lb-wrapper1 class=lb-element>
-                    <figure id=lb-figure1 class="lb-element lb-figure">
-                        <img id=lb-image1 class=lb-element src="/images/spinnerSSA.gif">
-                        <figcaption id=lb-figcap1 class=lb-element></figcaption>
-                    </figure>
+                <figure id=lb-figure1 class="lb-element lb-figure">
                     <div id=lb-image1-prev class=lb-element></div>
                     <div id=lb-image1-next class=lb-element></div>
-                </div>
+                    <img id=lb-image1 class=lb-element src="/images/spinnerSSA.gif">
+                    <figcaption id=lb-figcap1 class=lb-element></figcaption>
+                </figure>
             </div>
             <div id=lb-flex2 class="lb-flex lb-element">
-                <div id=lb-wrapper2 class=lb-element>
-                    <figure id=lb-figure2 class="lb-element lb-figure">
-                        <img id=lb-image2 class=lb-element src="/images/spinnerSSA.gif">
-                        <figcaption id=lb-figcap2 class=lb-element></figcaption>
-                    </figure>
+                <figure id=lb-figure2 class="lb-element lb-figure">
                     <div id=lb-image2-prev class=lb-element></div>
                     <div id=lb-image2-next class=lb-element></div>
-                </div>
+                    <img id=lb-image2 class=lb-element src="/images/spinnerSSA.gif">
+                    <figcaption id=lb-figcap2 class=lb-element></figcaption>
+                </figure>
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', html);
