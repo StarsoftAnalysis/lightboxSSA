@@ -1040,7 +1040,7 @@ class LightboxSSA {
                     usableWidth = winWidth;
                 } else {
                     // image is more portraint -- we're limited by height
-                    usableWidth = winHeight / imageAspect;
+                    usableWidth = winHeight * imageAspect;
                 }
                 const targetWidth = usableWidth * self.options.max_width / 100;  // max_width is percentage
                 // loop through srcset -- it's already in ascending order by width
@@ -1099,7 +1099,11 @@ class LightboxSSA {
             siblings[i].style['pointer-events'] = 'none';
         }
         //this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
-        this.fadeTo(this.currentFigure, this.options.image_fade_duration, 0);
+        this.fadeTo(this.currentFigure, this.options.image_fade_duration, 0, () => {
+            // at the end of the fade-out, remove it so that it doesn't affect spacing
+            this.currentFigure.style.display = "none";
+        });
+        this.otherFigure.style.display = "block";
         this.fadeTo(this.otherFigure, this.options.image_fade_duration+10, 1, () => {    // function() {
             // Swap the images
             const tempF = this.otherFigure;
