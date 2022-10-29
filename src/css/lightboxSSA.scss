@@ -24,7 +24,7 @@
 // ?? Use will-change: transform, opacity;  to make sure fadeTo works???
 
 // Variables
-$imageBorder: 28px;
+$imageBorder: 2vh;
 $imageRadius: ($imageBorder / 2);
 
 body.lb-disable-scrolling {
@@ -100,16 +100,6 @@ body.lb-disable-scrolling {
     z-index: 14;
 }
 
-/*
-#lb-wrapper1, #lb-wrapper2 {
-    position: relative; // to allow positioning of lb-image1prev etc.
-    pointer-events: none;
-    //max-width: 90vw;     // These may get adjusted by JS
-    //max-height: 90vh;
-    //border: 1px green solid;
-}
-*/
-
 #lb-figure1, #lb-figure2 {
     /*
     max-width: 90vw;     // These may get adjusted by JS
@@ -135,13 +125,14 @@ body.lb-disable-scrolling {
     //touch-action: none;
 }
 
+$onImageClickAreaHeight: 100%;
 #lb-image1-prev, #lb-image2-prev {
   position: absolute;
   //border: 1px blue solid;
   width: 20%;
-  height: 30%;
+  height: $onImageClickAreaHeight;
   left: 0;
-  top: 35%;     // = (100% - height%) / 2
+  top: #{(100% - $onImageClickAreaHeight) / 2};
   cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
   z-index: 17;
 }
@@ -150,9 +141,9 @@ body.lb-disable-scrolling {
   position: absolute;
   //border: 1px red solid;
   width: 20%;
-  height: 30%;
+  height: $onImageClickAreaHeight;
   right: 0;
-  top: 35%;     // = (100% - height%) / 2
+  top: #{(100% - $onImageClickAreaHeight) / 2};
   cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
   z-index: 17;
 }
@@ -161,21 +152,12 @@ figure.lb-figure {
   display: block;
   position: relative;
   margin: 0;
-  //img { display: table-cell; }
   figcaption {
-    //display: table-caption; 
-    //caption-side: bottom;
     position: absolute;
     left: $imageBorder;
-    bottom: $imageBorder;  // allow for image border
+    bottom: $imageBorder;
     background-color: rgba(255, 255, 255, 0.6);
-    //height: 1.2em;
     width: calc(100% - #{2 * $imageBorder});
-    //margin-top: -2.4em;
-    //float: right;
     text-align: center;
-    //color: white;
-    // z-index: 1;
-    //font-family: 'Open Sans', sans;
   }
 }

@@ -1,6 +1,6 @@
 // LightboxSSA 
 
-// version 2.51 25/10/2022
+// version 2.52 29/10/2022
 
 // Copyright 2020-2022 Chris Dennis
 
