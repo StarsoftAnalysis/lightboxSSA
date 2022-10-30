@@ -39,6 +39,8 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
+// - wrap_around option is ignored (always wraps) except with keyboard nav.
+//   (no it isn't, but arrows aren't removed)
 // - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
@@ -516,9 +518,30 @@ class LightboxSSA {
     }
 
     handleKey (e) {
+        const KEYCODE_ESC        = 27;
+        const KEYCODE_LEFTARROW  = 37;
+        const KEYCODE_RIGHTARROW = 39;
         //console.log("******** pressed", e);
-        if (e.keyCode == 27) { // escape
+        if (e.keyCode == KEYCODE_ESC) {
+            e.stopPropagation();
             this.dismantle();
+        } else if (this.album.length > 1) {
+            // More than one image -- use arrows
+            if (e.keyCode === KEYCODE_LEFTARROW) {
+                e.stopPropagation();
+                if (this.currentImageIndex !== 0) {
+                    this.changeImage(this.currentImageIndex - 1);
+                } else if (this.options.wrap_around) {
+                    this.changeImage(this.album.length - 1);
+                }
+            } else if (e.keyCode === KEYCODE_RIGHTARROW) {
+                e.stopPropagation();
+                if (this.currentImageIndex !== this.album.length - 1) {
+                    this.changeImage(this.currentImageIndex + 1);
+                } else if (this.options.wrap_around) {
+                    this.changeImage(0);
+                }
+            }
         }
     }
 
@@ -1079,7 +1102,6 @@ class LightboxSSA {
             }
             //this.currentImage.style["touch-action"] = "auto";  ???
             this.preloadNeighboringImages();
-            this.enableKeyboardNav();  // FIXME move this start() or build() -- no, need to disable nav during changeImage 
         });
     }
 
@@ -1092,44 +1114,6 @@ class LightboxSSA {
         if (this.currentImageIndex > 0) {
             var preloadPrev = new Image();
             preloadPrev.src = this.album[this.currentImageIndex - 1].name;
-        }
-    };
-
-    // FIXME does this still work?
-    enableKeyboardNav () {
-        /* TODO keyboard stuff
-        this.$overlay.on('keyup.keyboard', this.keyboardAction.bind(this));
-        this.$overlay.on('keyup.keyboard', this.keyboardAction.bind(this));
-        */
-    }
-
-    disableKeyboardNav () {
-        //this.$lightbox.off('.keyboard');
-        // TODO this.$overlay.off('.keyboard');
-    }
-
-    keyboardAction (event) {
-        const KEYCODE_ESC        = 27;
-        const KEYCODE_LEFTARROW  = 37;
-        const KEYCODE_RIGHTARROW = 39;
-
-        let keycode = event.keyCode;
-        if (keycode === KEYCODE_ESC) {
-            // Prevent bubbling so as to not affect other components on the page.
-            event.stopPropagation();
-            this.dismantle();
-        } else if (keycode === KEYCODE_LEFTARROW) {
-            if (this.currentImageIndex !== 0) {
-                this.changeImage(this.currentImageIndex - 1);
-            } else if (this.options.wrap_around && this.album.length > 1) {
-                this.changeImage(this.album.length - 1);
-            }
-        } else if (keycode === KEYCODE_RIGHTARROW) {
-            if (this.currentImageIndex !== this.album.length - 1) {
-                this.changeImage(this.currentImageIndex + 1);
-            } else if (this.options.wrap_around && this.album.length > 1) {
-                this.changeImage(0);
-            }
         }
     };
 
