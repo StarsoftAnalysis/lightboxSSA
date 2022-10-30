@@ -39,6 +39,10 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
+// - clickThroughImage -- to url, if external, config option to do target=_blank
+// - check getSiblings and pointer stuff
+// - single-image lightbox -- need no < > arrows
+// - ditto -- need bigger image, otherwise there's not much point.
 // - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
@@ -530,23 +534,7 @@ class LightboxSSA {
         const matches = document.querySelectorAll("[data-lightbox]");
         matches.forEach(function(match) {
             match.addEventListener('touchstart', self.imageClickHandler.bind(self), true);
-            /*match.addEventListener('touchstart', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const lbelement = e.currentTarget;
-                setTimeout(() => {  // Use timeout to return from event quickly
-                    self.start(e.currentTarget);
-                }, 0);
-            }, true);*/
             match.addEventListener('click', self.imageClickHandler.bind(self), true);
-            /*match.addEventListener('click', function (e) {
-                e.preventDefault();  // e.g. to stop an <a data-lightbox=x> doing the <a>'s href
-                e.stopPropagation();
-                const lbelement = e.currentTarget;
-                setTimeout(function () {  // Use timeout to return from event quickly
-                    self.start(lbelement);
-                }, 0);
-            }, true);*/
         });
     }
 
@@ -613,22 +601,22 @@ class LightboxSSA {
 
         const html = `
             <div id=lb-overlay class=lb-element></div>
-            <div id=lb-nav class=lb-element>
+            <div id=lb-nav class="lb-element lb-nav">
                 <div id=lb-prev aria-label="Previous image" class=lb-element></div>
                 <div id=lb-next aria-label="Next image" class=lb-element></div>
             </div>
             <div id=lb-flex1 class="lb-flex lb-element">
                 <figure id=lb-figure1 class="lb-element lb-figure">
-                    <div id=lb-image1-prev class=lb-element></div>
-                    <div id=lb-image1-next class=lb-element></div>
+                    <div id=lb-image1-prev class="lb-element lb-nav"></div>
+                    <div id=lb-image1-next class="lb-element lb-nav"></div>
                     <img id=lb-image1 class=lb-element src="/images/spinnerSSA.gif">
                     <figcaption id=lb-figcap1 class=lb-element></figcaption>
                 </figure>
             </div>
             <div id=lb-flex2 class="lb-flex lb-element">
                 <figure id=lb-figure2 class="lb-element lb-figure">
-                    <div id=lb-image2-prev class=lb-element></div>
-                    <div id=lb-image2-next class=lb-element></div>
+                    <div id=lb-image2-prev class="lb-element lb-nav"></div>
+                    <div id=lb-image2-next class="lb-element lb-nav"></div>
                     <img id=lb-image2 class=lb-element src="/images/spinnerSSA.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
@@ -656,6 +644,7 @@ class LightboxSSA {
         this.figcap1    = document.getElementById('lb-figcap1');
         this.figcap2    = document.getElementById('lb-figcap2');
         this.lbelements = document.getElementsByClassName('lb-element');
+        this.lbnavelements = document.getElementsByClassName('lb-nav');
 
         // Override CSS depending on options
         this.image1.style.maxWidth = "" + this.options.max_width + "vw";
@@ -708,6 +697,13 @@ class LightboxSSA {
         this.image2next.addEventListener('click', nextImage.bind(this), false);
         this.image2next.addEventListener('touchstart', nextImage.bind(this), false);
 
+        // from https://www.designcise.com/web/tutorial/how-to-check-if-a-string-url-refers-to-an-external-link-using-javascript
+        function isExternalLink (url) {
+            const tmp = document.createElement('a');
+            tmp.href = url;
+            return tmp.host !== window.location.host;
+        }
+
         // Honour a click on the current lightbox image (either 1 or 2).
         // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
         // If via swipe, e is null.
@@ -717,11 +713,22 @@ class LightboxSSA {
                 e.stopPropagation();
             }
             // this.currentImageIndex is evaluated at click time, so gives the correct URL.
-            if (this.album[this.currentImageIndex].url) {
-                // Jump to the given URL
-                window.location = this.album[this.currentImageIndex].url;
+            const targetUrl = this.album[this.currentImageIndex].url;
+            if (targetUrl) {
+                // using window.open always seems to be blocked as a pop-up, so don't bother
+                /*
+                if (isExternalLink(targetUrl)) {
+                    window.open(targetUrl, "_blank"); //, "noopener");
+                } else {
+                */
+                    window.location = targetUrl;
+                /* } */
+            } else if (this.albumLen == 1) {
+                // Nowhere to go, so close
+                this.dismantle();
             }
         }
+
         this.image1.addEventListener('click', clickThroughImage.bind(this), false);
         //this.image1.addEventListener('touchstart', clickThroughImage.bind(this), false);
         this.image2.addEventListener('click', clickThroughImage.bind(this), false);
@@ -898,12 +905,11 @@ class LightboxSSA {
                 title:   title,
                 alt:     alt,
                 caption: caption,
-                srcset:  srcset,  // NOT USED!!! FIXME
+                srcset:  srcset,
                 aspect:  aspect,
             });
         } // end of addToAlbum
 
-        //var dataLightboxValue = $lbelement.attr('data-lightbox');    // dLV gets 'lightbox' or the name of the gallery
         const dataLightboxValue = lbelement.getAttribute('data-lightbox');
         // Find all elements with the same gallery name.  querySelectorAll returns them in document order.
         const lbelements = document.querySelectorAll('[data-lightbox="' + dataLightboxValue + '"]');
@@ -919,12 +925,15 @@ class LightboxSSA {
         this.albumLen = this.album.length;
         if (this.albumLen == 1) {
             // nowhere to navigate to
-            //this.$nav.hide();
-            this.fadeTo(this.nav, this.options.fadeDuration, 0);
+            for (const nav of this.lbnavelements) {
+                nav.style.display = "none";
+            };
+            // (clickThroughImage will handle clicks)
         }
         if (this.albumLen == 2 && !this.options.wrap_around) {
             // TODO adjust arrows by hiding prev or next
         }
+
         this.currentFigure = this.figure1;
         this.otherFigure = this.figure2;
         this.currentImage = this.image1;
