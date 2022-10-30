@@ -39,7 +39,6 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - check getSiblings and pointer stuff
 // - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
@@ -82,6 +81,7 @@
 // - clickThroughImage -- to url, if external, config option to do target=_blank
 // - single-image lightbox -- need no < > arrows
 // - ditto -- need bigger image, otherwise there's not much point.
+// - check getSiblings and pointer stuff
 
 //+++++++++++++++++++++++++++++
 // from https://github.com/albell/parse-srcset/blob/master/src/parse-srcset.js
@@ -1056,21 +1056,12 @@ class LightboxSSA {
     // Display the image and its details and begin preload neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.
     showImage () {  // (width, height) 
-        //this.$loader.stop(true).hide();   // FIXME reinstate this
-        // TODO ? also disable other clicks and keyboard events before the swap?
-        //this.currentImage.style["pointer-events"] = "none";
         const siblings = this.getSiblings(this.currentImage);
-        //console.log("1. siblings:", siblings);
         for (let i = 0; i < siblings.length; i++) {
-            //console.log("siblings[i]:", siblings[i]);
             siblings[i].style['pointer-events'] = 'none';
         }
         //this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
-        this.fadeTo(this.currentFigure, this.options.image_fade_duration, 0, () => {
-            // at the end of the fade-out, remove it so that it doesn't affect spacing
-            this.currentFigure.style.display = "none";
-        });
-        this.otherFigure.style.display = "block";
+        this.fadeTo(this.currentFigure, this.options.image_fade_duration, 0);
         this.fadeTo(this.otherFigure, this.options.image_fade_duration+10, 1, () => {    // function() {
             // Swap the images
             const tempF = this.otherFigure;
@@ -1082,57 +1073,15 @@ class LightboxSSA {
             const tempC = this.otherFigcap;
             this.otherFigcap = this.currentFigcap;
             this.currentFigcap = tempC;
-            //this.currentImage.style["pointer-events"] = "auto";
             const siblings = this.getSiblings(this.currentImage);
-            //console.log("2. siblings:", siblings);
             for (let i = 0; i < siblings.length; i++) {
-                //console.log("siblings[i]:", siblings[i]);
                 siblings[i].style['pointer-events'] = 'auto';
             }
-            //this.currentImage.style["touch-action"] = "auto";
-            //this.updateNav();
+            //this.currentImage.style["touch-action"] = "auto";  ???
             this.preloadNeighboringImages();
             this.enableKeyboardNav();  // FIXME move this start() or build() -- no, need to disable nav during changeImage 
         });
-        //}.bind(this));
     }
-
-    // Display previous and next navigation if appropriate.
-    /* Still needed?
-    updateNav () {
-        // Check to see if the browser supports touch events. If so, we take the conservative approach
-        // and assume that mouse hover events are not supported and always show prev/next navigation
-        // arrows in image sets.
-        let alwaysShowNav = false;
-        try {
-            document.createEvent('TouchEvent');
-            alwaysShowNav = this.options.always_show_nav_on_touch_devices;   //) ? true : false;
-        } catch (e) {}
-
-        // FIXME sort out arrow opacity -- is it still needed? yes, does .show() among other things.
-        if (this.album.length > 1) {
-            if (this.options.wrap_around) {
-                if (alwaysShowNav) {
-                    this.$overlay.find('.lb-prev, .lb-next').css('opacity', '1');
-                }
-                this.$overlay.find('.lb-prev, .lb-next').show();
-            } else {
-                if (this.currentImageIndex > 0) {
-                    this.$overlay.find('.lb-prev').show();
-                    if (alwaysShowNav) {
-                        this.$overlay.find('.lb-prev').css('opacity', '1');
-                    }
-                }
-                if (this.currentImageIndex < this.album.length - 1) {
-                    this.$overlay.find('.lb-next').show();
-                    if (alwaysShowNav) {
-                        this.$overlay.find('.lb-next').css('opacity', '1');
-                    }
-                }
-            }
-        }
-    };
-    */
 
     // Preload previous and next images in set.
     preloadNeighboringImages () {
