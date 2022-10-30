@@ -44,7 +44,7 @@
 // - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
-// - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS
+// - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
 // - sort on onError/placeholder
 // - preload neighbours
 //  - highlight something during touchmove
@@ -435,7 +435,7 @@ class LightboxSSA {
             //show_image_number_label: false,    // TODO not reimplemented
             //always_show_nav_on_touch_devices: false,
             fade_duration: 600,  // for overlay
-            overlay_opacity: 0.9,
+            overlay_opacity: 1.0,
             image_fade_duration: 600,
             //max_size: 50000,
             max_width: 90,  // %
@@ -621,7 +621,7 @@ class LightboxSSA {
         }
 
         const html = `
-            <div id=lb-overlay class=lb-element></div>
+            <div id=lb-overlay class=lb-element>
             <div id=lb-nav class="lb-element lb-nav">
                 <div id=lb-prev aria-label="Previous image" class=lb-element></div>
                 <div id=lb-next aria-label="Next image" class=lb-element></div>
@@ -641,7 +641,7 @@ class LightboxSSA {
                     <img id=lb-image2 class=lb-element src="/images/spinnerSSA.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
-            </div>
+            </div></div>
         `;
         document.body.insertAdjacentHTML('beforeend', html);
 
@@ -751,7 +751,7 @@ class LightboxSSA {
         }
 
         this.image1.addEventListener('click', clickThroughImage.bind(this), false);
-        //this.image1.addEventListener('touchstart', clickThroughImage.bind(this), false);
+        //this.image1.addEventListener('touchstart', clickThroughImage.bind(this), false);   FIXME
         this.image2.addEventListener('click', clickThroughImage.bind(this), false);
         //this.image2.addEventListener('touchstart', clickThroughImage.bind(this), false);
 
@@ -1117,25 +1117,14 @@ class LightboxSSA {
         }
     };
 
-    remove (element) {
-        this.fadeTo(element, this.options.fade_duration, 0, function() {
-            //element.parentNode.removeChild(element);
-            // FIXME why don't we get here?
-            element.remove();
-        });
-        /* FIXME not needed
-        // Hack!
-        setTimeout(function () {
-            element.remove();
-        }, this.options.fade_duration);
-        */
-    }
-
     // Unbuild the DOM structure
     dismantle () {
-        for (let lbelement of this.lbelements) {
-            this.remove(lbelement);
-        };
+        // Fading before removing would be nice, but it leaves bits behind,
+        // and e.g. clickThrough event still happens.
+        // this.fadeTo(this.overlay, this.options.fade_duration, 0, function() {
+            this.overlay.replaceChildren();
+            this.overlay.remove();
+        // });
         if (this.options.disable_scrolling) {
             document.body.style.overflow = this.oldBodyOverflow;
         }
