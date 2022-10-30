@@ -39,16 +39,11 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - clickThroughImage -- to url, if external, config option to do target=_blank
 // - check getSiblings and pointer stuff
-// - single-image lightbox -- need no < > arrows
-// - ditto -- need bigger image, otherwise there's not much point.
 // - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
-// - is lb-cancel needed? maybe reinstate lb-loader because it's slower on real server 
-// - minimise (and/or separate out) parseSrcset.
-// - more configuration e.g. image margin/radius/colour, caption styling, etc.
+// - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS
 // - sort on onError/placeholder
 // - preload neighbours
 //  - highlight something during touchmove
@@ -84,6 +79,9 @@
 // - use title as tool tip? or add details?
 // - loading spinner
 // - use srcset that we've carefully parsed
+// - clickThroughImage -- to url, if external, config option to do target=_blank
+// - single-image lightbox -- need no < > arrows
+// - ditto -- need bigger image, otherwise there's not much point.
 
 //+++++++++++++++++++++++++++++
 // from https://github.com/albell/parse-srcset/blob/master/src/parse-srcset.js
@@ -980,16 +978,16 @@ class LightboxSSA {
 
         function onError () {
             // Expected image not found -- use placeholder
-            // FIXME this doesn't look right -- need to try again with the placeholder???
-            // It's not called yet anyway
+            // (This seems to work.  If the placeholder isn't found,
+            // we just end up with a border round nothing.)
             this.src = self.options.placeholder_image;
         }
 
         image.addEventListener('load', onLoad, { once: true });
-        image.addEventListener('error', onLoad, { once: true });  // FIXME call onError -- when it's working
+        image.addEventListener('error', onError, { once: true });
 
-        // Decide which image from the srcset to use...
-        // FIXME we're assuming that if srcset exists, we'll use it rather than src
+        // Decide which image from the srcset to use.
+        // We're assuming that if srcset exists, we'll use it rather than src
         let newImageURL = albumEntry.name; // fallback value from src
         const srcset = albumEntry.srcset;
         if (srcset) {
@@ -1013,7 +1011,7 @@ class LightboxSSA {
                     usableWidth = winHeight * (self.options.max_height / 100) * imageAspect;
                 }
                 // Loop through srcset -- it's already in ascending order by width
-                // FIXME we're choosing the smallest that at least as big to avoid enlarging,
+                // We're choosing the smallest that at least as big to avoid enlarging,
                 // but maybe a nearly-big enough image would be better than going for a much bigger one.
                 for (const src of srcset) {
                     if (src.w >= usableWidth) {
@@ -1023,7 +1021,7 @@ class LightboxSSA {
                 }
                 // If we didn't choose any from srcset, they're all too small.
                 // Is the src image better?  Would it be easier if src were in srcset?
-                // FIXME For now, we'll stick with the fallback src assigned above if none from srcset were chosen.
+                // For now, we'll stick with the fallback src assigned above if none from srcset were chosen.
             }
         }
 
