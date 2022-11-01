@@ -39,8 +39,14 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // TODO
-// - wrap_around option is ignored (always wraps) except with keyboard nav.
-//   (no it isn't, but arrows aren't removed)
+// Touch screens:
+//  - simple touch only to start lightbox
+//  - touch outside image to close -- NOT on clickable areas
+//  - swipe l/r to change image (already done?)
+//  - simple touch image to go to url if any
+
+
+// - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
 // - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
@@ -545,16 +551,53 @@ class LightboxSSA {
         }
     }
 
+    simpleTouch (e) {
+        // Run the callback if user makes a 'simple touch' on the element,
+        // ignoring swipes.
+        // This function is itself the touchstart handler...
+    //    e.preventDefault();
+      //  e.stopPropagation();
+        const lbelement = e.currentTarget;
+        const t0 = e.touches[0];
+        const startX = t0.screenX;
+        const startY = t0.screenY;
+        console.log("start touch event", e);
+        console.log("starting at ", startX, startY);
+        lbelement.addEventListener('touchend', (e2) => {
+            console.log("end: ", e2); // .changedTouches);
+            const t0 = e2.changedTouches[0];
+            const endX = t0.screenX;
+            const endY = t0.screenY;
+            console.log("simpleTouch moved?:", startX, startY, endX, endY);
+            if (endX == startX && endY == startY) {
+                console.log(" matched, starting lb");
+                setTimeout(() => {  // Use timeout to return from event quickly
+                    this.start(lbelement);
+                }, 0);
+            } else {
+                console.log("simpleTouch moved:", startX, startY, endX, endY);
+            }
+        }, { once: true });
+        lbelement.addEventListener('touchcancel', (e3) => {
+            console.log("touchcancel: e3 =", e3);
+        }, {once: true});
+        //lbelement.addEventListener('touchmove', (e2) => {
+        //    console.log(e2);
+        //});
+
+    }   
+
     // enable() is called via init() when page (i.e. JS) is loaded
     enable () {
         var self = this;
-        
         // Attach click/touch/pointer listeners to every element on the page
         // that has [data-lightbox] in its attributes.
         // (This requires that DOM is ready, but happens before the lightbox has been built)
         const matches = document.querySelectorAll("[data-lightbox]");
         matches.forEach(function(match) {
-            match.addEventListener('touchstart', self.imageClickHandler.bind(self), true);
+            // FIXME lightbox gets started when user is trying to swipe down the page rather than click on the image -- need something better than just touchstart
+            //match.addEventListener('touchstart', self.imageClickHandler.bind(self), true);
+            match.addEventListener('touchstart', self.simpleTouch.bind(self), true);
             match.addEventListener('click', self.imageClickHandler.bind(self), true);
         });
     }
@@ -755,7 +798,7 @@ class LightboxSSA {
         this.image2.addEventListener('click', clickThroughImage.bind(this), false);
         //this.image2.addEventListener('touchstart', clickThroughImage.bind(this), false);
 
-        this.swipedetect(this.image1, function (swipedir, e) {
+        this.swipedetect(this.figure1, function (swipedir, e) {
             // swipedir contains either "none", "left", "right", "top", or "down"
             //console.log("image1 detected swipe", swipedir);
             //alert("image1 detected swipe: " + swipedir);
@@ -768,7 +811,7 @@ class LightboxSSA {
             }
         });
 
-        this.swipedetect(this.image2, function (swipedir, e) {
+        this.swipedetect(this.figure2, function (swipedir, e) {
             // swipedir contains either "none", "left", "right", "top", or "down"
             //console.log("image2 detected swipe", swipedir);
             //alert("image2 detected swipe:" + swipedir);
@@ -804,14 +847,12 @@ class LightboxSSA {
     }
 
     // User has clicked on an element with 'data-lightbox'.
-    // Show lightbox. If the image is part of a set, add siblings to album array.
+    // Show lightbox. If the image is part of a set, add others in set to album array.
     start (lbelement) {
-        // lbelement is the thing clicked on -- typically a <figure> or <image>. -- no longer a $jquery thing!
+        // lbelement is the thing clicked on -- typically a <figure> or <image>
 
         // Apply user-supplied options 
         if (typeof lightboxSSAOptions == "object") {
-            //$.extend(this.options, lightboxSSAOptions);
-            //this.options = {...this.options, ...lightboxSSAOptions}
             this.applyOptions(lightboxSSAOptions);
         }
 
@@ -919,7 +960,7 @@ class LightboxSSA {
             if (!aspect || isNaN(aspect)) {
                 aspect = 1.0; // arbitrary default
             }
-            console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcset, aspect);
+            //console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcset, aspect);
             self.album.push({
                 name:    imageURL,
                 url:     linkURL,
@@ -942,6 +983,7 @@ class LightboxSSA {
             }
             i += 1;
         });
+        console.log("imageNumber=%d  album: ", imageNumber, this.album);
 
         this.albumLen = this.album.length;
         if (this.albumLen == 1) {
@@ -992,11 +1034,8 @@ class LightboxSSA {
             if (albumItem.caption) {
                 figcap.innerHTML = albumItem.caption;
             }
-            
             image.style.cursor = (albumItem.url ? "pointer" : "auto");
-
             self.showImage();
-
         }; // end of onload function
 
         function onError () {
@@ -1049,6 +1088,7 @@ class LightboxSSA {
         }
 
         // Load the new image -- it will have opacity 0 at first
+        // (this fires the onLoad function above) 
         image.setAttribute("src", newImageURL);
         this.currentImageIndex = imageNumber;
 
@@ -1061,6 +1101,7 @@ class LightboxSSA {
         });
     }
 
+    /*
     // From https://gomakethings.com/how-to-get-all-of-an-elements-siblings-with-vanilla-js/
     getSiblings (elem, includeSelf = true) {
         // Setup siblings array and get the first sibling
@@ -1075,14 +1116,20 @@ class LightboxSSA {
         }
         return siblings;
     };
+    */
 
-    // Display the image and its details and begin preload neighbouring images.
+    // Display the image and its details and begin preloading neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.
     showImage () {  // (width, height) 
+        // Sort out pointers over siblings i.e. 
+        // NO! only sibling we need is the figcap
+        /*
         const siblings = this.getSiblings(this.currentImage);
         for (let i = 0; i < siblings.length; i++) {
             siblings[i].style['pointer-events'] = 'none';
         }
+        */
+        this.currentFigcap.style['pointer-events'] = 'none';
         //this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
         this.fadeTo(this.currentFigure, this.options.image_fade_duration, 0);
         this.fadeTo(this.otherFigure, this.options.image_fade_duration+10, 1, () => {    // function() {
@@ -1096,12 +1143,16 @@ class LightboxSSA {
             const tempC = this.otherFigcap;
             this.otherFigcap = this.currentFigcap;
             this.currentFigcap = tempC;
+            /*
             const siblings = this.getSiblings(this.currentImage);
             for (let i = 0; i < siblings.length; i++) {
                 siblings[i].style['pointer-events'] = 'auto';
-            }
+            }*/
+            this.currentFigcap.style['pointer-events'] = 'auto';
             //this.currentImage.style["touch-action"] = "auto";  ???
+            /* NO, don't preload -- don't know which of srcset we'll need -- TODO choose via aspect as for current image FIXME
             this.preloadNeighboringImages();
+            */
         });
     }
 
