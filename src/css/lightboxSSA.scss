@@ -26,6 +26,7 @@
 // Variables
 $imageBorder: 1vh;
 $imageRadius: ($imageBorder / 2);
+$zstart: 10;
 
 body.lb-disable-scrolling {
     overflow: hidden;
@@ -41,7 +42,7 @@ body.lb-disable-scrolling {
     top: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 10;
+    z-index: $zstart;
     background: gray;
     opacity: 0; // initially
     cursor: url(../images/closeCursorSSA.png) 13 14, pointer;
@@ -52,7 +53,7 @@ body.lb-disable-scrolling {
     top: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 11;
+    z-index: $zstart+1;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -60,24 +61,22 @@ body.lb-disable-scrolling {
     //touch-action: none;
     opacity: 1;
 }
-#lb-prev, #lb-image1-prev, #lb-image2-prev {
-    opacity: 1;
+#lb-prev { //, #lb-image1-prev, #lb-image2-prev {
+//?    opacity: 1;
+//    background: green; opacity: 0.3;
     height: 50%;
     width: 50%;
-    //z-index: 12;
+    z-index: $zstart+2;
     pointer-events: auto;
-    //touch-action: auto;
-    //background: url(../images/prev.png) left 20px center no-repeat;
     cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
 }
-#lb-next, #lb-image1-next, #lb-image2-next {
-    opacity: 1;
+#lb-next { // , #lb-image1-next, #lb-image2-next {
+//?    opacity: 1;
+//    background: green; opacity: 0.3;
     height: 50%;
     width: 50%;
-    //z-index: 12;
+    z-index: $zstart+2;
     pointer-events: auto;
-    //touch-action: auto;
-    //background: url(../images/next.png) right 20px center no-repeat;
     cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
 }
 
@@ -92,12 +91,24 @@ body.lb-disable-scrolling {
     align-items: center;
     pointer-events: none;
     //touch-action: none;
+    z-index: $zstart+3;
 }
-#lb-flex1 {
-    z-index: 13;
-}
-#lb-flex2 {
-    z-index: 14;
+
+figure.lb-figure {
+  display: block;
+  position: relative;
+  margin: 0;
+  z-index: $zstart+4;
+  figcaption {
+    position: absolute;
+    left: $imageBorder;
+    bottom: $imageBorder;
+    background-color: rgba(255, 255, 255, 0.6);
+    width: calc(100% - #{2 * $imageBorder});
+    max-height: calc(100% - #{2 * $imageBorder});
+    text-align: center;
+    z-index: $zstart+6;
+  }
 }
 
 #lb-figure1, #lb-figure2 {
@@ -105,24 +116,6 @@ body.lb-disable-scrolling {
     max-width: 90vw;     // These may get adjusted by JS
     max-height: 90vh;
     */
-}
-
-#lb-image1, #lb-image2 {
-    border: white $imageBorder solid;
-    border-radius: $imageRadius;
-    // no position: absolute;
-    max-width: 90vw;     // These may get adjusted by JS
-    max-height: 90vh;
-}
-#lb-image1 {
-    //z-index: 15;
-    pointer-events: none;
-    //touch-action: auto;
-}
-#lb-image2 {
-    //z-index: 16;
-    pointer-events: auto; /* initially */ // FIXME check which is used first -- is this needed?
-    //touch-action: none;
 }
 
 $onImageClickAreaHeight: 100%;
@@ -134,9 +127,8 @@ $onImageClickAreaHeight: 100%;
   left: 0;
   top: #{(100% - $onImageClickAreaHeight) / 2};
   cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
-  z-index: 17;
+  z-index: $zstart+7;
 }
-
 #lb-image1-next, #lb-image2-next {
   position: absolute;
   //border: 1px red solid;
@@ -145,19 +137,24 @@ $onImageClickAreaHeight: 100%;
   right: 0;
   top: #{(100% - $onImageClickAreaHeight) / 2};
   cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
-  z-index: 17;
+  z-index: $zstart+7;
 }
 
-figure.lb-figure {
-  display: block;
-  position: relative;
-  margin: 0;
-  figcaption {
-    position: absolute;
-    left: $imageBorder;
-    bottom: $imageBorder;
-    background-color: rgba(255, 255, 255, 0.6);
-    width: calc(100% - #{2 * $imageBorder});
-    text-align: center;
-  }
+#lb-image1, #lb-image2 {
+    border: white $imageBorder solid;
+    border-radius: $imageRadius;
+    // no position: absolute;
+    max-width: 90vw;     // These may get adjusted by JS
+    max-height: 90vh;
+    z-index: $zstart+5;
+}
+#lb-image1 {
+    pointer-events: none;
+}
+#lb-image2 {
+    pointer-events: auto; /* initially */ // FIXME check which is used first -- is this needed?
+}
+
+#lb-overlay *:hover {
+    border: solid 1px red;
 }
