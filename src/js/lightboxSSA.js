@@ -528,15 +528,17 @@ class LightboxSSA {
         });
     }
 
+    /*
     imageClickHandler (e) {
         e.preventDefault();
         e.stopPropagation();
         const lbelement = e.currentTarget;
         console.log("iCH: clicked on", lbelement);
         setTimeout(() => {  // Use timeout to return from event quickly
-            this.start(lbelement);
+            this.start(e, lbelement);
         }, 0);
     }
+    */
 
     handleKey (e) {
         const KEYCODE_ESC        = 27;
@@ -566,20 +568,52 @@ class LightboxSSA {
         }
     }
     
-    debounce(func, timeout = 300){
+    // From https://www.freecodecamp.org/news/javascript-debounce-example/
+    // const processChanges = debounce(() => saveInput());
+    debounce (func, timeout = 300){
         let timer;
         return (...args) => {
+            if (!timer) {
+                func.apply(this, args);
+            }
             clearTimeout(timer);
-            timer = setTimeout(() => { func.apply(this, args); }, timeout);
+            timer = setTimeout(() => {
+                timer = undefined;
+            }, timeout);
         };
     }
 
-    simpleTouch (e) {
+    simpleTouch (element, callback, ...args) {
+        // TEMP no bounce  element.addEventListener('touchstart', this.debounce((estart) => {
+        element.addEventListener('touchstart', (estart) => {
+            estart.preventDefault();
+            estart.stopPropagation();
+            const t0 = estart.touches[0];
+            const el = t0.target;
+            const startX = t0.screenX;
+            const startY = t0.screenY;
+            /*element*/
+            el.addEventListener('touchend', (eend) => {
+                const t0 = eend.changedTouches[0];
+                const endX = t0.screenX;
+                const endY = t0.screenY;
+                console.log("lb:sT:end eend=", eend);
+                if (endX == startX && endY == startY) {
+                    // good touch -- fire the callback
+                    if (typeof(callback) == 'function') {
+                        setTimeout(() => callback(...args));
+                    }
+                }
+            }, { once: true });
+        }); //);
+    }
+
+    simpleTouchOrig (event, callback) {
         // Run the callback if user makes a 'simple touch' on the element,
         // ignoring swipes.
         // This function is itself the touchstart handler...
-    //    e.preventDefault();
-      //  e.stopPropagation();
+        //    e.preventDefault();
+        //  e.stopPropagation();
         const t0 = e.touches[0];
         const el = t0.target;
         const startX = t0.screenX;
@@ -589,18 +623,17 @@ class LightboxSSA {
             const t0 = e2.changedTouches[0];
             const endX = t0.screenX;
             const endY = t0.screenY;
-            // FIXME use t0.movementX etc.
             if (endX == startX && endY == startY) {
                 setTimeout(() => {  // Use timeout to return from event quickly
-                    this.start(el);
+                    callback(el);
                 }, 0);
             } else {
                 console.log("simpleTouch moved:", startX, startY, endX, endY);
             }
         }, { once: true });
-        el.addEventListener('touchcancel', (e3) => {
-            console.log("touchcancel: e3 =", e3);
-        }, {once: true});
+        //el.addEventListener('touchcancel', (e3) => {
+        //    console.log("touchcancel: e3 =", e3);
+        //}, {once: true});
         //el.addEventListener('touchmove', (e2) => {
         //    console.log(e2);
         //});
@@ -616,6 +649,7 @@ class LightboxSSA {
         // (This requires that DOM is ready, but happens before the lightbox has been built)
         const matches = document.querySelectorAll("[data-lightbox]");
         matches.forEach(function(match) {
+            /*
             // FIXME lightbox gets started when user is trying to swipe down the page rather than click on the image -- need something better than just touchstart
             //match.addEventListener('touchstart', self.imageClickHandler.bind(self), true);
             match.addEventListener('click', (e) => {
@@ -624,9 +658,10 @@ class LightboxSSA {
             }, false);
             match.addEventListener('touchstart', (e) => {
                 console.log("lb: [d-l] touched with debounce 100");
-                self.debounce(self.simpleTouch/*.bind(self)*/, 100);
-            }, false);
-
+                self.debounce(self.simpleTouch.bind(self), 100);
+            }, false);  
+            */
+            self.clickOrTouch(match, self.start.bind(self), match);
         });
     }
 
@@ -638,7 +673,7 @@ class LightboxSSA {
     }
     */
 
-    prevImage () {
+    prevImage (e) {
         // TODO check wrap_around
         console.log("method prevImage: currentII=%d", this.currentImageIndex);
         if (this.currentImageIndex == 0) {
@@ -648,7 +683,7 @@ class LightboxSSA {
         }
     }
 
-    nextImage () {
+    nextImage (e) {
         console.log("method nextImage: currentII=%d", this.currentImageIndex);
         if (this.currentImageIndex === this.album.length - 1) {
             this.changeImage(0);
@@ -660,7 +695,8 @@ class LightboxSSA {
     // Honour a click on the current lightbox image (either 1 or 2).
     // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
     // If via swipe, e is null.
-    clickThroughImage () {
+    clickThroughImage (e) {
+        e.preventDefault();
         console.log("method cTI: currentII=%d", this.currentImageIndex);
         // this.currentImageIndex is evaluated at click time, so gives the correct URL.
         const targetUrl = this.album[this.currentImageIndex].url;
@@ -680,7 +716,17 @@ class LightboxSSA {
             //this.dismantle();
         }
     }
- 
+
+    // Attach click or debounced touch events to an element, with a callback.
+    // (If there's no callback, we still may prevent the click/touch from propagating.)
+    // Callback gets passed the event and any other arsgs.
+    clickOrTouch (element, callback, ...args) {
+        // TEMP no debounce element.addEventListener('click', this.debounce(() => callback(args)));
+        //console.log("lb:cOT, element=%o callback=%o", element, callback);
+        element.addEventListener('click', (e) => { callback(e, ...args); });
+        this.simpleTouch(element, callback, args);
+    }
+        
     // FIXME does this handle being attached to more than one element ?!"!?
     // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
     // Detect left/right swipe or simple touch on gallery pictures.
@@ -695,16 +741,16 @@ class LightboxSSA {
         const self = this;
         console.log("lb:swipeDetect surface=", touchsurface);
 
-        touchsurface.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            const touch = e.changedTouches[0];
+        touchsurface.addEventListener('touchstart', function(estart) {
+            estart.preventDefault();
+            const touch = estart.changedTouches[0];
             let swipedir = '';
             let startX = touch.pageX;
             let startY = touch.pageY;
             let startTime = new Date().getTime(); // record time when finger first makes contact with surface
-            touchsurface.addEventListener('touchend', function(e) {
-                e.preventDefault();
-                const touch = e.changedTouches[0];
+            touchsurface.addEventListener('touchend', function(eend) {
+                eend.preventDefault();
+                const touch = eend.changedTouches[0];
                 const distX = touch.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
                 const distY = touch.pageY - startY; // get vertical dist traveled by finger while in contact with surface
                 const endTime = new Date().getTime();
@@ -729,18 +775,18 @@ class LightboxSSA {
                 }
                 //callback(swipedir, e);
                 if (swipedir == 'r') {
-                    self.prevImage();
+                    self.prevImage(eend);
                 } else if (swipedir == 'l') {
-                    self.nextImage();
+                    self.nextImage(eend);
                 } else {    // no swipe, just simple touch
-                    self.clickThroughImage();
+                    self.clickThroughImage(eend);
                 }
-            }, false);
-        }, false);
+            });
+        });
 
-        touchsurface.addEventListener('touchmove', function(e) {
-            e.preventDefault(); // prevent scrolling when inside DIV   What?
-        }, false);
+        touchsurface.addEventListener('touchmove', function(emove) {
+            emove.preventDefault(); // prevent scrolling when inside DIV   What?
+        });
     }
 
     // Build html for the lightbox and the overlay.
@@ -811,6 +857,7 @@ class LightboxSSA {
         // Attach event handlers
         const self = this;
         // Close lightbox if clicked/touched other than on navigation areas:
+        /*
         this.overlay.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -823,10 +870,13 @@ class LightboxSSA {
             console.log("lb: overlay touched");
             this.debounce(this.dismantle.bind(this)(e))
         }, { once: true });
+        */
+        this.clickOrTouch(this.overlay, this.dismantle.bind(this));
 
         // Intercept key presses (looking for 'escape' or left/right arrows)
         document.addEventListener('keydown', this.handleKey.bind(this), false);
 
+        /*
         function prevImage (e) {
             if (e) {    // e is null if via swipe
                 e.preventDefault();
@@ -840,6 +890,9 @@ class LightboxSSA {
                 this.changeImage(this.currentImageIndex - 1);
             }
         }
+        */
+        this.clickOrTouch(this.prev, this.prevImage.bind(this));
+        /*
         this.prev.addEventListener('click', (e) => {
             console.log("lb: prev clicked");
             this.prevImage.bind(this)(e);
@@ -848,15 +901,20 @@ class LightboxSSA {
             console.log("lb: prev touched");
             this.prevImage.bind(this)(e);
         });
+        */
+        this.clickOrTouch(this.image1prev, this.prevImage.bind(this));
+        /*
         this.image1prev.addEventListener('click', (e) => {
             console.log("lb: image1prev clicked");
             this.prevImage.bind(this)(e);
         });
-        NO!!! don't use touchstart directly -- swipedetect ... or simpletouch -- would need to pass callback
         this.image1prev.addEventListener('touchstart', (e) => {
             console.log("lb: image1prev touched");
             this.prevImage.bind(this)(e);
         });
+        */
+        this.clickOrTouch(this.image2prev, this.prevImage.bind(this));
+        /*
         this.image2prev.addEventListener('click', (e) => {
             console.log("lb: image2prev clicked");
             this.prevImage.bind(this)(e);
@@ -865,7 +923,9 @@ class LightboxSSA {
             console.log("lb: image2prev touched");
             this.prevImage.bind(this)(e);
         });
+        */
 
+        /*
         function nextImage (e) {
             if (e) {    // e is null if via swipe
                 e.preventDefault();
@@ -878,6 +938,9 @@ class LightboxSSA {
                 this.changeImage(this.currentImageIndex + 1);
             }
         }
+        */
+        this.clickOrTouch(this.next, this.nextImage.bind(this));
+        /*
         this.next.addEventListener('click', (e) => {
             console.log("lb: next clicked");
             this.nextImage.bind(this)(e);
@@ -886,6 +949,9 @@ class LightboxSSA {
             console.log("lb: next touched");
             this.nextImage.bind(this)(e);
         });
+        */
+        this.clickOrTouch(this.image1next, this.nextImage.bind(this));
+        /*
         this.image1next.addEventListener('click', (e) => {
             console.log("lb: image1next clicked");
             this.nextImage.bind(this)(e);
@@ -894,6 +960,9 @@ class LightboxSSA {
             console.log("lb: image1next touched");
             this.nextImage.bind(this)(e);
         });
+        */
+        this.clickOrTouch(this.image2next, this.nextImage.bind(this));
+        /*
         this.image2next.addEventListener('click', (e) => {
             console.log("lb: image2next clicked");
             this.nextImage.bind(this)(e);
@@ -902,6 +971,7 @@ class LightboxSSA {
             console.log("lb: image2next touched");
             this.nextImage.bind(this)(e);
         });
+        */
 
         // from https://www.designcise.com/web/tutorial/how-to-check-if-a-string-url-refers-to-an-external-link-using-javascript
         function isExternalLink (url) {
@@ -910,6 +980,7 @@ class LightboxSSA {
             return tmp.host !== window.location.host;
         }
 
+        /*
         // Honour a click on the current lightbox image (either 1 or 2).
         // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
         // If via swipe, e is null.
@@ -923,13 +994,13 @@ class LightboxSSA {
             const targetUrl = this.album[this.currentImageIndex].url;
             if (targetUrl) {
                 // using window.open always seems to be blocked as a pop-up, so don't bother
-                /*
+                *
                 if (isExternalLink(targetUrl)) {
                     window.open(targetUrl, "_blank"); //, "noopener");
                 } else {
-                */
+                *
                     window.location = targetUrl;
-                /* } */
+                * } *
             } else if (this.albumLen == 1) {
                 // Nowhere to go, so close the lightbox
                 // FIXME or maybe don't -- try ignoring the click
@@ -937,8 +1008,12 @@ class LightboxSSA {
                 //this.dismantle();
             }
         }
+        */
 
         // Images get clicked/touched where not covered by navigation divs
+        // FIXME attach to figure instead of image?
+        this.clickOrTouch(this.figure1, this.clickThroughImage.bind(this));
+        /*
         this.image1.addEventListener('click', (e) => {
             console.log("lb: image1 clicked");
             clickThroughImage.bind(this)(e);
@@ -947,6 +1022,9 @@ class LightboxSSA {
             console.log("lb: image1 touched");
             clickThroughImage.bind(this)(e);
         });
+        */
+        this.clickOrTouch(this.figure2, this.clickThroughImage.bind(this));
+        /*
         this.image2.addEventListener('click', (e) => {
             console.log("lb: image2 clicked");
             clickThroughImage.bind(this)(e);
@@ -955,8 +1033,9 @@ class LightboxSSA {
             console.log("lb: image2 touched");
             clickThroughImage.bind(this)(e);
         });
+        */
 
-        // FIXME move this inline function into swipedetect?
+        // FIXME move this inline function into swipedetect?  DONE
         this.swipedetect(this.figure1); /*, function (swipedir, e) {
             // swipedir contains either "l", "r", or ""
             console.log("image1 detected swipe '%s'", swipedir);
@@ -1025,7 +1104,11 @@ class LightboxSSA {
 
     // User has clicked on an element with 'data-lightbox'.
     // Show lightbox. If the image is part of a set, add others in set to album array.
-    start (lbelement) {
+    start (e, lbelement) {
+        // Spread args not working?  -- make sure lbelement isn't an array:
+        if (Array.isArray(lbelement)) {
+            lbelement = lbelement[0];
+        }
         // lbelement is the thing clicked on -- typically a <figure> or <image>
         console.log("SSSSSSSSSSSSSSStart lbelement=", lbelement);
 
