@@ -56,6 +56,7 @@
 //  - simple touch image to go to url if any
 // 
 
+// (for figset): need to limit image to natural size AND max_width/height lbSSA config values -- so implement the latter as margin/padding instead of percentage, then we can do max-width=<size>px etc.
 // - which bits of pointer-event tweaking are needed?
 // -  fadeTo doesn't seem to work slowley if we set display:none at the end
 //    -- improving, but a lot of overlap between several transitions and timeouts, so results are inconsistent
@@ -811,9 +812,9 @@ class LightboxSSA {
     }; // end of build()
 
     // TEMP fadeTo that just does it now
-    fadeTo (element, duration, opacity, completeFn = null, display = "block") {
+    fadeTo (element, duration, opacity, completeFn = null) {
         if (opacity != 0) {
-            element.style.display = display;
+            element.style.display = ""; // revert to non-inline value
         }
         element.style.opacity = opacity;
         if (opacity == 0) {
@@ -824,8 +825,8 @@ class LightboxSSA {
         }
     }
 
-    fadeToProper (element, duration, opacity, completeFn = null, display = "block") {
-        //        console.log("lb:fadeTo element=%o  duration=%o  opacity=%o  fn=%o  display=%s", element, duration, opacity, completeFn, display);
+    fadeToProper (element, duration, opacity, completeFn = null) {
+        //        console.log("lb:fadeTo element=%o  duration=%o  opacity=%o  fn=%o", element, duration, opacity, completeFn);
         //        console.log("ft: setting transition property");
         element.style['transition-property'] = 'opacity';
         element.style['transition-duration'] = duration + 'ms';
@@ -833,7 +834,7 @@ class LightboxSSA {
         setTimeout(() => {
             // Make sure it's displayed if the target opacity is non-zero
             if (opacity != 0) {
-                element.style.display = display;
+                element.style.display = ""; // revert to non-inline value
             }
             element.addEventListener('transitionend', (e) => {
                 setTimeout(() => {
@@ -963,6 +964,7 @@ class LightboxSSA {
                 srcset = filterSrcset(srcset, "w");
                 srcset.sort((a, b) => a.w - b.w);
             }
+            /*
             // sizes -- from data-sizes or img
             let sizesString;
             sizesString = lbe.getAttribute('data-sizes');
@@ -971,6 +973,7 @@ class LightboxSSA {
                     sizesString = img.getAttribute('sizes');
                 }
             }
+            */
             //console.log("lbSSA: srcset = %o", srcset)
             // aspect ratio -- from data-aspect
             let aspect = lbe.getAttribute('data-aspect');
@@ -989,7 +992,7 @@ class LightboxSSA {
                 caption:      caption,
                 srcset:       srcset,
                 srcsetString: srcsetString,
-                sizesString:  sizesString,
+                //sizesString:  sizesString,
                 aspect:       aspect,
             });
         } // end of addToAlbum
@@ -1125,13 +1128,12 @@ class LightboxSSA {
 
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
-               image.setAttribute("src", newImageURL);
-        // OR...
-// BOTHER!  This is not good -- the browser seems to choose a small version, and then flex doesn't make it fill the screen.
-        //image.setAttribute("src", albumEntry.name);
-        //image.setAttribute("srcset", albumEntry.srcsetString);
+        //       image.setAttribute("src", newImageURL);
+        image.setAttribute("src", albumEntry.name);
+        image.setAttribute("srcset", albumEntry.srcsetString);
+        // NO! the sizes string is tailored for figset's size value e.g. size=small, so it's no use here!!
         //image.setAttribute("sizes", albumEntry.sizesString);
-
+        image.setAttribute("sizes", "" + this.options.max_width + "vw");
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
@@ -1172,7 +1174,7 @@ class LightboxSSA {
         // figcap never gets clicked  (allow clicks through to image beneath)  this.currentUnit.figcap.style['pointer-events'] = 'none';
         //this.currentUnit.image.style["touch-action"] = "none";    // FIXME touch action needed?
         // Maybe fade the whole flex, not just the figure.
-        this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0, null, "flex");
+        this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0, null);
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1, () => {    // function() {
             // Swap the images
             [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
@@ -1184,7 +1186,7 @@ class LightboxSSA {
             /* NO, don't preload -- don't know which of srcset we'll need -- TODO choose via aspect as for current image FIXME
             this.preloadNeighboringImages();
             */
-        }, "flex");
+        });
     }
 
     // Preload previous and next images in set.
