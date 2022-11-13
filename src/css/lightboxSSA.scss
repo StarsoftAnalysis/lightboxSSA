@@ -149,7 +149,7 @@ $onImageClickAreaHeight: 100%;
     z-index: $zstart+5;
 }
 #lb-image1 {
-    pointer-events: none;
+    pointer-events: auto;
 }
 #lb-image2 {
     pointer-events: auto; /* initially */ // FIXME check which is used first -- is this needed?
