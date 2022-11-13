@@ -963,6 +963,14 @@ class LightboxSSA {
                 srcset = filterSrcset(srcset, "w");
                 srcset.sort((a, b) => a.w - b.w);
             }
+            // sizes -- from data-sizes or img
+            let sizesString;
+            sizesString = lbe.getAttribute('data-sizes');
+            if (!sizesString) {
+                if (img) {
+                    sizesString = img.getAttribute('sizes');
+                }
+            }
             //console.log("lbSSA: srcset = %o", srcset)
             // aspect ratio -- from data-aspect
             let aspect = lbe.getAttribute('data-aspect');
@@ -974,13 +982,15 @@ class LightboxSSA {
             }
             //console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcset, aspect);
             self.album.push({
-                name:    imageURL,
-                url:     linkURL,
-                title:   title,
-                alt:     alt,
-                caption: caption,
-                srcset:  srcset,
-                aspect:  aspect,
+                name:         imageURL,
+                url:          linkURL,
+                title:        title,
+                alt:          alt,
+                caption:      caption,
+                srcset:       srcset,
+                srcsetString: srcsetString,
+                sizesString:  sizesString,
+                aspect:       aspect,
             });
         } // end of addToAlbum
 
@@ -1047,9 +1057,9 @@ class LightboxSSA {
         // Disable keyboard nav during transitions
         //??this.disableKeyboardNav();
 
-        function onLoad () {
-            // 'self' is the lightbox object
-            // 'image' is the DOM object (either lb-image1 or lb-image2)
+        function onLoad (e) {
+            const image = e.target;
+            console.log("onLoad: currentSrc ", image.currentSrc);
             if (albumEntry.alt) {
                 image.setAttribute('alt', albumEntry.alt);
             }
@@ -1115,7 +1125,13 @@ class LightboxSSA {
 
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
-        image.setAttribute("src", newImageURL);
+               image.setAttribute("src", newImageURL);
+        // OR...
+// BOTHER!  This is not good -- the browser seems to choose a small version, and then flex doesn't make it fill the screen.
+        //image.setAttribute("src", albumEntry.name);
+        //image.setAttribute("srcset", albumEntry.srcsetString);
+        //image.setAttribute("sizes", albumEntry.sizesString);
+
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
@@ -1172,6 +1188,7 @@ class LightboxSSA {
     }
 
     // Preload previous and next images in set.
+    // TODO (if we're doing this at all) -- set srcset and sizes as in changeImage()
     preloadNeighboringImages () {
         if (this.album.length > this.currentImageIndex + 1) {
             var preloadNext = new Image();
