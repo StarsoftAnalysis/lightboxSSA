@@ -49,12 +49,18 @@
 //  - simple touch only to start lightbox
 //  - touch outside image to close -- NOT on clickable areas
 //  - swipe l/r to change image (already done?)
+//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
+//        those areas ought to respnd to either...
+///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
+//  - make caption transparent to touches
 //  - simple touch image to go to url if any
+// 
 
+// - which bits of pointer-event tweaking are needed?
 // -  fadeTo doesn't seem to work slowley if we set display:none at the end
 //    -- improving, but a lot of overlap between several transitions and timeouts, so results are inconsistent
 
-// - put currentUnit.image, currentFigcap etc. into a structure so that there's only one pointer to swap
+// - trap back button to call dismantle
 // - demo/test site as part of this repo
 // - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
 // - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
@@ -568,7 +574,7 @@ class LightboxSSA {
                 if (endX == startX && endY == startY) {
                     // good touch -- fire the callback
                     if (typeof(callback) == 'function') {
-                        setTimeout(() => callback(...args));
+                        setTimeout(() => callback(eend, ...args));
                     }
                 }
             }, { once: true });
