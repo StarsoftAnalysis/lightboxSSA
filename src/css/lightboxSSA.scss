@@ -47,6 +47,9 @@ body.lb-disable-scrolling {
     opacity: 0; // initially
     cursor: url(../images/closeCursorSSA.png) 13 14, pointer;
 }
+
+// lb-nav and lb-prev/next sit behind the flex/figure/image, 
+// catching clicks/touches
 #lb-nav {
     position: fixed;
     left: 0;
@@ -84,7 +87,7 @@ body.lb-disable-scrolling {
     position: fixed;
     left: 0;
     top: 0;
-    width: 100vw;
+    width: 100vw;   // must fill the window for centering to work
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -99,6 +102,8 @@ figure.lb-figure {
   position: relative;
   margin: 0;
   z-index: $zstart+4;
+  //max-width: 90vw;     // These may get adjusted by JS   now done on the figure instead
+  //max-height: 90vh;
   figcaption {
     position: absolute;
     left: $imageBorder;
@@ -143,9 +148,12 @@ $onImageClickAreaHeight: 100%;
 #lb-image1, #lb-image2 {
     border: white $imageBorder solid;
     border-radius: $imageRadius;
+    // maybe, but will need to adjust figcap etc.   box-sizing: content-box; // size image correctly, then add border
     // no position: absolute;
-    max-width: 90vw;     // These may get adjusted by JS
+    max-width: 90vw;     // These may get adjusted by JS  
     max-height: 90vh;
+    width: 100%;
+    height: 100%;
     z-index: $zstart+5;
 }
 #lb-image1 {

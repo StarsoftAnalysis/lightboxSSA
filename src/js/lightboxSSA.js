@@ -52,6 +52,7 @@
 //     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
 //        those areas ought to respnd to either...
 ///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
+//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
 //  - make caption transparent to touches
 //  - simple touch image to go to url if any
 // 
@@ -126,6 +127,7 @@
  * (except for comments in parens).
  */
 
+/*
 function parseSrcset(input) {
 
     // UTILITY FUNCTIONS
@@ -214,10 +216,9 @@ function parseSrcset(input) {
         // 16. Return to the step labeled splitting loop.
     } // (Close of big while loop.)
 
-    /**
-     * Tokenizes descriptor properties prior to parsing
-     * Returns undefined.
-     */
+    
+    // Tokenizes descriptor properties prior to parsing
+    // Returns undefined.
     function tokenize() {
 
         // 8.1. Descriptor tokeniser: Skip whitespace
@@ -339,10 +340,8 @@ function parseSrcset(input) {
         } // (close while true loop)
     }
 
-    /**
-     * Adds descriptor properties to a candidate, pushes to the candidates array
-     * @return undefined
-     */
+    // Adds descriptor properties to a candidate, pushes to the candidates array
+    // @return undefined
     // Declared outside of the while loop so that it's only created once.
     function parseDescriptors() {
 
@@ -440,6 +439,7 @@ function filterSrcset (srcset, types) {
 }
 
 //+++++++++++++++++++++++++++++
+*/
 
 class LightboxSSA {
 
@@ -748,6 +748,7 @@ class LightboxSSA {
 
         // Swappable units
         this.unit1 = {
+            id:        1,
             flex:      document.getElementById('lb-flex1'),
             figure:    document.getElementById('lb-figure1'),
             imagePrev: document.getElementById('lb-image1-prev'),
@@ -756,6 +757,7 @@ class LightboxSSA {
             figcap:    document.getElementById('lb-figcap1'),
         };
         this.unit2 = {
+            id:        2,
             flex:      document.getElementById('lb-flex2'),
             figure:    document.getElementById('lb-figure2'),
             imagePrev: document.getElementById('lb-image2-prev'),
@@ -777,6 +779,12 @@ class LightboxSSA {
         this.unit2.image.style.maxWidth = "" + this.options.max_width + "vw";
         this.unit1.image.style.maxHeight = "" + this.options.max_height + "vh";
         this.unit2.image.style.maxHeight = "" + this.options.max_height + "vh";
+        // try this on the figure instead
+        // but these get overridden in the onLoad:
+        //this.unit1.figure.style.maxWidth = "" + this.options.max_width + "vw";
+        //this.unit2.figure.style.maxWidth = "" + this.options.max_width + "vw";
+        //this.unit1.figure.style.maxHeight = "" + this.options.max_height + "vh";
+        //this.unit2.figure.style.maxHeight = "" + this.options.max_height + "vh";
 
         // Attach event handlers
         const self = this;
@@ -958,12 +966,14 @@ class LightboxSSA {
                     srcsetString = img.getAttribute('srcset');
                 }
             }
+            /*
             if (srcsetString) {
                 // Parse the string, and filter to just leave the "w" entries
                 srcset = parseSrcset(srcsetString);
                 srcset = filterSrcset(srcset, "w");
                 srcset.sort((a, b) => a.w - b.w);
             }
+            */
             /*
             // sizes -- from data-sizes or img
             let sizesString;
@@ -990,7 +1000,7 @@ class LightboxSSA {
                 title:        title,
                 alt:          alt,
                 caption:      caption,
-                srcset:       srcset,
+                //srcset:       srcset,
                 srcsetString: srcsetString,
                 //sizesString:  sizesString,
                 aspect:       aspect,
@@ -1047,7 +1057,7 @@ class LightboxSSA {
         }
         const self = this;  // for use within functions -- NEEDED?
         // The DOM figure/image/figcap we're about to modify:
-        //?const figure = this.otherUnit.flex;
+        const figure = this.otherUnit.figure;
         const image = this.otherUnit.image;
         const figcap = this.otherUnit.figcap;
         // The album entry we're going to load:
@@ -1061,9 +1071,14 @@ class LightboxSSA {
         //??this.disableKeyboardNav();
 
         function onLoad (e) {
+            // Get the dimensions of the image that the srcset mechanism has chosen:
             const image = e.target;
-            console.log("onLoad: currentSrc ", image.currentSrc);
-            if (albumEntry.alt) {
+            console.log("onLoad: currentSrc=%s  width=%d", image.currentSrc, image.width);
+            //image.style.maxWidth = "" + image.width + "px";
+            //image.style.maxHeight = "" + image.height + "px";
+            figure.style.maxWidth = "" + image.width + "px";  // TODO add border width
+            figure.style.maxHeight = "" + image.height + "px";
+            if (albumEntry.alt) {  // TODO ? move these three out of onLoad
                 image.setAttribute('alt', albumEntry.alt);
             }
             if (albumEntry.title) {
@@ -1086,6 +1101,7 @@ class LightboxSSA {
         image.addEventListener('load', onLoad, { once: true });
         image.addEventListener('error', onError, { once: true });
 
+        /*
         // Decide which image from the srcset to use.
         // FIXME let browser do the work == just set srcset!!  and sizes and src
         // We're assuming that if srcset exists, we'll use it rather than src
@@ -1125,6 +1141,7 @@ class LightboxSSA {
                 // For now, we'll stick with the fallback src assigned above if none from srcset were chosen.
             }
         }
+        */
 
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
@@ -1165,6 +1182,7 @@ class LightboxSSA {
     // Display the image and its details and begin preloading neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.
     showImage () {  // (width, height) 
+        console.log("showImage swapping from %s to %s", this.currentUnit.id, this.otherUnit.id);
         // Sort out pointers over siblings i.e. 
         // NO! only sibling we need is the figcap
         // WRONG, spefically need the next/prev areas, not all siblings
