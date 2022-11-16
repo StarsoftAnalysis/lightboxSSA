@@ -38,6 +38,12 @@
 //  -- see enable() applying click to anything with a data-lightbox
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
+// ongoing issues
+// - every swipe makes it smaller!
+// - fadeToProper -- is that the problem
+// - need to debounce? -- ? with fade_duration 
+// - cSOT on image and imagePrev/Next instead of figure?
+
 // TRY THIS
 //   this.srcset = albumEntry.srcset
 //   and likewise for sizes and src
@@ -45,6 +51,7 @@
 //  and then get rid of srcset parser!!
 
 // TODO
+// - more pure functions -- ??move them outside the class -- need lbssa prefix if so
 // Touch screens:
 //  - simple touch only to start lightbox
 //  - touch outside image to close -- NOT on clickable areas
@@ -658,6 +665,70 @@ class LightboxSSA {
     // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
     // Detect left/right swipe or simple touch on gallery pictures.
     // Goes to previous, next, clickthrough or nowhere.
+    clickTouchOrSwipe (element, clickCallback, leftCallback, RightCallback) {
+        const self = this;
+        console.log("lb:cTOS surface=", element);
+
+        // Simple click
+        element.addEventListener('click', (e) => { clickCallback(e); });
+
+        // Touches -- simple or swipe left/right
+        element.addEventListener('touchstart', function(estart) {
+            estart.preventDefault();
+            const touch = estart.changedTouches[0];
+            let swipedir = '';
+            let startX = touch.pageX;
+            let startY = touch.pageY;
+            let startTime = new Date().getTime(); // record time when finger first makes contact with surface
+            element.addEventListener('touchend', function(eend) {
+                eend.preventDefault();
+                const touch = eend.changedTouches[0];
+                const distX = touch.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
+                const distY = touch.pageY - startY; // get vertical dist traveled by finger while in contact with surface
+                const endTime = new Date().getTime();
+                const elapsedTime = endTime - startTime;
+                console.log("cSTOS: %d,%d  %dms", distX, distY, elapsedTime);
+                if (distX == 0 && distY == 0) {
+                    console.log("lb:sD: zero distance -- t");
+                    swipedir = 't';
+                } else if (elapsedTime <= self.options.swipeallowedtime) {
+                    if (Math.abs(distX) >= self.options.swipethreshold && Math.abs(distY) <= self.options.swiperestraint) {
+                        swipedir = (distX < 0) ? 'l' : 'r';
+                    } else {
+                        // Very short swipe -- call it a touch  NO, ignore it
+                        console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
+                        swipedir = '';
+                    }
+                } else {
+                    // too slow -- ignore swipe completely 
+                    console.log("lb:sD: too slow  start=%d  end=%d  elapsed=%d", startTime, endTime, elapsedTime);
+                    swipedir = '';
+                }
+                switch (swipedir) {
+                    case 'r':
+                        rightCallback(eend);
+                        break;
+                    case 'l':
+                        leftCallback(eend);
+                        break;
+                    case 't':
+                        clickCallback(eend);
+                        break;
+                    default:
+                        // do nothing
+                }
+            });
+        });
+
+        element.addEventListener('touchmove', function(emove) {
+            emove.preventDefault(); // prevent scrolling when inside DIV   What?
+        });
+    }
+        
+    // FIXME does this handle being attached to more than one element ?!"!?
+    // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
+    // Detect left/right swipe or simple touch on gallery pictures.
+    // Goes to previous, next, clickthrough or nowhere.
     swipedetect (touchsurface /*, callback */) {
         const self = this;
         console.log("lb:swipeDetect surface=", touchsurface);
@@ -809,6 +880,7 @@ class LightboxSSA {
         }
 
         // Images get clicked/touched where not covered by navigation divs
+/*
         // FIXME attach to figure instead of image?
         this.clickOrTouch(this.unit1.figure, this.clickThroughImage.bind(this));
         this.clickOrTouch(this.unit2.figure, this.clickThroughImage.bind(this));
@@ -816,11 +888,14 @@ class LightboxSSA {
         // FIXME move this inline function into swipedetect?  DONE
         this.swipedetect(this.unit1.figure);
         this.swipedetect(this.unit2.figure);
+  */
+            this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
+            this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
 
     }; // end of build()
 
     // TEMP fadeTo that just does it now
-    fadeTo (element, duration, opacity, completeFn = null) {
+    fadeToZero (element, duration, opacity, completeFn = null) {
         if (opacity != 0) {
             element.style.display = ""; // revert to non-inline value
         }
@@ -833,11 +908,11 @@ class LightboxSSA {
         }
     }
 
-    fadeToProper (element, duration, opacity, completeFn = null) {
+    fadeTo (element, duration, opacity, completeFn = null) {
         //        console.log("lb:fadeTo element=%o  duration=%o  opacity=%o  fn=%o", element, duration, opacity, completeFn);
         //        console.log("ft: setting transition property");
         element.style['transition-property'] = 'opacity';
-        element.style['transition-duration'] = duration + 'ms';
+        element.style['transition-duration'] = this.options.fade_duration + 'ms';   // ?? duration + 'ms';
         // Do the fade after a short delay to let the CSS changes take effect:
         setTimeout(() => {
             // Make sure it's displayed if the target opacity is non-zero
@@ -845,7 +920,9 @@ class LightboxSSA {
                 element.style.display = ""; // revert to non-inline value
             }
             element.addEventListener('transitionend', (e) => {
+                console.log("fadeTo transition ended");
                 setTimeout(() => {
+                    console.log("fadeTo transition end timeout called");
                     // Undisplay it if faded to 0
                     if (opacity == 0) {
                         element.style.display = "none";
@@ -1192,12 +1269,18 @@ class LightboxSSA {
         // figcap never gets clicked  (allow clicks through to image beneath)  this.currentUnit.figcap.style['pointer-events'] = 'none';
         //this.currentUnit.image.style["touch-action"] = "none";    // FIXME touch action needed?
         // Maybe fade the whole flex, not just the figure.
-        this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0, null);
+        this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0, () => {
+            console.log("fade out current finished");
+        });
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1, () => {    // function() {
-            // Swap the images
-            [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
-            this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
-            this.currentUnit.imageNext.style['pointer-events'] = 'auto';
+            console.log("fade in other finished");
+            setTimeout(() => {
+                console.log("fade in other timeout called");
+                // Swap the images
+                [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
+                this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
+                this.currentUnit.imageNext.style['pointer-events'] = 'auto';
+            });
             //this.currentUnit.flex.style['pointer-events'] = 'auto';  // ?? needed
             //this.currentUnit.figcap.style['pointer-events'] = 'auto';
             //this.currentUnit.image.style["touch-action"] = "auto";  ???
