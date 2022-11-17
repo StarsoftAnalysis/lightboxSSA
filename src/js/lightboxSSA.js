@@ -51,6 +51,8 @@
 //  and then get rid of srcset parser!!
 
 // TODO
+// - touch on image goes through to overlay (wrong); click does it correctly
+        // simpleTouch gets called as well as CTOS
 // - more pure functions -- ??move them outside the class -- need lbssa prefix if so
 // Touch screens:
 //  - simple touch only to start lightbox
@@ -631,9 +633,9 @@ class LightboxSSA {
     clickThroughImage (e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log("method cTI: currentII=%d", this.currentImageIndex);
         // this.currentImageIndex is evaluated at click time, so gives the correct URL.
         const targetUrl = this.album[this.currentImageIndex].url;
+        console.log("method cTI: currentII=%d  targetUrl='%s'", this.currentImageIndex, targetUrl);
         if (targetUrl) {
             // using window.open always seems to be blocked as a pop-up, so don't bother
             /*
@@ -643,11 +645,13 @@ class LightboxSSA {
                 */
             window.location = targetUrl;
             /* } */
+        /*
         } else if (this.albumLen == 1) {
             // Nowhere to go, so close the lightbox
             // FIXME or maybe don't -- try ignoring the click
             console.log("lb:cTI: NOT dismantling when nowhere to go");
             //this.dismantle();
+        */
         }
     }
 
@@ -665,16 +669,21 @@ class LightboxSSA {
     // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
     // Detect left/right swipe or simple touch on gallery pictures.
     // Goes to previous, next, clickthrough or nowhere.
-    clickTouchOrSwipe (element, clickCallback, leftCallback, RightCallback) {
+    clickTouchOrSwipe (element, clickCallback, leftCallback, rightCallback) {
         const self = this;
         console.log("lb:cTOS surface=", element);
 
         // Simple click
-        element.addEventListener('click', (e) => { clickCallback(e); });
+        element.addEventListener('click', (eclick) => { 
+            eclick.preventDefault();
+            eclick.stopPropagation();
+            clickCallback(e); 
+        });
 
         // Touches -- simple or swipe left/right
         element.addEventListener('touchstart', function(estart) {
             estart.preventDefault();
+            estart.stopPropagation();
             const touch = estart.changedTouches[0];
             let swipedir = '';
             let startX = touch.pageX;
@@ -705,14 +714,20 @@ class LightboxSSA {
                     swipedir = '';
                 }
                 switch (swipedir) {
-                    case 'r':
-                        rightCallback(eend);
+                    case 't':
+                        if (typeof(clickCallback) == 'function') {
+                            clickCallback(eend);
+                        }
                         break;
                     case 'l':
-                        leftCallback(eend);
+                        if (typeof(leftCallback) == 'function') {
+                            leftCallback(eend);
+                        }
                         break;
-                    case 't':
-                        clickCallback(eend);
+                    case 'r':
+                        if (typeof(rightCallback) == 'function') {
+                            rightCallback(eend);
+                        }
                         break;
                     default:
                         // do nothing
@@ -889,6 +904,7 @@ class LightboxSSA {
         this.swipedetect(this.unit1.figure);
         this.swipedetect(this.unit2.figure);
   */
+        // FIXME : need to do this for image and figcap instead? -- does cTI work if element is not the image?
             this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
             this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
 
@@ -1153,7 +1169,7 @@ class LightboxSSA {
             console.log("onLoad: currentSrc=%s  width=%d", image.currentSrc, image.width);
             //image.style.maxWidth = "" + image.width + "px";
             //image.style.maxHeight = "" + image.height + "px";
-            figure.style.maxWidth = "" + image.width + "px";  // TODO add border width
+            figure.style.maxWidth = "" + image.width + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
             figure.style.maxHeight = "" + image.height + "px";
             if (albumEntry.alt) {  // TODO ? move these three out of onLoad
                 image.setAttribute('alt', albumEntry.alt);

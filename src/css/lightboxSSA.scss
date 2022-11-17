@@ -20,6 +20,8 @@
 
 // TODO
 // -- see https://freebiesupply.com/blog/css-arrows/ for fancy responsive < > arrows
+// -- see https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Positioning/Understanding_z_index/The_stacking_context
+//    re stacking contexts -- zstart can be anything here
 
 // ?? Use will-change: transform, opacity;  to make sure fadeTo works???
 
@@ -60,7 +62,7 @@ body.lb-disable-scrolling {
     display: flex;
     justify-content: center;
     align-items: center;
-    pointer-events: none;
+    pointer-events: auto;
     //touch-action: none;
     opacity: 1;
 }
@@ -112,7 +114,7 @@ figure.lb-figure {
     width: calc(100% - #{2 * $imageBorder});
     max-height: calc(100% - #{2 * $imageBorder});
     text-align: center;
-    z-index: $zstart+6;
+    z-index: 2; // relative to figure  $zstart+6;
   }
 }
 
@@ -132,6 +134,7 @@ $onImageClickAreaHeight: 100%;
   left: 0;
   top: #{(100% - $onImageClickAreaHeight) / 2};
   cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
+  pointer-events: auto;
   z-index: $zstart+7;
 }
 #lb-image1-next, #lb-image2-next {
@@ -142,7 +145,8 @@ $onImageClickAreaHeight: 100%;
   right: 0;
   top: #{(100% - $onImageClickAreaHeight) / 2};
   cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
-  z-index: $zstart+7;
+  pointer-events: auto;
+  z-index: 3; // relative to figure  $zstart+7;
 }
 
 #lb-image1, #lb-image2 {
@@ -154,7 +158,7 @@ $onImageClickAreaHeight: 100%;
     max-height: 90vh;
     width: 100%;
     height: 100%;
-    z-index: $zstart+5;
+    z-index: 1; // relative to figure  $zstart+5;
 }
 #lb-image1 {
     pointer-events: auto;
@@ -163,7 +167,16 @@ $onImageClickAreaHeight: 100%;
     pointer-events: auto; /* initially */ // FIXME check which is used first -- is this needed?
 }
 
-#lb-overlay *:hover {
-    // TEMP:
+// TEMP:
+#lb-overlay:hover {
     border: solid 1px red;
+}
+#lb-prev:hover, #lb-next:hover {
+    border: solid 1px green;
+}
+#lb-image1:hover, #lb-image2:hover {
+    border: solid 1px yellow;
+}
+#lb-image1-next:hover, #lb-image2-next:hover, #lb-image1-prev:hover, #lb-image2-prev:hover {
+    border: solid 1px blue;
 }
