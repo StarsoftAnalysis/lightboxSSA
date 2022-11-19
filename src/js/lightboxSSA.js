@@ -486,6 +486,7 @@ class LightboxSSA {
         };
         this.options = Object.assign({}, this.defaults);
         this.applyOptions(options);
+        this.transitionEnd = this.whichTransitionEvent();
 
         this.docReady(() => {
             this.enable();
@@ -903,10 +904,10 @@ class LightboxSSA {
         // FIXME move this inline function into swipedetect?  DONE
         this.swipedetect(this.unit1.figure);
         this.swipedetect(this.unit2.figure);
-  */
+        */
         // FIXME : need to do this for image and figcap instead? -- does cTI work if element is not the image?
-            this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
-            this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
+        this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
+        this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
 
     }; // end of build()
 
@@ -924,32 +925,55 @@ class LightboxSSA {
         }
     }
 
+    // See https://davidwalsh.name/css-animation-callback
+    whichTransitionEvent () {
+        const el = document.createElement('fakeelement');
+        const transitions = {
+            'transition'       :'transitionEnd',
+            'OTransition'      :'oTransitionEnd',
+            'MSTransition'     :'msTransitionEnd',
+            'MozTransition'    :'transitionend',
+            'WebkitTransition' :'webkitTransitionEnd'
+        }
+        for (const t in transitions) {
+            if (el.style[t] !== undefined) {
+                return transitions[t];
+            }
+        }
+    }
+
     fadeTo (element, duration, opacity, completeFn = null) {
-        //        console.log("lb:fadeTo element=%o  duration=%o  opacity=%o  fn=%o", element, duration, opacity, completeFn);
+        console.log("lb:fadeTo element=%o  duration=%o  opacity=%o  fn=%o", element, duration, opacity, completeFn);
         //        console.log("ft: setting transition property");
+        /* Try with these fixed in the CSS
         element.style['transition-property'] = 'opacity';
         element.style['transition-duration'] = this.options.fade_duration + 'ms';   // ?? duration + 'ms';
-        // Do the fade after a short delay to let the CSS changes take effect:
-        setTimeout(() => {
-            // Make sure it's displayed if the target opacity is non-zero
-            if (opacity != 0) {
-                element.style.display = ""; // revert to non-inline value
-            }
-            element.addEventListener('transitionend', (e) => {
+        */
+        if (this.transitionEnd) {
+            element.addEventListener(this.transitionEnd, (ete) => {
                 console.log("fadeTo transition ended");
-                setTimeout(() => {
-                    console.log("fadeTo transition end timeout called");
-                    // Undisplay it if faded to 0
-                    if (opacity == 0) {
-                        element.style.display = "none";
-                    }
-                    if (completeFn) {
-                        completeFn();
-                    }
-                });
+                //setTimeout(() => {
+                //    console.log("fadeTo transition end timeout called");
+                // Undisplay it if faded to 0
+                if (opacity == 0) {
+                    element.style.display = "none";
+                }
+                if (typeof completeFn == "function") {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            completeFn();
+                        });
+                    });
+                }
             }, { once: true });
-            element.style.opacity = opacity;
-        });
+        } else {
+            console.log("fadeTo -- no transition event -- what to do?")
+        }
+        element.style.opacity = opacity;
+        if (opacity != 0) {
+            // Make sure it's displayed if the target opacity is non-zero
+            element.style.display = ""; // revert to non-inline value
+        }
     }
 
     // User has clicked on an element with 'data-lightbox'.
@@ -1169,8 +1193,10 @@ class LightboxSSA {
             console.log("onLoad: currentSrc=%s  width=%d", image.currentSrc, image.width);
             //image.style.maxWidth = "" + image.width + "px";
             //image.style.maxHeight = "" + image.height + "px";
-            figure.style.maxWidth = "" + image.width + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
-            figure.style.maxHeight = "" + image.height + "px";
+            // ?? TODO naturalWidth/Height (instead of width/height) stop the getting smaller but,
+            // even though they don't seem to be the original size of the file.
+            figure.style.maxWidth = "" + image.naturalWidth + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
+            figure.style.maxHeight = "" + image.naturalHeight + "px";
             if (albumEntry.alt) {  // TODO ? move these three out of onLoad
                 image.setAttribute('alt', albumEntry.alt);
             }
@@ -1286,16 +1312,19 @@ class LightboxSSA {
         //this.currentUnit.image.style["touch-action"] = "none";    // FIXME touch action needed?
         // Maybe fade the whole flex, not just the figure.
         this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0, () => {
+            //requestAnimationFrame(() =>{console.log("fade out current finished");});
             console.log("fade out current finished");
         });
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1, () => {    // function() {
-            console.log("fade in other finished");
-            setTimeout(() => {
-                console.log("fade in other timeout called");
-                // Swap the images
-                [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
-                this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
-                this.currentUnit.imageNext.style['pointer-events'] = 'auto';
+            //console.log("fade in other finished");
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    console.log("fade in other timeout called");
+                    // Swap the images
+                    [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
+                    this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
+                    this.currentUnit.imageNext.style['pointer-events'] = 'auto';
+                });
             });
             //this.currentUnit.flex.style['pointer-events'] = 'auto';  // ?? needed
             //this.currentUnit.figcap.style['pointer-events'] = 'auto';

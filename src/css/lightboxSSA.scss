@@ -29,6 +29,15 @@
 $imageBorder: 1vh;
 $imageRadius: ($imageBorder / 2);
 $zstart: 10;
+$fadeDuration: 2000ms;
+@mixin setTransition {
+  -webkit-transition: $fadeDuration;
+  -moz-transition: $fadeDuration;
+  -ms-transition: $fadeDuration;
+  -o-transition: $fadeDuration;
+  transition: $fadeDuration;
+  transition-property: opacity;
+}
 
 body.lb-disable-scrolling {
     overflow: hidden;
@@ -47,6 +56,7 @@ body.lb-disable-scrolling {
     z-index: $zstart;
     background: gray;
     opacity: 0; // initially
+    @include setTransition;
     cursor: url(../images/closeCursorSSA.png) 13 14, pointer;
 }
 
@@ -97,6 +107,7 @@ body.lb-disable-scrolling {
     pointer-events: none;
     //touch-action: none;
     z-index: $zstart+3;
+    @include setTransition;
 }
 
 figure.lb-figure {
