@@ -806,7 +806,7 @@ class LightboxSSA {
             console.log("lb:changeImage: album is empty");
             return;
         }
-        const self = this;  // for use within functions -- NEEDED?
+        const self = this;
         // The DOM figure/image/figcap we're about to modify:
         const figure = this.otherUnit.figure;
         const image = this.otherUnit.image;
@@ -823,24 +823,28 @@ class LightboxSSA {
 
         function onLoad (e) {
             // Get the dimensions of the image that the srcset mechanism has chosen:
-            const image = e.target;
-            console.log("onLoad: currentSrc=%s  width=%d", image.currentSrc, image.width);
-            //image.style.maxWidth = "" + image.width + "px";
-            //image.style.maxHeight = "" + image.height + "px";
+            const targetImage = e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
+            console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
+            //targetImage.style.maxWidth = "" + targetImage.width + "px";
+            //targetImage.style.maxHeight = "" + targetImage.height + "px";
             // ?? TODO naturalWidth/Height (instead of width/height) stop the getting smaller but,
             // even though they don't seem to be the original size of the file.
-            figure.style.maxWidth = "" + image.naturalWidth + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
-            figure.style.maxHeight = "" + image.naturalHeight + "px";
+            //?figure.style.maxWidth = "" + targetImage.naturalWidth + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
+            //?figure.style.maxHeight = "" + targetImage.naturalHeight + "px";
+            //targetImage.style.maxWidth = "" + targetImage.naturalWidth + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
+            //targetImage.style.maxHeight = "" + targetImage.naturalHeight + "px";
+            //targetImage.style.maxWidth = "" + targetImage.width + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
+            //targetImage.style.maxHeight = "" + targetImage.width + "px";
             if (albumEntry.alt) {  // TODO ? move these three out of onLoad
-                image.setAttribute('alt', albumEntry.alt);
+                targetImage.setAttribute('alt', albumEntry.alt);
             }
             if (albumEntry.title) {
-                image.setAttribute('title', albumEntry.title);
+                targetImage.setAttribute('title', albumEntry.title);
             }
             if (albumEntry.caption) {
                 figcap.innerHTML = albumEntry.caption;
             }
-            image.style.cursor = (albumEntry.url ? "pointer" : "auto");
+            targetImage.style.cursor = (albumEntry.url ? "pointer" : "auto");
             self.showImage();
         }; // end of onload function
 
@@ -899,11 +903,25 @@ class LightboxSSA {
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
         //       image.setAttribute("src", newImageURL);
-        image.setAttribute("src", albumEntry.name);
-        image.setAttribute("srcset", albumEntry.srcsetString);
+        //image.setAttribute("src", albumEntry.name);
+        image.src = albumEntry.name;
+        //image.setAttribute("srcset", albumEntry.srcsetString);
+        image.srcset =  albumEntry.srcsetString;
         // NO! the sizes string is tailored for figset's size value e.g. size=small, so it's no use here!!
         //image.setAttribute("sizes", albumEntry.sizesString);
-        image.setAttribute("sizes", "" + this.options.max_width + "vw");
+        //image.setAttribute("sizes", "" + this.options.max_width + "vw");
+        image.sizes = "" + this.options.max_width + "vw";
+
+        image.decode()
+            .then(() => {
+                //document.body.appendChild(img);
+                console.log(">>> decode complete, image=", image);
+            })
+            .catch((encodingError) => {
+                // Do something with the error.
+                console.log(">>> decode error", encodingError);
+            })
+
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
@@ -941,7 +959,7 @@ class LightboxSSA {
         // TODO? don't bother to fade if already at the target opacity
         this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0.0, (e) => {
             //requestAnimationFrame(() =>{console.log("fade out current finished");});
-            console.log("fade out current finished  e=", e);
+            //console.log("fade out current finished  e=", e);
         });
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1.0, (e) => {    // function() {
             //console.log("fade in other finished  e=", e);
