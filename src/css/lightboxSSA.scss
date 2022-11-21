@@ -35,8 +35,10 @@ $fadeDuration: 2000ms;
   -moz-transition: $fadeDuration;
   -ms-transition: $fadeDuration;
   -o-transition: $fadeDuration;
-  transition: $fadeDuration;
-  transition-property: opacity;
+  //transition: $fadeDuration;
+  transition: opacity $fadeDuration ease-in-out;
+  //transition-property: opacity;
+  animation-fill-mode: forwards;  // ??? see https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
 }
 
 body.lb-disable-scrolling {

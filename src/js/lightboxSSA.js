@@ -678,7 +678,7 @@ class LightboxSSA {
         element.addEventListener('click', (eclick) => { 
             eclick.preventDefault();
             eclick.stopPropagation();
-            clickCallback(e); 
+            clickCallback(eclick); 
         });
 
         // Touches -- simple or swipe left/right
@@ -943,36 +943,40 @@ class LightboxSSA {
     }
 
     fadeTo (element, duration, opacity, completeFn = null) {
-        console.log("lb:fadeTo element=%o  duration=%o  opacity=%o  fn=%o", element, duration, opacity, completeFn);
+        console.log("lb:fadeTo element=%s  duration=%o  opacity=%o  fn=%o", element.id, duration, opacity, completeFn);
         //        console.log("ft: setting transition property");
         /* Try with these fixed in the CSS
         element.style['transition-property'] = 'opacity';
         element.style['transition-duration'] = this.options.fade_duration + 'ms';   // ?? duration + 'ms';
         */
-        if (this.transitionEnd) {
-            element.addEventListener(this.transitionEnd, (ete) => {
-                console.log("fadeTo transition ended");
+        element.addEventListener("transitionrun", (e) => { console.log("trun: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
+        element.addEventListener("transitioncancel", (e) => { console.log("tcancel: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
+        //element.addEventListener("transitionend", (e) => { console.log("tend: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
+        //if (this.transitionEnd) {
+            //element.addEventListener(this.transitionEnd, (ete) => {
+            element.addEventListener("transitionend", (ete) => {
+                console.log("fadeTo transition ended, ete=", ete);
                 //setTimeout(() => {
                 //    console.log("fadeTo transition end timeout called");
                 // Undisplay it if faded to 0
                 if (opacity == 0) {
-                    element.style.display = "none";
+                    //element.style.display = "none";    TEMP out whilel debugging transitions
                 }
                 if (typeof completeFn == "function") {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
-                            completeFn();
+                            completeFn(ete);
                         });
                     });
                 }
             }, { once: true });
-        } else {
-            console.log("fadeTo -- no transition event -- what to do?")
-        }
+        //} else {
+        //    console.log("fadeTo -- no transition event -- what to do?")
+        //}
         element.style.opacity = opacity;
         if (opacity != 0) {
             // Make sure it's displayed if the target opacity is non-zero
-            element.style.display = ""; // revert to non-inline value
+         //   element.style.display = ""; // revert to non-inline value    TEMP out wilel debugging transitions
         }
     }
 
@@ -1311,12 +1315,13 @@ class LightboxSSA {
         // figcap never gets clicked  (allow clicks through to image beneath)  this.currentUnit.figcap.style['pointer-events'] = 'none';
         //this.currentUnit.image.style["touch-action"] = "none";    // FIXME touch action needed?
         // Maybe fade the whole flex, not just the figure.
-        this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0, () => {
+        // TODO? don't bother to fade if already at the target opacity
+        this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0.0, (e) => {
             //requestAnimationFrame(() =>{console.log("fade out current finished");});
-            console.log("fade out current finished");
+            console.log("fade out current finished  e=", e);
         });
-        this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1, () => {    // function() {
-            //console.log("fade in other finished");
+        this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1.0, (e) => {    // function() {
+            console.log("fade in other finished  e=", e);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     console.log("fade in other timeout called");
