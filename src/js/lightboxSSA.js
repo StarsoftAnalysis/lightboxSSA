@@ -462,7 +462,7 @@ class LightboxSSA {
             //album_label: 'Image %1 of %2',
             //show_image_number_label: false,    // TODO not reimplemented
             //always_show_nav_on_touch_devices: false,
-            fade_duration: 2000, //600,
+            fade_duration: 600,
             overlay_opacity: 1.0,   
             //max_size: 50000,
             max_width: 90,  // %
@@ -486,7 +486,7 @@ class LightboxSSA {
         };
         this.options = Object.assign({}, this.defaults);
         this.applyOptions(options);
-        this.transitionEnd = this.whichTransitionEvent();
+        //this.transitionEnd = this.whichTransitionEvent();
 
         this.docReady(() => {
             this.enable();
@@ -925,6 +925,7 @@ class LightboxSSA {
         }
     }
 
+    /*
     // See https://davidwalsh.name/css-animation-callback
     whichTransitionEvent () {
         const el = document.createElement('fakeelement');
@@ -941,6 +942,7 @@ class LightboxSSA {
             }
         }
     }
+    */
 
     fadeTo (element, duration, opacity, completeFn = null) {
         console.log("lb:fadeTo element=%s  duration=%o  opacity=%o  fn=%o", element.id, duration, opacity, completeFn);
@@ -949,13 +951,15 @@ class LightboxSSA {
         element.style['transition-property'] = 'opacity';
         element.style['transition-duration'] = this.options.fade_duration + 'ms';   // ?? duration + 'ms';
         */
+
+        /*
         element.addEventListener("transitionrun", (e) => { console.log("trun: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
         element.addEventListener("transitioncancel", (e) => { console.log("tcancel: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
         //element.addEventListener("transitionend", (e) => { console.log("tend: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
         //if (this.transitionEnd) {
             //element.addEventListener(this.transitionEnd, (ete) => {
             element.addEventListener("transitionend", (ete) => {
-                console.log("fadeTo transition ended, ete=", ete);
+                console.log("fadeTo transition ended, ete=");
                 //setTimeout(() => {
                 //    console.log("fadeTo transition end timeout called");
                 // Undisplay it if faded to 0
@@ -973,11 +977,37 @@ class LightboxSSA {
         //} else {
         //    console.log("fadeTo -- no transition event -- what to do?")
         //}
-        element.style.opacity = opacity;
+        */
+
+        // Still can't get transitionend stuff to work reliably, so we'll just do timeout stuff
+
+
+        element.style['transition-property'] = 'opacity';
+        element.style['transition-duration'] = this.options.fade_duration + 'ms';   // ?? duration + 'ms';
         if (opacity != 0) {
             // Make sure it's displayed if the target opacity is non-zero
-         //   element.style.display = ""; // revert to non-inline value    TEMP out wilel debugging transitions
+            element.style.display = ""; // revert to non-inline value    TEMP out wilel debugging transitions
         }
+        // Start the opacity transition after CSS changes
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                element.style.opacity = opacity;
+            });
+        });
+        setTimeout(() => {
+            console.log("fadeTo timed out to fade_duration");
+            if (opacity == 0) {
+                element.style.display = "none";
+            }
+            if (typeof completeFn == "function") {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        completeFn();
+                    });
+                });
+            }
+
+        }, this.options.fade_duration);
     }
 
     // User has clicked on an element with 'data-lightbox'.

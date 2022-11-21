@@ -29,16 +29,15 @@
 $imageBorder: 1vh;
 $imageRadius: ($imageBorder / 2);
 $zstart: 10;
-$fadeDuration: 2000ms;
+$fadeDuration: 2000ms;  // Default value -- gets changed in JS
 @mixin setTransition {
-  -webkit-transition: $fadeDuration;
-  -moz-transition: $fadeDuration;
-  -ms-transition: $fadeDuration;
-  -o-transition: $fadeDuration;
-  //transition: $fadeDuration;
-  transition: opacity $fadeDuration ease-in-out;
+  -webkit-transition: opacity $fadeDuration ease-in-out;
+  -moz-transition:    opacity $fadeDuration ease-in-out;
+  -ms-transition:     opacity $fadeDuration ease-in-out;
+  -o-transition:      opacity $fadeDuration ease-in-out;
+  transition:         opacity $fadeDuration ease-in-out;
   //transition-property: opacity;
-  animation-fill-mode: forwards;  // ??? see https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
+  //animation-fill-mode: forwards;  // ??? see https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
 }
 
 body.lb-disable-scrolling {
