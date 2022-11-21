@@ -1,6 +1,6 @@
 // LightboxSSA 
 
-// version 2.52 29/10/2022
+// version 2.53 21/11/2022
 
 // Copyright 2020-2022 Chris Dennis
 
@@ -117,338 +117,6 @@
 // - single-image lightbox -- need no < > arrows
 // - ditto -- need bigger image, otherwise there's not much point.
 // - check getSiblings and pointer stuff
-
-//+++++++++++++++++++++++++++++
-// from https://github.com/albell/parse-srcset/blob/master/src/parse-srcset.js
-/**
- * Srcset Parser
- *
- * By Alex Bell |  MIT License
- *
- * JS Parser for the string value that appears in markup <img srcset="here">
- *
- * @returns Array [{url: _, d: _, w: _, h:_}, ...]    what about x?
- *
- * Based super duper closely on the reference algorithm at:
- * https://html.spec.whatwg.org/multipage/embedded-content.html#parse-a-srcset-attribute
- *
- * Most comments are copied in directly from the spec
- * (except for comments in parens).
- */
-
-/*
-function parseSrcset(input) {
-
-    // UTILITY FUNCTIONS
-
-    // Manual is faster than RegEx
-    // http://bjorn.tipling.com/state-and-regular-expressions-in-javascript
-    // http://jsperf.com/whitespace-character/5
-    function isSpace(c) {
-        return (c === "\u0020" || // space
-            c === "\u0009" || // horizontal tab
-            c === "\u000A" || // new line
-            c === "\u000C" || // form feed
-            c === "\u000D");  // carriage return
-    }
-
-    function collectCharacters(regEx) {
-        var chars,
-            match = regEx.exec(input.substring(pos));
-        if (match) {
-            chars = match[ 0 ];
-            pos += chars.length;
-            return chars;
-        }
-    }
-
-    var inputLength = input.length,
-
-        // (Don't use \s, to avoid matching non-breaking space)
-        regexLeadingSpaces = /^[ \t\n\r\u000c]+/,
-        regexLeadingCommasOrSpaces = /^[, \t\n\r\u000c]+/,
-        regexLeadingNotSpaces = /^[^ \t\n\r\u000c]+/,
-        regexTrailingCommas = /[,]+$/,
-        regexNonNegativeInteger = /^\d+$/,
-
-        // ( Positive or negative or unsigned integers or decimals, without or without exponents.
-        // Must include at least one digit.
-        // According to spec tests any decimal point must be followed by a digit.
-        // No leading plus sign is allowed.)
-        // https://html.spec.whatwg.org/multipage/infrastructure.html#valid-floating-point-number
-        regexFloatingPoint = /^-?(?:[0-9]+|[0-9]*\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/,
-
-        url,
-        descriptors,
-        currentDescriptor,
-        state,
-        c,
-
-        // 2. Let position be a pointer into input, initially pointing at the start
-        //    of the string.
-        pos = 0,
-
-        // 3. Let candidates be an initially empty source set.
-        candidates = [];
-
-    // 4. Splitting loop: Collect a sequence of characters that are space
-    //    characters or U+002C COMMA characters. If any U+002C COMMA characters
-    //    were collected, that is a parse error.
-    while (true) {
-        collectCharacters(regexLeadingCommasOrSpaces);
-
-        // 5. If position is past the end of input, return candidates and abort these steps.
-        if (pos >= inputLength) {
-            return candidates; // (we're done, this is the sole return path)
-        }
-
-        // 6. Collect a sequence of characters that are not space characters,
-        //    and let that be url.
-        url = collectCharacters(regexLeadingNotSpaces);
-
-        // 7. Let descriptors be a new empty list.
-        descriptors = [];
-
-        // 8. If url ends with a U+002C COMMA character (,), follow these substeps:
-        //		(1). Remove all trailing U+002C COMMA characters from url. If this removed
-        //         more than one character, that is a parse error.
-        if (url.slice(-1) === ",") {
-            url = url.replace(regexTrailingCommas, "");
-            // (Jump ahead to step 9 to skip tokenization and just push the candidate).
-            parseDescriptors();
-
-            //	Otherwise, follow these substeps:
-        } else {
-            tokenize();
-        } // (close else of step 8)
-
-        // 16. Return to the step labeled splitting loop.
-    } // (Close of big while loop.)
-
-    
-    // Tokenizes descriptor properties prior to parsing
-    // Returns undefined.
-    function tokenize() {
-
-        // 8.1. Descriptor tokeniser: Skip whitespace
-        collectCharacters(regexLeadingSpaces);
-
-        // 8.2. Let current descriptor be the empty string.
-        currentDescriptor = "";
-
-        // 8.3. Let state be in descriptor.
-        state = "in descriptor";
-
-        while (true) {
-
-            // 8.4. Let c be the character at position.
-            c = input.charAt(pos);
-
-            //  Do the following depending on the value of state.
-            //  For the purpose of this step, "EOF" is a special character representing
-            //  that position is past the end of input.
-
-            // In descriptor
-            if (state === "in descriptor") {
-                // Do the following, depending on the value of c:
-
-                // Space character
-                // If current descriptor is not empty, append current descriptor to
-                // descriptors and let current descriptor be the empty string.
-                // Set state to after descriptor.
-                if (isSpace(c)) {
-                    if (currentDescriptor) {
-                        descriptors.push(currentDescriptor);
-                        currentDescriptor = "";
-                        state = "after descriptor";
-                    }
-
-                    // U+002C COMMA (,)
-                    // Advance position to the next character in input. If current descriptor
-                    // is not empty, append current descriptor to descriptors. Jump to the step
-                    // labeled descriptor parser.
-                } else if (c === ",") {
-                    pos += 1;
-                    if (currentDescriptor) {
-                        descriptors.push(currentDescriptor);
-                    }
-                    parseDescriptors();
-                    return;
-
-                    // U+0028 LEFT PARENTHESIS (()
-                    // Append c to current descriptor. Set state to in parens.
-                } else if (c === "\u0028") {
-                    currentDescriptor = currentDescriptor + c;
-                    state = "in parens";
-
-                    // EOF
-                    // If current descriptor is not empty, append current descriptor to
-                    // descriptors. Jump to the step labeled descriptor parser.
-                } else if (c === "") {
-                    if (currentDescriptor) {
-                        descriptors.push(currentDescriptor);
-                    }
-                    parseDescriptors();
-                    return;
-
-                    // Anything else
-                    // Append c to current descriptor.
-                } else {
-                    currentDescriptor = currentDescriptor + c;
-                }
-                // (end "in descriptor"
-
-                // In parens
-            } else if (state === "in parens") {
-
-                // U+0029 RIGHT PARENTHESIS ())
-                // Append c to current descriptor. Set state to in descriptor.
-                if (c === ")") {
-                    currentDescriptor = currentDescriptor + c;
-                    state = "in descriptor";
-
-                    // EOF
-                    // Append current descriptor to descriptors. Jump to the step labeled
-                    // descriptor parser.
-                } else if (c === "") {
-                    descriptors.push(currentDescriptor);
-                    parseDescriptors();
-                    return;
-
-                    // Anything else
-                    // Append c to current descriptor.
-                } else {
-                    currentDescriptor = currentDescriptor + c;
-                }
-
-                // After descriptor
-            } else if (state === "after descriptor") {
-
-                // Do the following, depending on the value of c:
-                // Space character: Stay in this state.
-                if (isSpace(c)) {
-
-                    // EOF: Jump to the step labeled descriptor parser.
-                } else if (c === "") {
-                    parseDescriptors();
-                    return;
-
-                    // Anything else
-                    // Set state to in descriptor. Set position to the previous character in input.
-                } else {
-                    state = "in descriptor";
-                    pos -= 1;
-
-                }
-            }
-
-            // Advance position to the next character in input.
-            pos += 1;
-
-            // Repeat this step.
-        } // (close while true loop)
-    }
-
-    // Adds descriptor properties to a candidate, pushes to the candidates array
-    // @return undefined
-    // Declared outside of the while loop so that it's only created once.
-    function parseDescriptors() {
-
-        // 9. Descriptor parser: Let error be no.
-        var pError = false,
-
-            // 10. Let width be absent.
-            // 11. Let density be absent.
-            // 12. Let future-compat-h be absent. (We're implementing it now as h)
-            w, d, h, i,
-            candidate = {},
-            desc, lastChar, value, intVal, floatVal;
-
-        // 13. For each descriptor in descriptors, run the appropriate set of steps
-        // from the following list:
-        for (i = 0 ; i < descriptors.length; i++) {
-            desc = descriptors[ i ];
-
-            lastChar = desc[ desc.length - 1 ];
-            value = desc.substring(0, desc.length - 1);
-            intVal = parseInt(value, 10);
-            floatVal = parseFloat(value);
-
-            // If the descriptor consists of a valid non-negative integer followed by
-            // a U+0077 LATIN SMALL LETTER W character
-            if (regexNonNegativeInteger.test(value) && (lastChar === "w")) {
-
-                // If width and density are not both absent, then let error be yes.
-                if (w || d) {pError = true;}
-
-                // Apply the rules for parsing non-negative integers to the descriptor.
-                // If the result is zero, let error be yes.
-                // Otherwise, let width be the result.
-                if (intVal === 0) {pError = true;} else {w = intVal;}
-
-                // If the descriptor consists of a valid floating-point number followed by
-                // a U+0078 LATIN SMALL LETTER X character
-            } else if (regexFloatingPoint.test(value) && (lastChar === "x")) {
-
-                // If width, density and future-compat-h are not all absent, then let error
-                // be yes.
-                if (w || d || h) {pError = true;}
-
-                // Apply the rules for parsing floating-point number values to the descriptor.
-                // If the result is less than zero, let error be yes. Otherwise, let density
-                // be the result.
-                if (floatVal < 0) {pError = true;} else {d = floatVal;}
-
-                // If the descriptor consists of a valid non-negative integer followed by
-                // a U+0068 LATIN SMALL LETTER H character
-            } else if (regexNonNegativeInteger.test(value) && (lastChar === "h")) {
-
-                // If height and density are not both absent, then let error be yes.
-                if (h || d) {pError = true;}
-
-                // Apply the rules for parsing non-negative integers to the descriptor.
-                // If the result is zero, let error be yes. Otherwise, let future-compat-h
-                // be the result.
-                if (intVal === 0) {pError = true;} else {h = intVal;}
-
-                // Anything else, Let error be yes.
-            } else {pError = true;}
-        } // (close step 13 for loop)
-
-        // 15. If error is still no, then append a new image source to candidates whose
-        // URL is url, associated with a width width if not absent and a pixel
-        // density density if not absent. Otherwise, there is a parse error.
-        if (!pError) {
-            candidate.url = url;
-            if (w) { candidate.w = w;}
-            if (d) { candidate.d = d;}
-            if (h) { candidate.h = h;}
-            candidates.push(candidate);
-        } else if (console && console.log) {
-            console.log("Invalid srcset descriptor found in '" +
-                input + "' at '" + desc + "'.");
-        }
-    } // (close parseDescriptors fn)
-
-}
-
-// New function added by CD 26/10/2022
-function filterSrcset (srcset, types) {
-    // types is e.g. "wd" -- get rid of items that don't match
-    const newSrcset = srcset.filter(src => {
-        let matched = false;
-        for (let type of types) {
-            if (src.hasOwnProperty(type)) {
-                matched = true;
-            }
-        }
-        return matched; 
-    });
-    return newSrcset;
-}
-
-//+++++++++++++++++++++++++++++
-*/
 
 class LightboxSSA {
 
@@ -807,7 +475,7 @@ class LightboxSSA {
             document.body.style.overflow = 'hidden';
         }
 
-        // FIX are -overlay and -nav both needed? -- overlay traps clicks
+        // FIXME are -overlay and -nav both needed? -- overlay traps clicks
         const html = `
             <div id=lb-overlay class=lb-element>
             <div id=lb-nav class="lb-element lb-navclass">
@@ -866,12 +534,6 @@ class LightboxSSA {
         this.unit2.image.style.maxWidth = "" + this.options.max_width + "vw";
         this.unit1.image.style.maxHeight = "" + this.options.max_height + "vh";
         this.unit2.image.style.maxHeight = "" + this.options.max_height + "vh";
-        // try this on the figure instead
-        // but these get overridden in the onLoad:
-        //this.unit1.figure.style.maxWidth = "" + this.options.max_width + "vw";
-        //this.unit2.figure.style.maxWidth = "" + this.options.max_width + "vw";
-        //this.unit1.figure.style.maxHeight = "" + this.options.max_height + "vh";
-        //this.unit2.figure.style.maxHeight = "" + this.options.max_height + "vh";
 
         // Attach event handlers
         const self = this;
@@ -896,22 +558,13 @@ class LightboxSSA {
         }
 
         // Images get clicked/touched where not covered by navigation divs
-/*
-        // FIXME attach to figure instead of image?
-        this.clickOrTouch(this.unit1.figure, this.clickThroughImage.bind(this));
-        this.clickOrTouch(this.unit2.figure, this.clickThroughImage.bind(this));
-
-        // FIXME move this inline function into swipedetect?  DONE
-        this.swipedetect(this.unit1.figure);
-        this.swipedetect(this.unit2.figure);
-        */
-        // FIXME : need to do this for image and figcap instead? -- does cTI work if element is not the image?
         this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
         this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
 
     }; // end of build()
 
     // TEMP fadeTo that just does it now
+    /*
     fadeToZero (element, duration, opacity, completeFn = null) {
         if (opacity != 0) {
             element.style.display = ""; // revert to non-inline value
@@ -924,69 +577,16 @@ class LightboxSSA {
             completeFn();
         }
     }
-
-    /*
-    // See https://davidwalsh.name/css-animation-callback
-    whichTransitionEvent () {
-        const el = document.createElement('fakeelement');
-        const transitions = {
-            'transition'       :'transitionEnd',
-            'OTransition'      :'oTransitionEnd',
-            'MSTransition'     :'msTransitionEnd',
-            'MozTransition'    :'transitionend',
-            'WebkitTransition' :'webkitTransitionEnd'
-        }
-        for (const t in transitions) {
-            if (el.style[t] !== undefined) {
-                return transitions[t];
-            }
-        }
-    }
     */
 
     fadeTo (element, duration, opacity, completeFn = null) {
-        console.log("lb:fadeTo element=%s  duration=%o  opacity=%o  fn=%o", element.id, duration, opacity, completeFn);
-        //        console.log("ft: setting transition property");
-        /* Try with these fixed in the CSS
-        element.style['transition-property'] = 'opacity';
-        element.style['transition-duration'] = this.options.fade_duration + 'ms';   // ?? duration + 'ms';
-        */
-
-        /*
-        element.addEventListener("transitionrun", (e) => { console.log("trun: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
-        element.addEventListener("transitioncancel", (e) => { console.log("tcancel: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
-        //element.addEventListener("transitionend", (e) => { console.log("tend: id=%s property=%s e=", e.target.id, e.propertyName, e); }, { once: true });
-        //if (this.transitionEnd) {
-            //element.addEventListener(this.transitionEnd, (ete) => {
-            element.addEventListener("transitionend", (ete) => {
-                console.log("fadeTo transition ended, ete=");
-                //setTimeout(() => {
-                //    console.log("fadeTo transition end timeout called");
-                // Undisplay it if faded to 0
-                if (opacity == 0) {
-                    //element.style.display = "none";    TEMP out whilel debugging transitions
-                }
-                if (typeof completeFn == "function") {
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            completeFn(ete);
-                        });
-                    });
-                }
-            }, { once: true });
-        //} else {
-        //    console.log("fadeTo -- no transition event -- what to do?")
-        //}
-        */
-
+        //console.log("lb:fadeTo element=%s  duration=%o  opacity=%o  fn=%o", element.id, duration, opacity, completeFn);
         // Still can't get transitionend stuff to work reliably, so we'll just do timeout stuff
-
-
         element.style['transition-property'] = 'opacity';
-        element.style['transition-duration'] = this.options.fade_duration + 'ms';   // ?? duration + 'ms';
+        element.style['transition-duration'] = this.options.fade_duration + 'ms';
         if (opacity != 0) {
             // Make sure it's displayed if the target opacity is non-zero
-            element.style.display = ""; // revert to non-inline value    TEMP out wilel debugging transitions
+            element.style.display = ""; // revert to non-inline value
         }
         // Start the opacity transition after CSS changes
         requestAnimationFrame(() => {
@@ -995,7 +595,7 @@ class LightboxSSA {
             });
         });
         setTimeout(() => {
-            console.log("fadeTo timed out to fade_duration");
+            //console.log("fadeTo timed out to fade_duration");
             if (opacity == 0) {
                 element.style.display = "none";
             }
@@ -1335,38 +935,25 @@ class LightboxSSA {
     // Display the image and its details and begin preloading neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.
     showImage () {  // (width, height) 
-        console.log("showImage swapping from %s to %s", this.currentUnit.id, this.otherUnit.id);
-        // Sort out pointers over siblings i.e. 
-        // NO! only sibling we need is the figcap
-        // WRONG, spefically need the next/prev areas, not all siblings
+        //console.log("showImage swapping from %s to %s", this.currentUnit.id, this.otherUnit.id);
         this.currentUnit.imagePrev.style['pointer-events'] = 'none';
         this.currentUnit.imageNext.style['pointer-events'] = 'none';
-        //this.currentUnit.flex.style['pointer-events'] = 'none';
-        // figcap never gets clicked  (allow clicks through to image beneath)  this.currentUnit.figcap.style['pointer-events'] = 'none';
-        //this.currentUnit.image.style["touch-action"] = "none";    // FIXME touch action needed?
-        // Maybe fade the whole flex, not just the figure.
         // TODO? don't bother to fade if already at the target opacity
         this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0.0, (e) => {
             //requestAnimationFrame(() =>{console.log("fade out current finished");});
             console.log("fade out current finished  e=", e);
         });
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1.0, (e) => {    // function() {
-            console.log("fade in other finished  e=", e);
+            //console.log("fade in other finished  e=", e);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    console.log("fade in other timeout called");
+                    //console.log("fade in other timeout called");
                     // Swap the images
                     [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
                     this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
                     this.currentUnit.imageNext.style['pointer-events'] = 'auto';
                 });
             });
-            //this.currentUnit.flex.style['pointer-events'] = 'auto';  // ?? needed
-            //this.currentUnit.figcap.style['pointer-events'] = 'auto';
-            //this.currentUnit.image.style["touch-action"] = "auto";  ???
-            /* NO, don't preload -- don't know which of srcset we'll need -- TODO choose via aspect as for current image FIXME
-            this.preloadNeighboringImages();
-            */
         });
     }
 
