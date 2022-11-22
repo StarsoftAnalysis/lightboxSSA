@@ -530,11 +530,12 @@ class LightboxSSA {
         this.lbnavelements = document.getElementsByClassName('lb-navclass');
 
         // Override CSS depending on options
+        /* in onload stuff
         this.unit1.image.style.maxWidth = "" + this.options.max_width + "vw";
         this.unit2.image.style.maxWidth = "" + this.options.max_width + "vw";
         this.unit1.image.style.maxHeight = "" + this.options.max_height + "vh";
         this.unit2.image.style.maxHeight = "" + this.options.max_height + "vh";
-
+        */ 
         // Attach event handlers
         const self = this;
         // Close lightbox if clicked/touched other than on navigation areas:
@@ -821,10 +822,25 @@ class LightboxSSA {
         // Disable keyboard nav during transitions
         //??this.disableKeyboardNav();
 
+        // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
+
         function onLoad (e) {
             // Get the dimensions of the image that the srcset mechanism has chosen:
-            const targetImage = e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
+            const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
             console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
+
+            // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
+            if (targetImage.srcset) {
+                let pixelWidth = targetImage.naturalWidth;  // use this if src (rather than srcset) image was used.
+                const wpos = targetImage.currentSrc.indexOf("?w=");
+                if (wpos > -1) {
+                    pixelWidth = parseInt(targetImage.currentSrc.substr(wpos+3));
+                }
+                if (!isNaN(pixelWidth)) {
+                    targetImage.style.maxWidth = `${pixelWidth}px`;
+                }
+            }
+
             //targetImage.style.maxWidth = "" + targetImage.width + "px";
             //targetImage.style.maxHeight = "" + targetImage.height + "px";
             // ?? TODO naturalWidth/Height (instead of width/height) stop the getting smaller but,
@@ -835,6 +851,31 @@ class LightboxSSA {
             //targetImage.style.maxHeight = "" + targetImage.naturalHeight + "px";
             //targetImage.style.maxWidth = "" + targetImage.width + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
             //targetImage.style.maxHeight = "" + targetImage.width + "px";
+            // load currentSrc off-screen
+            /*
+    const offScreenImg = new Image();
+        offScreenImg.addEventListener('load', (eosi) => {
+    console.log("oSI loaded:", offScreenImg.src, offScreenImg.naturalWidth, offScreenImg.naturalHeight);
+    targetImage.style.maxWidth = offScreenImg.naturalWidth;
+    targetImage.style.maxHeight = offScreenImg.naturalHeight;
+            console.log(targetImage.style);
+        }, { once: true });
+    */
+
+            /*
+    offScreenImg.decode()
+            .then(() => {
+                //document.body.appendChild(img);
+    console.log("oSI decoded:", offScreenImg.src, offScreenImg.naturalWidth, offScreenImg.naturalHeight);
+    targetImage.style.maxWidth = offScreenImg.naturalWidth;
+    targetImage.style.maxHeight = offScreenImg.naturalHeight;
+            })
+            .catch((encodingError) => {
+                // Do something with the error.
+                console.log(">>> decode error", encodingError);
+            })
+    offScreenImg.src = targetImage.currentSrc;
+*/
             if (albumEntry.alt) {  // TODO ? move these three out of onLoad
                 targetImage.setAttribute('alt', albumEntry.alt);
             }
