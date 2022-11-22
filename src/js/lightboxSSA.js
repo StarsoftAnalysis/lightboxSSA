@@ -1,6 +1,6 @@
 // LightboxSSA 
 
-// version 2.53 21/11/2022
+// version 2.54 22/11/2022
 
 // Copyright 2020-2022 Chris Dennis
 
@@ -39,20 +39,10 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // ongoing issues
-// - every swipe makes it smaller!
-// - fadeToProper -- is that the problem
 // - need to debounce? -- ? with fade_duration 
 // - cSOT on image and imagePrev/Next instead of figure?
 
-// TRY THIS
-//   this.srcset = albumEntry.srcset
-//   and likewise for sizes and src
-//  then in on-load: console.log(this.currentSrc) to see if it worked
-//  and then get rid of srcset parser!!
-
 // TODO
-// - touch on image goes through to overlay (wrong); click does it correctly
-        // simpleTouch gets called as well as CTOS
 // - more pure functions -- ??move them outside the class -- need lbssa prefix if so
 // Touch screens:
 //  - simple touch only to start lightbox
@@ -64,12 +54,6 @@
 //  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
 //  - make caption transparent to touches
 //  - simple touch image to go to url if any
-// 
-
-// (for figset): need to limit image to natural size AND max_width/height lbSSA config values -- so implement the latter as margin/padding instead of percentage, then we can do max-width=<size>px etc.
-// - which bits of pointer-event tweaking are needed?
-// -  fadeTo doesn't seem to work slowley if we set display:none at the end
-//    -- improving, but a lot of overlap between several transitions and timeouts, so results are inconsistent
 
 // - trap back button to call dismantle
 // - demo/test site as part of this repo
@@ -718,25 +702,6 @@ class LightboxSSA {
                     srcsetString = img.getAttribute('srcset');
                 }
             }
-            /*
-            if (srcsetString) {
-                // Parse the string, and filter to just leave the "w" entries
-                srcset = parseSrcset(srcsetString);
-                srcset = filterSrcset(srcset, "w");
-                srcset.sort((a, b) => a.w - b.w);
-            }
-            */
-            /*
-            // sizes -- from data-sizes or img
-            let sizesString;
-            sizesString = lbe.getAttribute('data-sizes');
-            if (!sizesString) {
-                if (img) {
-                    sizesString = img.getAttribute('sizes');
-                }
-            }
-            */
-            //console.log("lbSSA: srcset = %o", srcset)
             // aspect ratio -- from data-aspect
             let aspect = lbe.getAttribute('data-aspect');
             if (aspect) {
@@ -745,16 +710,14 @@ class LightboxSSA {
             if (!aspect || isNaN(aspect)) {
                 aspect = 1.0; // arbitrary default
             }
-            //console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcset, aspect);
+            //console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcsetString, aspect);
             self.album.push({
                 name:         imageURL,
                 url:          linkURL,
                 title:        title,
                 alt:          alt,
                 caption:      caption,
-                //srcset:       srcset,
                 srcsetString: srcsetString,
-                //sizesString:  sizesString,
                 aspect:       aspect,
             });
         } // end of addToAlbum
@@ -819,17 +782,13 @@ class LightboxSSA {
             return;
         }
 
-        // Disable keyboard nav during transitions
-        //??this.disableKeyboardNav();
-
-        // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
-
         function onLoad (e) {
             // Get the dimensions of the image that the srcset mechanism has chosen:
             const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
             console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
 
             // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
+            // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
             if (targetImage.srcset) {
                 let pixelWidth = targetImage.naturalWidth;  // use this if src (rather than srcset) image was used.
                 const wpos = targetImage.currentSrc.indexOf("?w=");
@@ -841,41 +800,6 @@ class LightboxSSA {
                 }
             }
 
-            //targetImage.style.maxWidth = "" + targetImage.width + "px";
-            //targetImage.style.maxHeight = "" + targetImage.height + "px";
-            // ?? TODO naturalWidth/Height (instead of width/height) stop the getting smaller but,
-            // even though they don't seem to be the original size of the file.
-            //?figure.style.maxWidth = "" + targetImage.naturalWidth + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
-            //?figure.style.maxHeight = "" + targetImage.naturalHeight + "px";
-            //targetImage.style.maxWidth = "" + targetImage.naturalWidth + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
-            //targetImage.style.maxHeight = "" + targetImage.naturalHeight + "px";
-            //targetImage.style.maxWidth = "" + targetImage.width + "px";  // TODO add border width    FIXME keeps getting smaller (sometimes)
-            //targetImage.style.maxHeight = "" + targetImage.width + "px";
-            // load currentSrc off-screen
-            /*
-    const offScreenImg = new Image();
-        offScreenImg.addEventListener('load', (eosi) => {
-    console.log("oSI loaded:", offScreenImg.src, offScreenImg.naturalWidth, offScreenImg.naturalHeight);
-    targetImage.style.maxWidth = offScreenImg.naturalWidth;
-    targetImage.style.maxHeight = offScreenImg.naturalHeight;
-            console.log(targetImage.style);
-        }, { once: true });
-    */
-
-            /*
-    offScreenImg.decode()
-            .then(() => {
-                //document.body.appendChild(img);
-    console.log("oSI decoded:", offScreenImg.src, offScreenImg.naturalWidth, offScreenImg.naturalHeight);
-    targetImage.style.maxWidth = offScreenImg.naturalWidth;
-    targetImage.style.maxHeight = offScreenImg.naturalHeight;
-            })
-            .catch((encodingError) => {
-                // Do something with the error.
-                console.log(">>> decode error", encodingError);
-            })
-    offScreenImg.src = targetImage.currentSrc;
-*/
             if (albumEntry.alt) {  // TODO ? move these three out of onLoad
                 targetImage.setAttribute('alt', albumEntry.alt);
             }
@@ -898,48 +822,6 @@ class LightboxSSA {
 
         image.addEventListener('load', onLoad, { once: true });
         image.addEventListener('error', onError, { once: true });
-
-        /*
-        // Decide which image from the srcset to use.
-        // FIXME let browser do the work == just set srcset!!  and sizes and src
-        // We're assuming that if srcset exists, we'll use it rather than src
-        let newImageURL = albumEntry.name; // fallback value from src
-        const srcset = albumEntry.srcset;
-        if (srcset) {
-            if (srcset.length == 1) {
-                // Hobson's choice
-                newImageURL = srcset[0].url;
-            } else {
-                // Need to get current window dimensions
-                const winWidth = window.innerWidth;
-                const winHeight = window.innerHeight;
-                // then use aspect to work out the limiting direction
-                const winAspect = winWidth / winHeight;
-                const imageAspect = this.album[imageNumber].aspect;
-                let usableWidth;
-                if (imageAspect > winAspect) {
-                    // image is more landscape -- we're limited by width
-                    // and need a bit of space for < > arrows (sadly).
-                    usableWidth = winWidth * (self.options.max_width / 100);
-                } else {
-                    // image is more portraint -- we're limited by height
-                    usableWidth = winHeight * (self.options.max_height / 100) * imageAspect;
-                }
-                // Loop through srcset -- it's already in ascending order by width
-                // We're choosing the smallest that at least as big to avoid enlarging,
-                // but maybe a nearly-big enough image would be better than going for a much bigger one.
-                for (const src of srcset) {
-                    if (src.w >= usableWidth) {
-                        newImageURL = src.url;
-                        break;
-                    }
-                }
-                // If we didn't choose any from srcset, they're all too small.
-                // Is the src image better?  Would it be easier if src were in srcset?
-                // For now, we'll stick with the fallback src assigned above if none from srcset were chosen.
-            }
-        }
-        */
 
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
@@ -973,23 +855,6 @@ class LightboxSSA {
             console.log("overlay fadeIn complete");
         });
     }
-
-    /*
-    // From https://gomakethings.com/how-to-get-all-of-an-elements-siblings-with-vanilla-js/
-    getSiblings (elem, includeSelf = true) {
-        // Setup siblings array and get the first sibling
-        const siblings = [];
-        let sibling = elem.parentNode.firstChild;
-        // Loop through each sibling and push to the array
-        while (sibling) {
-            if (sibling.nodeType === 1 && (includeSelf || (sibling !== elem))) {
-                siblings.push(sibling);
-            }
-            sibling = sibling.nextSibling
-        }
-        return siblings;
-    };
-    */
 
     // Display the image and its details and begin preloading neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.

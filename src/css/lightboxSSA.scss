@@ -29,7 +29,7 @@
 $imageBorder: 1vh;
 $imageRadius: ($imageBorder / 2);
 $zstart: 10;
-$fadeDuration: 2000ms;  // Default value -- gets changed in JS
+$fadeDuration: 600ms;  // Default value -- gets changed in JS
 @mixin setTransition {
   -webkit-transition: opacity $fadeDuration ease-in-out;
   -moz-transition:    opacity $fadeDuration ease-in-out;
@@ -130,13 +130,6 @@ figure.lb-figure {
   }
 }
 
-#lb-figure1, #lb-figure2 {
-    /*
-    max-width: 90vw;     // These may get adjusted by JS
-    max-height: 90vh;
-    */
-}
-
 $onImageClickAreaHeight: 100%;
 #lb-image1-prev, #lb-image2-prev {
   position: absolute;
@@ -179,6 +172,7 @@ $onImageClickAreaHeight: 100%;
     pointer-events: auto; /* initially */ // FIXME check which is used first -- is this needed?
 }
 
+/*
 // TEMP:
 #lb-overlay:hover {
     border: solid 1px red;
@@ -192,3 +186,4 @@ $onImageClickAreaHeight: 100%;
 #lb-image1-next:hover, #lb-image2-next:hover, #lb-image1-prev:hover, #lb-image2-prev:hover {
     border: solid 1px blue;
 }
+*/
