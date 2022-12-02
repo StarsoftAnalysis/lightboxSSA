@@ -799,17 +799,6 @@ class LightboxSSA {
                     targetImage.style.maxWidth = `${pixelWidth}px`;
                 }
             }
-
-            if (albumEntry.alt) {  // TODO ? move these three out of onLoad
-                targetImage.setAttribute('alt', albumEntry.alt);
-            }
-            if (albumEntry.title) {
-                targetImage.setAttribute('title', albumEntry.title);
-            }
-            if (albumEntry.caption) {
-                figcap.innerHTML = albumEntry.caption;
-            }
-            targetImage.style.cursor = (albumEntry.url ? "pointer" : "auto");
             self.showImage();
         }; // end of onload function
 
@@ -825,25 +814,13 @@ class LightboxSSA {
 
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
-        //       image.setAttribute("src", newImageURL);
-        //image.setAttribute("src", albumEntry.name);
         image.src = albumEntry.name;
-        //image.setAttribute("srcset", albumEntry.srcsetString);
         image.srcset =  albumEntry.srcsetString;
-        // NO! the sizes string is tailored for figset's size value e.g. size=small, so it's no use here!!
-        //image.setAttribute("sizes", albumEntry.sizesString);
-        //image.setAttribute("sizes", "" + this.options.max_width + "vw");
         image.sizes = "" + this.options.max_width + "vw";
-
-        image.decode()
-            .then(() => {
-                //document.body.appendChild(img);
-                console.log(">>> decode complete, image=", image);
-            })
-            .catch((encodingError) => {
-                // Do something with the error.
-                console.log(">>> decode error", encodingError);
-            })
+        image.alt = albumEntry.alt || "";
+        image.title = albumEntry.title || "";
+        image.style.cursor = (albumEntry.url ? "pointer" : "auto");
+        figcap.innerHTML = albumEntry.caption || "";
 
         this.currentImageIndex = imageNumber;
 
