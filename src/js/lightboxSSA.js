@@ -105,7 +105,7 @@
 class LightboxSSA {
 
     constructor (options) {
-        console.log("CCCCCCCCCCCCCCCCConstructor options=", options);
+        //console.log("CCCCCCCCCCCCCCCCConstructor options=", options);
         this.album = [];
         this.currentImageIndex = 0;
         // NOTE: these have to be lowercase or snake_case because of the way they can be
@@ -131,12 +131,7 @@ class LightboxSSA {
             sanitize_title: false,
             //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
             placeholder_image: '/images/imageNotFoundSSA.png',
-            swipethreshold: window.innerWidth * 0.1,    //100,  // required min distance traveled to be considered swipe
-            swiperestraint: window.innerWidth * 0.01,   // 70,   // maximum distance allowed at the same time in perpendicular direction
-            swipemin: 0.1,
-            swipemax: 0.05,
-            // FIXME do we need a maximum time? (if so, make it smaller) (if not get rid of some code)
-            swipeallowedtime: 40000, // maximum time allowed to travel that distance
+            swipemin: 0.1,  // minimum swipe distance (as fraction screen size) 
         };
         this.options = Object.assign({}, this.defaults);
         this.applyOptions(options);
@@ -192,15 +187,15 @@ class LightboxSSA {
         switch (e.keyCode) {
             case KEYCODE_ESC:
                 e.stopPropagation();
-                console.log("escape pressed", e.keyCode, e.code);
+                //console.log("escape pressed", e.keyCode, e.code);
                 this.dismantle();
                 break;
             case KEYCODE_LEFTARROW:
-                console.log("<- pressed", e.keyCode, e.code);
+                //console.log("<- pressed", e.keyCode, e.code);
                 this.prevImage(e);
                 break;
             case KEYCODE_RIGHTARROW:
-                console.log("-> pressed", e.keyCode, e.code);
+                //console.log("-> pressed", e.keyCode, e.code);
                 this.nextImage(e);
                 break;
         }
@@ -221,6 +216,7 @@ class LightboxSSA {
         };
     }
 
+    /*
     simpleTouch (element, callback, ...args) {
         // TEMP no bounce  element.addEventListener('touchstart', this.debounce((estart) => {
         return;  // Oh! FIXME it works better on my screen without all this  9Sep23
@@ -231,7 +227,6 @@ class LightboxSSA {
             const el = t0.target;
             const startX = t0.screenX;
             const startY = t0.screenY;
-            /*element*/
             el.addEventListener('touchend', (eend) => {
                 const t0 = eend.changedTouches[0];
                 const endX = t0.screenX;
@@ -247,6 +242,7 @@ class LightboxSSA {
             }, { once: true });
         }); //);
     }
+    */
 
     // enable() is called via init() when page (i.e. JS) is loaded
     enable () {
@@ -265,7 +261,7 @@ class LightboxSSA {
         e.preventDefault();
         e.stopPropagation();
         // TODO check wrap_around   and do nothing if album length is 1 (or is that already handled elsewhere?)
-        console.log("method prevImage: currentII=%d", this.currentImageIndex);
+        //console.log("method prevImage: currentII=%d", this.currentImageIndex);
         if (this.currentImageIndex == 0) {
             this.changeImage(this.album.length - 1);
         } else {
@@ -276,7 +272,7 @@ class LightboxSSA {
     nextImage (e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log("method nextImage: currentII=%d", this.currentImageIndex);
+        //console.log("method nextImage: currentII=%d", this.currentImageIndex);
         if (this.currentImageIndex === this.album.length - 1) {
             this.changeImage(0);
         } else {
@@ -292,7 +288,7 @@ class LightboxSSA {
         e.stopPropagation();
         // this.currentImageIndex is evaluated at click time, so gives the correct URL.
         const targetUrl = this.album[this.currentImageIndex].url;
-        console.log("method cTI: currentII=%d  targetUrl='%s'", this.currentImageIndex, targetUrl);
+        //console.log("method cTI: currentII=%d  targetUrl='%s'", this.currentImageIndex, targetUrl);
         if (targetUrl) {
             // using window.open always seems to be blocked as a pop-up, so don't bother
             /*
@@ -319,7 +315,7 @@ class LightboxSSA {
         // TEMP no debounce element.addEventListener('click', this.debounce(() => callback(args)));
         //console.log("lb:cOT, element=%o callback=%o", element, callback);
         element.addEventListener('click', (e) => { callback(e, ...args); });
-        this.simpleTouch(element, callback, args);
+        // NOT NEEDED!  this.simpleTouch(element, callback, args);
     }
         
     // FIXME does this handle being attached to more than one element ?!"!?
@@ -328,7 +324,7 @@ class LightboxSSA {
     // Goes to previous, next, clickthrough or nowhere.
     clickTouchOrSwipe (element, clickCallback, leftCallback, rightCallback) {
         const self = this;
-        console.log("lb:cTOS surface=", element);
+        //console.log("lb:cTOS surface=", element);
 
         // Simple click
         element.addEventListener('click', (eclick) => { 
@@ -353,27 +349,18 @@ class LightboxSSA {
                 const distY = touch.pageY - startY; // get vertical dist traveled by finger while in contact with surface
                 const endTime = new Date().getTime();
                 const elapsedTime = endTime - startTime;
-                console.log("cSTOS: %d,%d  %dms", distX, distY, elapsedTime);
-                if (distX == 0 && distY == 0) {
-                    console.log("lb:sD: zero distance -- t");
-                    swipedir = 't';
-                } else if (elapsedTime <= self.options.swipeallowedtime) {
-                    // Detect left/right or up/down swipe.  Check for l/r first -- diagonals will be detected as l/r rather than u/d.
-                    if (Math.abs(distX) >= self.options.swipemin*window.innerWidth) { 
-                        swipedir = (distX < 0) ? 'l' : 'r';
-                        //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
-                    } else if (Math.abs(distY) >= self.options.swipemin*window.innerHeight) {
-                        swipedir = (distY < 0) ? 'u' : 'd';
-                        //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
-                    } else {
-                        // Very short swipe -- call it a touch  NO, ignore it  TODO click through?
-                        //console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
-                        swipedir = 't';
-                    }
+                //console.log("cSTOS: %d,%d  %dms", distX, distY, elapsedTime);
+                // Detect left/right or up/down swipe.  Check for l/r first -- diagonals will be detected as l/r rather than u/d.
+                if (Math.abs(distX) >= self.options.swipemin*window.innerWidth) { 
+                    swipedir = (distX < 0) ? 'l' : 'r';
+                    //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
+                } else if (Math.abs(distY) >= self.options.swipemin*window.innerHeight) {
+                    swipedir = (distY < 0) ? 'u' : 'd';
+                    //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
                 } else {
-                    // too slow -- ignore swipe completely 
-                    console.log("lb:sD: too slow  start=%d  end=%d  elapsed=%d", startTime, endTime, elapsedTime);
-                    swipedir = '';
+                    // Very short swipe -- call it a touch
+                    //console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
+                    swipedir = 't';
                 }
                 switch (swipedir) {
                     case 't':   // touch
@@ -410,7 +397,7 @@ class LightboxSSA {
     // Goes to previous, next, clickthrough or nowhere.
     swipedetect (touchsurface /*, callback */) {
         const self = this;
-        console.log("lb:swipeDetect surface=", touchsurface);
+        //console.log("lb:swipeDetect surface=", touchsurface);
 
         touchsurface.addEventListener('touchstart', function(estart) {
             estart.preventDefault();
@@ -426,21 +413,21 @@ class LightboxSSA {
                 const distY = touch.pageY - startY; // get vertical dist traveled by finger while in contact with surface
                 const endTime = new Date().getTime();
                 const elapsedTime = endTime - startTime;
-                console.log("swipe: %d,%d  %dms", distX, distY, elapsedTime);
+                //console.log("swipe: %d,%d  %dms", distX, distY, elapsedTime);
                 if (distX == 0 && distY == 0) {
-                    console.log("lb:sD: zero distance -- t");
+                    //console.log("lb:sD: zero distance -- t");
                     swipedir = 't';
                 } else if (elapsedTime <= self.options.swipeallowedtime) {
                     if (Math.abs(distX) >= self.options.swipethreshold && Math.abs(distY) <= self.options.swiperestraint) {
                         swipedir = (distX < 0) ? 'l' : 'r';
                     } else {
                         // Very short swipe -- call it a touch  NO, ignore it
-                        console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
+                        //console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
                         swipedir = '';
                     }
                 } else {
                     // too slow -- ignore swipe completely 
-                    console.log("lb:sD: too slow  start=%d  end=%d  elapsed=%d", startTime, endTime, elapsedTime);
+                    //console.log("lb:sD: too slow  start=%d  end=%d  elapsed=%d", startTime, endTime, elapsedTime);
                     swipedir = '';
                 }
                 //callback(swipedir, e);
@@ -463,7 +450,7 @@ class LightboxSSA {
     // Attach event handlers to the new DOM elements.
     // NOTE This happens as part of start(), after user has clicked an image.
     build () {
-        console.log("BBBBBBBBBBBBBuild");
+        //console.log("BBBBBBBBBBBBBuild");
 
         if (this.options.disable_scrolling) {
             this.oldBodyOverflow = document.body.style.overflow;
@@ -614,7 +601,7 @@ class LightboxSSA {
             lbelement = lbelement[0];
         }
         // lbelement is the thing clicked on -- typically a <figure> or <image>
-        console.log("SSSSSSSSSSSSSSStart lbelement=", lbelement);
+        //console.log("SSSSSSSSSSSSSSStart lbelement=", lbelement);
         if (!lbelement) {
             return; // shouldn't happen
         }
@@ -752,7 +739,7 @@ class LightboxSSA {
             addToAlbum(lbelement);
             imageNumber = 0;
         }
-        console.log("imageNumber=%d  album: ", imageNumber, this.album);
+        //console.log("imageNumber=%d  album: ", imageNumber, this.album);
 
         this.albumLen = this.album.length;
         if (this.albumLen == 1) {
@@ -778,7 +765,7 @@ class LightboxSSA {
     // Load the specified image as this.otherUnit.image, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {
         if (this.album.len == 0) {
-            console.log("lb:changeImage: album is empty");
+            //console.log("lb:changeImage: album is empty");
             return;
         }
         const self = this;
@@ -789,14 +776,14 @@ class LightboxSSA {
         // The album entry we're going to load:
         const albumEntry = this.album[imageNumber];
         if (!albumEntry) {
-            console.log("lb:cI: albumEntry not set");
+            //console.log("lb:cI: albumEntry not set");
             return;
         }
 
         function onLoad (e) {
             // Get the dimensions of the image that the srcset mechanism has chosen:
             const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
-            console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
+            //console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
 
             // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
             // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
@@ -840,7 +827,7 @@ class LightboxSSA {
     // Make the lightbox stuff visible
     showLightbox () {
         this.fadeTo(this.overlay, this.options.fade_duration, this.options.overlay_opacity, ()=>{
-            console.log("overlay fadeIn complete");
+            //console.log("overlay fadeIn complete");
         });
     }
 
@@ -886,7 +873,7 @@ class LightboxSSA {
     dismantle (e) {
         // Fading before removing would be nice, but it leaves bits behind,
         // and e.g. clickThrough event still happens.
-        console.log("DDDDDDDDDDDDDDDDDDDDDDDismantling");
+        //console.log("DDDDDDDDDDDDDDDDDDDDDDDismantling");
         this.fadeTo(this.overlay, this.options.fade_duration, 0, () => {
             setTimeout(() => {
                 this.overlay.replaceChildren();
