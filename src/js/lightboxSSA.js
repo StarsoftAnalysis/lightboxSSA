@@ -201,20 +201,60 @@ class LightboxSSA {
         }
     }
     
+    /* Not needed -- use 'once' instead 
     // From https://www.freecodecamp.org/news/javascript-debounce-example/
     // const processChanges = debounce(() => saveInput());
-    debounce (func, timeout = 300){
+    // TODO this is throttling rather than debouncing?
+    debounce (func, timeout = 300) {
         let timer;
         return (...args) => {
+            const now = Date.now();
             if (!timer) {
+                console.log("debounce: running func with args:", now, func, ...args);
                 func.apply(this, args);
+            } else {
+                console.log("debounce: not running func", now, func);
             }
             clearTimeout(timer);
             timer = setTimeout(() => {
                 timer = undefined;
+                console.log("debounce: timer cleared", Date.now()); 
             }, timeout);
         };
     }
+    */
+    /*
+    // is this better?  No!
+    debounce2 (fn, delay = 300) {
+        let timer;
+        return (...args) => {
+            if (timer) {
+                clearTimeout(timer);
+                console.log("debounce: putting it off");
+            }
+            // Oh! this won't run the fn for ages...
+            timer = setTimeout(fn, delay, ...args)
+        }
+    }
+    */
+
+    /*
+    // From https://webdesign.tutsplus.com/javascript-debounce-and-throttle--cms-36783t#toc-v2qk-debounce-vs-throttle
+    //initialize throttlePause variable outside throttle function
+    let throttlePause;
+    const throttle = (callback, time) => {
+        //don't run the function if throttlePause is true
+        if (throttlePause) return;
+        //set throttlePause to true after the if condition. This allows the function to be run once
+        throttlePause = true;
+        //setTimeout runs the callback within the specified time
+        setTimeout(() => {
+            callback();
+            //throttlePause is set to false once the function has been called, allowing the throttle function to loop
+            throttlePause = false;
+        }, time);
+    };
+    */
 
     /*
     simpleTouch (element, callback, ...args) {
@@ -324,42 +364,45 @@ class LightboxSSA {
     // Goes to previous, next, clickthrough or nowhere.
     clickTouchOrSwipe (element, clickCallback, leftCallback, rightCallback) {
         const self = this;
-        //console.log("lb:cTOS surface=", element);
+        //console.log("cTOS surface=", element);
 
         // Simple click
         element.addEventListener('click', (eclick) => { 
             eclick.preventDefault();
             eclick.stopPropagation();
+            console.log("cTOS: simple click");
             clickCallback(eclick); 
         });
 
         // Touches -- simple or swipe left/right
+        //element.addEventListener('touchstart', function(estart) {
         element.addEventListener('touchstart', function(estart) {
             estart.preventDefault();
             estart.stopPropagation();
             const touch = estart.changedTouches[0];
             let swipedir = '';
-            let startX = touch.pageX;
-            let startY = touch.pageY;
-            let startTime = new Date().getTime(); // record time when finger first makes contact with surface
+            const startX = touch.pageX;
+            const startY = touch.pageY;
+            //console.log("cTOS: touchstart %o at %d,%d", Date.now(), startX, startY);
+            //let startTime = new Date().getTime(); // record time when finger first makes contact with surface
             element.addEventListener('touchend', function(eend) {
                 eend.preventDefault();
                 const touch = eend.changedTouches[0];
                 const distX = touch.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
                 const distY = touch.pageY - startY; // get vertical dist traveled by finger while in contact with surface
-                const endTime = new Date().getTime();
-                const elapsedTime = endTime - startTime;
-                //console.log("cSTOS: %d,%d  %dms", distX, distY, elapsedTime);
+                //const endTime = new Date().getTime();
+                //const elapsedTime = endTime - startTime;
+                //console.log("cTOS: touchend %o at %d,%d", Date.now(), distX, distY);
                 // Detect left/right or up/down swipe.  Check for l/r first -- diagonals will be detected as l/r rather than u/d.
-                if (Math.abs(distX) >= self.options.swipemin*window.innerWidth) { 
+                if (Math.abs(distX) >= self.options.swipemin * window.innerWidth) { 
                     swipedir = (distX < 0) ? 'l' : 'r';
-                    //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
-                } else if (Math.abs(distY) >= self.options.swipemin*window.innerHeight) {
+                    //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
+                } else if (Math.abs(distY) >= self.options.swipemin * window.innerHeight) {
                     swipedir = (distY < 0) ? 'u' : 'd';
-                    //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
+                    //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
                 } else {
                     // Very short swipe -- call it a touch
-                    //console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
+                    //console.log("cTOS: short distance (%d,%d) -- none", distX, distY);
                     swipedir = 't';
                 }
                 switch (swipedir) {
@@ -368,13 +411,13 @@ class LightboxSSA {
                             clickCallback(eend);
                         }
                         break;
-                    case 'l':   // left or down: previous image
+                    case 'r':   // left or down: previous image
                     case 'd':
                         if (typeof(leftCallback) == 'function') {
                             leftCallback(eend);
                         }
                         break;
-                    case 'r':   // right or up: next image
+                    case 'l':   // right or up: next image
                     case 'u':
                         if (typeof(rightCallback) == 'function') {
                             rightCallback(eend);
@@ -383,65 +426,10 @@ class LightboxSSA {
                     default:
                         // do nothing
                 }
-            });
+            }, { once: true }); // only want touchend once per touchstart.
         });
 
         element.addEventListener('touchmove', function(emove) {
-            emove.preventDefault(); // prevent scrolling when inside DIV   What?
-        });
-    }
-        
-    // FIXME does this handle being attached to more than one element ?!"!?
-    // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
-    // Detect left/right swipe or simple touch on gallery pictures.
-    // Goes to previous, next, clickthrough or nowhere.
-    swipedetect (touchsurface /*, callback */) {
-        const self = this;
-        //console.log("lb:swipeDetect surface=", touchsurface);
-
-        touchsurface.addEventListener('touchstart', function(estart) {
-            estart.preventDefault();
-            const touch = estart.changedTouches[0];
-            let swipedir = '';
-            let startX = touch.pageX;
-            let startY = touch.pageY;
-            let startTime = new Date().getTime(); // record time when finger first makes contact with surface
-            touchsurface.addEventListener('touchend', function(eend) {
-                eend.preventDefault();
-                const touch = eend.changedTouches[0];
-                const distX = touch.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
-                const distY = touch.pageY - startY; // get vertical dist traveled by finger while in contact with surface
-                const endTime = new Date().getTime();
-                const elapsedTime = endTime - startTime;
-                //console.log("swipe: %d,%d  %dms", distX, distY, elapsedTime);
-                if (distX == 0 && distY == 0) {
-                    //console.log("lb:sD: zero distance -- t");
-                    swipedir = 't';
-                } else if (elapsedTime <= self.options.swipeallowedtime) {
-                    if (Math.abs(distX) >= self.options.swipethreshold && Math.abs(distY) <= self.options.swiperestraint) {
-                        swipedir = (distX < 0) ? 'l' : 'r';
-                    } else {
-                        // Very short swipe -- call it a touch  NO, ignore it
-                        //console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
-                        swipedir = '';
-                    }
-                } else {
-                    // too slow -- ignore swipe completely 
-                    //console.log("lb:sD: too slow  start=%d  end=%d  elapsed=%d", startTime, endTime, elapsedTime);
-                    swipedir = '';
-                }
-                //callback(swipedir, e);
-                if (swipedir == 'r') {
-                    self.prevImage(eend);
-                } else if (swipedir == 'l') {
-                    self.nextImage(eend);
-                } else {    // no swipe, just simple touch
-                    self.clickThroughImage(eend);
-                }
-            });
-        });
-
-        touchsurface.addEventListener('touchmove', function(emove) {
             emove.preventDefault(); // prevent scrolling when inside DIV   What?
         });
     }
