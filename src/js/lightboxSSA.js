@@ -117,8 +117,8 @@ class LightboxSSA {
             fade_duration: 600,
             overlay_opacity: 1.0,   
             //max_size: 50000,
-            max_width: 90,  // %
-            max_height: 90,
+            max_width: 95,  // %
+            max_height: 95,
             //resizeDuration: 700,
             wrap_around: true,
             disable_scrolling: false, // hide scrollbar so that lightbox uses full area of window
@@ -131,8 +131,10 @@ class LightboxSSA {
             sanitize_title: false,
             //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
             placeholder_image: '/images/imageNotFoundSSA.png',
-            swipethreshold: 100,  // required min distance traveled to be considered swipe
-            swiperestraint: 70,   // maximum distance allowed at the same time in perpendicular direction
+            swipethreshold: window.innerWidth * 0.1,    //100,  // required min distance traveled to be considered swipe
+            swiperestraint: window.innerWidth * 0.01,   // 70,   // maximum distance allowed at the same time in perpendicular direction
+            swipemin: 0.1,
+            swipemax: 0.05,
             // FIXME do we need a maximum time? (if so, make it smaller) (if not get rid of some code)
             swipeallowedtime: 40000, // maximum time allowed to travel that distance
         };
@@ -221,6 +223,7 @@ class LightboxSSA {
 
     simpleTouch (element, callback, ...args) {
         // TEMP no bounce  element.addEventListener('touchstart', this.debounce((estart) => {
+        return;  // Oh! FIXME it works better on my screen without all this  9Sep23
         element.addEventListener('touchstart', (estart) => {
             estart.preventDefault();
             estart.stopPropagation();
@@ -233,7 +236,8 @@ class LightboxSSA {
                 const t0 = eend.changedTouches[0];
                 const endX = t0.screenX;
                 const endY = t0.screenY;
-                console.log("lb:sT:end eend=", eend);
+                console.log("lb:sT:end endX=%o startX=%o  endY=%o startY=%o", endX, startX, endY, startY); //eend=", eend);
+                // TODO detect up/down scrolling -- propogate it, or something.
                 if (endX == startX && endY == startY) {
                     // good touch -- fire the callback
                     if (typeof(callback) == 'function') {
@@ -354,12 +358,17 @@ class LightboxSSA {
                     console.log("lb:sD: zero distance -- t");
                     swipedir = 't';
                 } else if (elapsedTime <= self.options.swipeallowedtime) {
-                    if (Math.abs(distX) >= self.options.swipethreshold && Math.abs(distY) <= self.options.swiperestraint) {
+                    // Detect left/right or up/down swipe.  Check for l/r first -- diagonals will be detected as l/r rather than u/d.
+                    if (Math.abs(distX) >= self.options.swipemin*window.innerWidth) { 
                         swipedir = (distX < 0) ? 'l' : 'r';
+                        //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
+                    } else if (Math.abs(distY) >= self.options.swipemin*window.innerHeight) {
+                        swipedir = (distY < 0) ? 'u' : 'd';
+                        //console.log("lb:sD: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
                     } else {
-                        // Very short swipe -- call it a touch  NO, ignore it
-                        console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
-                        swipedir = '';
+                        // Very short swipe -- call it a touch  NO, ignore it  TODO click through?
+                        //console.log("lb:sD: short distance (%d,%d) -- none", distX, distY);
+                        swipedir = 't';
                     }
                 } else {
                     // too slow -- ignore swipe completely 
@@ -367,17 +376,19 @@ class LightboxSSA {
                     swipedir = '';
                 }
                 switch (swipedir) {
-                    case 't':
+                    case 't':   // touch
                         if (typeof(clickCallback) == 'function') {
                             clickCallback(eend);
                         }
                         break;
-                    case 'l':
+                    case 'l':   // left or down: previous image
+                    case 'd':
                         if (typeof(leftCallback) == 'function') {
                             leftCallback(eend);
                         }
                         break;
-                    case 'r':
+                    case 'r':   // right or up: next image
+                    case 'u':
                         if (typeof(rightCallback) == 'function') {
                             rightCallback(eend);
                         }
