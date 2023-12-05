@@ -14,7 +14,7 @@
 
 {{/* lightboxSSA is separate because it's only needed on some pages, as requested via the frontmatter */}}
 {{ warnf "lbSSA partial .Params is %v" .Params }}
-{{ if .Params.lightboxSSA */}}
+{{ if .Params.lightboxSSA }}
     {{ $jsbOpts := merge $jsbDftOpts (dict "targetPath" "js/lightboxSSA.js") }}
     {{ if .Site.IsServer }}
       {{ $js := resources.Get "lib/lightboxSSA/src/js/lightboxSSA.js" | js.Build $jsbOpts }}
