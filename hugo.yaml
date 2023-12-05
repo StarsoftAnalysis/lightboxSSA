@@ -14,4 +14,3 @@ module:
       target: assets/lib/js/
     - source: src/css/
       target: assets/lib/sass/
-
