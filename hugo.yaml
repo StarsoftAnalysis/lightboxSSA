@@ -6,11 +6,7 @@ module:
     min: 0.64.0
     extended: true
   mounts:
-    - source: src/partials/
-      target: layout/partials/
-    - source: src/images/
-      target: assets/images/
-    - source: src/js/
-      target: assets/lib/js/
-    - source: src/css/
-      target: assets/lib/sass/
+    - source: src/partials
+      target: layouts/partials
+    - source: src
+      target: assets
