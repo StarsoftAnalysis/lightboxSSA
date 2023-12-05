@@ -3,10 +3,10 @@
 This is yet another fork of 
 [Lokesh Dhakar](http://www.lokeshdhakar.com)'s excellent [Lightbox2](https://github.com/lokesh/lightbox2).
 
-I'm making various modifications, so this version isn't really ready for use yet.
 
 LightboxSSA is small Javascript module used to overlay images on top of the current page for viewing as a lightbox.
 
+This repository is arranged so that it can be used as a Hugo module.
 
 ## Major changes from Lightbox2
 
@@ -17,7 +17,7 @@ LightboxSSA is small Javascript module used to overlay images on top of the curr
   touch screens, but phone users can guess that swiping should be possible, so:
 * Added swiping for touch screens.
 * Uses 'proper' Javascript classes.
-* No more jQuery.  And it's no longer a module.
+* No more jQuery.  And it's no longer a Javascript module.
 
 ## Requirements
 
@@ -32,7 +32,7 @@ like this in the HTML, either in the `<head>` or at the end of the `<body>`.
 
 ```javascript
 const lightboxSSA = {
-        overlay_opacity: 0.9,
+    overlay_opacity: 0.9,
 	wrap_around: false,
 };
 ```

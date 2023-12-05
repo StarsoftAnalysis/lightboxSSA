@@ -1,0 +1,26 @@
+# hugo.yaml for Hugo module 'lightboxSSA'
+
+[module.hugoVersion]
+min = "0.64.0"
+extended = true
+
+#[[module.mounts]]
+#    source = "assets/sass/figset.scss"
+#    target = "assets/sass/figset.scss"
+#
+
+module:
+  # Need at least 64 for ?  and extended for SASS
+  hugoVersion:
+    min: 0.64.0
+    extended: true
+  mounts:
+    - source: src/partials/
+      target: layout/partials/
+    - source: src/images/
+      target: assets/images/
+    - source: src/js/
+      target: assets/lib/js/
+    - source: src/css/
+      target: assets/lib/sass/
+

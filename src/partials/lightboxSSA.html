@@ -1,0 +1,83 @@
+{{/* partials/lightboxSSA.html */}}
+
+{{/* This partial is designed to be called from the head (or footer?) of a Hugo website
+     page, so that relevant javascript and CSS are included
+*/}}
+
+{{/* Package JS using Hugo's js.Build (aka esbuild), with these parameters: */}}
+{{ $jsbExternals := slice }}
+{{ $jsbDefines := dict }}{{/* only for e.g. React: "process.env.NODE_ENV" `"development"` */}}
+{{/* TODO when available: --target=chrome58,firefox57,safari11,edge16 */}}
+{{/* NOTE can't do ES6 -- esbuild can't transform 'class' syntax to es5 ('yet') */}}
+{{ $jsbDftOpts := dict "externals" $jsbExternals "defines" $jsbDefines "minify" false "target" "es2015" "format" "iife" }}
+
+
+{{/* lightboxSSA is separate because it's only needed on some pages, as requested via the frontmatter */}}
+{{ warnf "lbSSA partial .Params is %v" .Params }}
+{{ if .Params.lightboxSSA */}}
+    {{ $jsbOpts := merge $jsbDftOpts (dict "targetPath" "js/lightboxSSA.js") }}
+    {{ if .Site.IsServer }}
+      {{ $js := resources.Get "lib/lightboxSSA/src/js/lightboxSSA.js" | js.Build $jsbOpts }}
+      <script src="{{ $js.RelPermalink }}" defer></script>
+    {{ else }}{{/* 'production' */}}
+      {{ $js := resources.Get "lib/lightboxSSA/src/js/lightboxSSA.js" | js.Build $jsbOpts | fingerprint }}
+      <script src="{{ $js.RelPermalink }}" defer integrity="{{ $js.Data.Integrity }}"></script>
+    {{ end }}
+  {{ end }}
+
+  {{/* if .Params.lightboxSSA exists and is a map, store the values for Javascript to use */}}
+  {{ if eq (printf "%T" .Params.lightboxSSA) "maps.Params" }}
+    <script>
+      const lightboxSSAOptions = {
+        {{ range $key, $value := .Params.LightboxSSA }}
+          {{ $key }}: {{ $value }},
+        {{ end }}
+      }
+    </script>
+  {{ end }}
+{{ end }}
+
+
+
+{{/* -------------------------------------------------------------------------------------------------------------------- */}}
+
+{{/* CSS - the pipelining/bundling is done in main.scss; lightbox is separate and included only if required */}}
+{{/* DON'T FORGET: SCSS processing requires the 'extended build' of Hugo: go install --tags extended */}}
+
+{{/* See https://simpleit.rocks/golang/hugo/customizing-bootstrap-with-hugo-pipes/ */}}
+
+{{/* $options := (dict "targetPath" "style.css" "outputStyle" "compressed" "enableSourceMap" true "includePaths" (slice "node_modules/myscss")) */}}
+{{/* $style := resources.Get "sass/main.scss" | resources.ToCSS $options */}}
+
+{{/* For prod, add minify and fingerprint */}}
+{{/* {{ $style := resources.Get "sass/main.scss" | toCSS $options | minify | fingerprint }}  {{/* we don't have postCSS */}}
+{{/* For now... */}}
+{{/* 'ExecuteAsTemplate' as described in https://zwbetz.com/use-hugo-templating-in-your-external-css/ and https://blog.fullstackdigital.com/how-to-use-hugo-template-variables-in-scss-files-in-2018-b8a834accce */}}
+
+{{/* NOTE name given to ExecuteAsTemplate is target name of CSS file, unless overridden in options by targetPath */}}
+{{/* DELETE THIS  $options := (dict "targetPath" "css/style.css" ) }} {{/* "outputStyle" "compressed" "enableSourceMap" true) */}}{{/* ???... "includePaths" (slice "/node_modules")) }} */}}
+
+{{/* main imports cv and styles -- via this pipeline */}}
+{{/* DELETE THIS  $mainstyle := resources.Get "sass/main.scss" | resources.ExecuteAsTemplate "css/main.css" . | toCSS */}}
+
+{{ $options := (dict "enableSourceMap" true "outputStyle" "compressed") }}
+{{ if .Site.IsServer }}
+  {{ $options := (dict "enableSourceMap" true) }}
+{{ end }}
+{{/* FIXME !! using $options after toCSS causes and error e.g. ERROR 2020/05/14 22:09:06 TOCSS: failed to transform "css/lightboxSSA.css" (text/x-scss): resource "scss/lib/lightboxSSA/src/css/lightbox.scss_8720e7eee4c6bdda01e6607519c86a7a" not found in file cache
+*/}}
+
+
+{{/* FIXME can't work out how to set a variable for testing here from a template (e.g. from layouts/catshowcase/single.html), so for now we'll include lbssa on ALL pages */}}
+{{/* if .Params.lightboxSSA */}}
+  {{ $lightboxSSAscss := resources.Get "lib/lightboxSSA/src/css/lightboxSSA.scss" }}
+  {{ if not $lightboxSSAscss }}
+    {{ errorf "Failed to load lightboxSSA SCSS" }}
+  {{ else }}
+    {{ $css := $lightboxSSAscss | resources.ExecuteAsTemplate "css/lightboxSSA.css" . | toCSS $options | fingerprint }}
+    <link rel="stylesheet" href="{{ $css.RelPermalink }}" type="text/css" integrity="{{ $css.Data.Integrity }}">
+  {{ end }}
+{{/* end */}}
+
+{{/* -------------------------------------------------------------------------------------------------------------------- */}}
+
