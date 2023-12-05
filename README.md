@@ -46,8 +46,17 @@ The settable options are:
 
 LightboxSSA can be used with Hugo.  
 
-...how to put JS and CSS in assets, and then do the stuff in `<head>`  TODO
+...now as a module.
+Just need to include something like
+'''{{ partial "lightboxSSA.html" . }}'''
+in your `partials/head.html` or equivalent.
 
+PLAN: put
+```lightboxSSA: true```
+(with options if required, see below)
+in config.yaml within params (or the .toml version)
+to include lbSSA CSS and JS on every page.  Otherwise
+...
 To include the JS and CSS for LightboxSSA on a page, add this to the frontmatter:
 
 ```yaml
