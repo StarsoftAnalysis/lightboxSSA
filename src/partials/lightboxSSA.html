@@ -11,33 +11,28 @@
 {{/* NOTE can't do ES6 -- esbuild can't transform 'class' syntax to es5 ('yet') */}}
 {{ $jsbDftOpts := dict "externals" $jsbExternals "defines" $jsbDefines "minify" false "target" "es2015" "format" "iife" }}
 
-
 {{/* lightboxSSA is separate because it's only needed on some pages, as requested via the frontmatter */}}
 {{ warnf "lbSSA partial .Params is %v" .Params }}
-{{ if .Params.lightboxSSA */}}
+{{ if .Params.lightboxSSA }}
     {{ $jsbOpts := merge $jsbDftOpts (dict "targetPath" "js/lightboxSSA.js") }}
     {{ if .Site.IsServer }}
-      {{ $js := resources.Get "lib/lightboxSSA/src/js/lightboxSSA.js" | js.Build $jsbOpts }}
-      <script src="{{ $js.RelPermalink }}" defer></script>
+        {{ $js := resources.Get "lib/lightboxSSA/src/js/lightboxSSA.js" | js.Build $jsbOpts }}
+        <script src="{{ $js.RelPermalink }}" defer></script>
     {{ else }}{{/* 'production' */}}
-      {{ $js := resources.Get "lib/lightboxSSA/src/js/lightboxSSA.js" | js.Build $jsbOpts | fingerprint }}
-      <script src="{{ $js.RelPermalink }}" defer integrity="{{ $js.Data.Integrity }}"></script>
+        {{ $js := resources.Get "lib/lightboxSSA/src/js/lightboxSSA.js" | js.Build $jsbOpts | fingerprint }}
+        <script src="{{ $js.RelPermalink }}" defer integrity="{{ $js.Data.Integrity }}"></script>
     {{ end }}
-  {{ end }}
-
-  {{/* if .Params.lightboxSSA exists and is a map, store the values for Javascript to use */}}
-  {{ if eq (printf "%T" .Params.lightboxSSA) "maps.Params" }}
-    <script>
-      const lightboxSSAOptions = {
-        {{ range $key, $value := .Params.LightboxSSA }}
-          {{ $key }}: {{ $value }},
-        {{ end }}
-      }
-    </script>
-  {{ end }}
+    {{/* if .Params.lightboxSSA exists and is a map, store the values for Javascript to use */}}
+    {{ if eq (printf "%T" .Params.lightboxSSA) "maps.Params" }}
+        <script>
+            const lightboxSSAOptions = {
+                {{ range $key, $value := .Params.LightboxSSA }}
+                    {{ $key }}: {{ $value }},
+            {{ end }}
+            }
+        </script>
+    {{ end }}
 {{ end }}
-
-
 
 {{/* -------------------------------------------------------------------------------------------------------------------- */}}
 
