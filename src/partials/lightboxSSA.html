@@ -1,54 +1,75 @@
-{{/* partials/lightboxSSA.html */}}
+{{- /* partials/lightboxSSA.html */ -}}
 
-{{/* This partial is designed to be called from the head (or footer?) of a Hugo website
-     page, so that relevant javascript and CSS are included
-*/}}
+{{- /* 
+This partial is designed to be called from the head (or footer?) of a Hugo website
+page, so that relevant javascript and CSS are included
 
-{{/* Package JS using Hugo's js.Build (aka esbuild), with these parameters: */}}
-{{ $jsbExternals := slice }}
-{{ $jsbDefines := dict }}
-{{/* TODO when available: --target=chrome58,firefox57,safari11,edge16 */}}
-{{/* NOTE can't do ES6 -- esbuild can't transform 'class' syntax to es5 ('yet') */}}
-{{ $jsbDftOpts := dict "externals" $jsbExternals "defines" $jsbDefines "minify" false "target" "es2015" "format" "iife" }}
+Needs to be passed the context:
 
-{{/* warnf "lbSSA partial .Params is %v" .Params */}}
-{{/* this will work if we put something on every page...   if .Params.lightboxssa */}}{{/* note that lightboxssa is lower-case here, however it's written in the front matter */}}
-    {{ $jsbOpts := merge $jsbDftOpts (dict "targetPath" "js/lightboxSSA.js") }}
-    {{ if .Site.IsServer }}
-        {{ $js := resources.Get "lightboxSSA/js/lightboxSSA.js" | js.Build $jsbOpts }}
-        <script src="{{ $js.RelPermalink }}" defer></script>
-    {{ else }}{{/* 'production' */}}
-        {{ $js := resources.Get "lightboxSSA/js/lightboxSSA.js" | js.Build $jsbOpts | fingerprint }}
-        <script src="{{ $js.RelPermalink }}" defer integrity="{{ $js.Data.Integrity }}"></script>
-    {{ end }}
-    {{/* if .Params.lightboxSSA exists and is a map, store the values for Javascript to use */}}
-    {{ if eq (printf "%T" .Params.lightboxSSA) "maps.Params" }}
-        <script>
-            const lightboxSSAOptions = {
-                {{ range $key, $value := .Params.LightboxSSA }}
-                    {{ $key }}: {{ $value }},
-            {{ end }}
-            }
-        </script>
-    {{ end }}
-{{/* end */}}
+{{- partial "lightboxSSA.html" . -}}
 
-{{/* -------------------------------------------------------------------------------------------------------------------- */}}
+TODO
+* user might want to include JS and/or CSS in their own bundles,
+  so need options to this partial re whether or not to output the JS and CSS from here.
+  -- if user is bundling, it's their problem to be efficient.
 
-{{ $options := (dict "enableSourceMap" true "outputStyle" "compressed") }}
-{{ if .Site.IsServer }}
-  {{ $options := (dict "enableSourceMap" true) }}
-{{ end }}
+*/ -}}
 
-{{/* if .Params.lightboxSSA */}}
-  {{ $lightboxSSAscss := resources.Get "lightboxSSA/css/lightboxSSA.scss" }}
-  {{ if not $lightboxSSAscss }}
-    {{ errorf "Failed to load lightboxSSA SCSS" }}
-  {{ else }}
-    {{ $css := $lightboxSSAscss | resources.ExecuteAsTemplate "css/lightboxSSA.css" . | toCSS $options | fingerprint }}
-    <link rel="stylesheet" href="{{ $css.RelPermalink }}" type="text/css" integrity="{{ $css.Data.Integrity }}">
-  {{ end }}
-{{/* end */}}
+{{- /* Merge site and page lightboxssa params */ -}}
+{{- /* Note that lightboxssa is lower-case here, however it's written in the front matter */ -}}
+{{- $lbsite := .Site.Params.lightboxssa -}}
+{{- $lbpage := .Params.lightboxssa -}}
+{{- $lbparams := dict -}}
+{{- if eq (printf "%T" $lbsite) "maps.Params" -}}
+    {{- /* site params are valid */ -}}
+    {{- $lbparams = $lbsite -}}
+    {{- if eq (printf "%T" $lbpage) "maps.Params" -}}
+        {{- /* so are page params */ -}}
+        {{- $lbparams = merge $lbparams $lbpage -}}
+    {{- end -}}
+{{- else -}}
+    {{- if eq (printf "%T" $lbpage) "maps.Params" -}}
+        {{- /* just page params */ -}}
+        {{- $lbparams = $lbpage -}}
+    {{- end -}}
+{{- end -}}
 
-{{/* -------------------------------------------------------------------------------------------------------------------- */}}
+{{- /* Only output JS and CSS if lighboxssa is marked 'active' for this page */ -}}
+{{- if $lbparams.active -}}
 
+    {{- /* Package JS using Hugo's js.Build (aka esbuild), with these parameters: */ -}}
+    {{- $jsbExternals := slice -}}
+    {{- $jsbDefines := dict -}}
+
+    {{- /* TODO when available: --target=chrome58,firefox57,safari11,edge16 */ -}}
+    {{- /* NOTE can't do ES6 -- esbuild can't transform 'class' syntax to es5 ('yet') */ -}}
+    {{- $jsbDftOpts := dict "externals" $jsbExternals "defines" $jsbDefines "minify" (not .Site.IsServer) "target" "es2015" "format" "iife" -}}
+    {{- $jsbOpts := merge $jsbDftOpts (dict "targetPath" "js/lightboxSSA.js") -}}
+    {{- $js := resources.Get "lightboxSSA/js/lightboxSSA.js" | js.Build $jsbOpts | fingerprint -}}
+    <script src="{{ $js.RelPermalink }}" defer integrity="{{ $js.Data.Integrity }}"></script>
+
+    {{- /* Store the values for Javascript to use */ -}}
+    <script defer>
+        const lightboxssa_options = {
+            {{- /* key,value pairs of options */ -}}
+            {{- range $key, $value := $lbparams -}}
+                {{ $key }}: {{ $value }},
+            {{ end -}}
+        }
+    </script>
+
+    {{- $cssoptions := (dict "enableSourceMap" true "outputStyle" "compressed") -}}
+    {{- if .Site.IsServer -}}
+        {{- $cssoptions := (dict "enableSourceMap" true) -}}
+    {{- end -}}
+
+    {{- /* if .Params.lightboxSSA */ -}}
+    {{- $lightboxSSAscss := resources.Get "lightboxSSA/css/lightboxSSA.scss" -}}
+    {{- if not $lightboxSSAscss -}}
+        {{- errorf "Failed to load lightboxSSA SCSS" -}}
+    {{- else -}}
+        {{- $css := $lightboxSSAscss | resources.ExecuteAsTemplate "css/lightboxSSA.css" . | toCSS $cssoptions | fingerprint -}}
+        <link rel="stylesheet" href="{{ $css.RelPermalink }}" type="text/css" integrity="{{ $css.Data.Integrity }}">
+    {{- end -}}
+
+{{- end -}}{{- /* if active */ -}}

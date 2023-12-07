@@ -50,28 +50,22 @@ LightboxSSA can be used with Hugo.
 Just need to include something like
 '''{{ partial "lightboxSSA.html" . }}'''
 in your `partials/head.html` or equivalent.
+-- that will put the JS and CSS on every page
+that has `lightboxssa: ...` in its frontmatter.
 
-PLAN: put
+Put
 ```lightboxSSA: true```
 (with options if required, see below)
 in config.yaml within params (or the .toml version)
-to include lbSSA CSS and JS on every page.  Otherwise
-...
-To include the JS and CSS for LightboxSSA on a page, add this to the frontmatter:
-
-```yaml
----
-...
-lightboxSSA: true
----
-```
-
+to include lbSSA CSS and JS on every page. 
+(unless it active:false).
 If you want to adjust any options, use something like this:
 
 ```yaml
 ---
 ...
 lightboxSSA: 
+    active: true
     overlay_opacity: 0.9
     wrap_around: true
 ---

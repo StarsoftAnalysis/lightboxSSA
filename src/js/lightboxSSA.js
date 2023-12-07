@@ -1,8 +1,8 @@
 // LightboxSSA 
 
-// version 2.54 22/11/2022
+// version 0.5 6/12/2023
 
-// Copyright 2020-2022 Chris Dennis
+// Copyright 2020-2023 Chris Dennis
 
 //    This file is part of LightboxSSA.
 //
@@ -39,7 +39,6 @@
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // ongoing issues
-// - need to debounce? -- ? with fade_duration 
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
@@ -127,12 +126,16 @@ class LightboxSSA {
             // This will free you to add html tags, such as links, in the caption.
             // If the caption data is user submitted or from some other untrusted source, then set this to true
             // to prevent xss and other injection attacks.
-            // FIXME implement this
+            // FIXME implement this:
             sanitize_title: false,
             //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
-            placeholder_image: '/images/imageNotFoundSSA.png',
+            placeholder_image: '/images/lightboxSSA/imageNotFoundSSA.png',
             swipemin: 0.1,  // minimum swipe distance (as fraction screen size) 
         };
+
+        // Apply defaults from Hugo config (if this is part of Hugo)
+
+
         this.options = Object.assign({}, this.defaults);
         this.applyOptions(options);
         //this.transitionEnd = this.whichTransitionEvent();
@@ -370,7 +373,7 @@ class LightboxSSA {
         element.addEventListener('click', (eclick) => { 
             eclick.preventDefault();
             eclick.stopPropagation();
-            console.log("cTOS: simple click");
+            //console.log("cTOS: simple click");
             clickCallback(eclick); 
         });
 
@@ -595,8 +598,9 @@ class LightboxSSA {
         }
 
         // Apply user-supplied options 
-        if (typeof lightboxSSAOptions == "object") {
-            this.applyOptions(lightboxSSAOptions);
+        if (typeof lightboxssa_options == "object") {
+            console.log("lbSSA.start: options are %o", lightboxssa_options);
+            this.applyOptions(lightboxssa_options);
         }
 
         // Build <<<<<<<<<<<<<<<
