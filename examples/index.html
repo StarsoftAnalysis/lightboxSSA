@@ -2,35 +2,69 @@
 <html lang="en-us">
 <head>
   <meta charset="utf-8">
-  <title>LightboxSSA Example</title>
+  <title>LightboxSSA Examples</title>
   <script src="js/lightboxSSA.js" defer></script>
-  <link rel="stylesheet" href="css/lightboxSSA.min.css">
+  <link rel="stylesheet" href="css/lightboxSSA.css">
+<style>
+    figure {
+      margin: 0 1em 0.5em;
+      width: fit-content;
+      display: table;
+    }
+    figure figcaption {
+      display: table-caption;
+      caption-side: bottom;
+    }
+    figure img, figure video {
+      display: table-cell;
+    }
+    div#div1 img {
+        width: 30%;
+    }
+</style>
 </head>
 <body>
 
+    <h1>LightboxSSA Examples</h1>
+
+    <p>For a more complete demonstration of LightboxSSA, see the <a href="https://starsoftanalysis.github.io/figsetdemo">figset demonstration site</a>.
+
     <h3>Two Individual Images</h3>
-    <div>
-      <figure  data-lightbox="example-1"><img src="https://picsum.photos/200/300?random=1" alt="image-1" /></a>
-      <figure V data-lightbox="example-2" data-title="Optional caption."><img src="https://picsum.photos/200/300?random=2" alt="image-1"/></a>
+    Each with its own lightbox.
+    <div id=div1>
+      <figure data-lightbox="example-1">
+          <img src="/photos/pic1.jpg"  alt="A view of Westminster Abbey">
+          <figcaption>Short caption</figcaption>
+      </figure>
+      <figure data-lightbox="example-2" data-title="This is a title that only Javascript will find">
+          <img src="/photos/pic2.jpg" alt="Looking down at a calm sea from the top of a chalk cliff">
+          <figcaption>LKJ LK LKJ LKJ LKJ LKJ LKJ LKJ LKJ LKJlksdjf lskdfj slkdfj asdkfj asldkfj A much longer caption that should wrap nicely beneath the image.</figcaption>
+      </figure>
     </div>
 
-    <hr />
+    <hr>
 
     <h3>A Four Image Set</h3>
-    <div>
-      <figure  data-lightbox="example-set" data-title="Click the right half of the image to move forward.">
-        <img src="https://picsum.photos/200/300?random=3" alt="Random image"/>
+    The lightboxes are linked into a gallery.
+    <div id=div2>
+      <figure data-lightbox="example-set" data-title="Click the right half of the image to move forward.">
+        <img src="https://picsum.photos/200/300?random=3" alt="Random image">
+        <figcaption>Caption for random image 1</figcaption>
       </figure>
-      <figure  data-lightbox="example-set" data-title="Or press the right arrow on your keyboard.">
-        <img src="https://picsum.photos/200/300?random=4" alt="Random image" />
+      <figure data-lightbox="example-set" data-title="Or press the right arrow on your keyboard.">
+        <img src="https://picsum.photos/200/300?random=4" alt="Random image">
+        <figcaption>Caption for random image 2</figcaption>
       </figure>
-      <figure  data-lightbox="example-set" data-title="The next image in the set is preloaded as you're viewing.">
-        <img src="https://picsum.photos/200/300?random=5" alt="Random image" />
+      <figure data-lightbox="example-set" data-title="The next image in the set is preloaded as you're viewing.">
+        <img src="https://picsum.photos/200/300?random=5" alt="Random image">
+        <figcaption>Caption for random image 3</figcaption>
       </figure>
-      <figure  data-lightbox="example-set" data-title="Click anywhere outside the image or the X to the right to close.">
-        <img src="https://picsum.photos/200/300?random=6" alt="Random image" />
+      <figure data-lightbox="example-set" data-title="Click anywhere outside the image or the X to the right to close.">
+        <img src="https://picsum.photos/200/300?random=6" alt="Random image">
+        <figcaption>Caption for random image 4</figcaption>
       </figure>
     </div>
 
+    <p>Thanks to <a href="https://picsum.photos">picsum.photos</a> for the images.
 </body>
 </html>

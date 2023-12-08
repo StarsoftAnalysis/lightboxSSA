@@ -1,7 +1,7 @@
 /* lightboxSSA.scss */
 
-// LightboxSSA v2.50
-// Copyright 2020 Chris Dennis
+// LightboxSSA v0.5.0
+// Copyright 2020-2023 Chris Dennis
 
 //    This file is part of LightboxSSA.
 //
@@ -27,7 +27,7 @@
 
 // Variables
 $imageBorder: 1vh;
-$imageRadius: ($imageBorder / 2);
+$imageRadius: calc($imageBorder / 2);
 $zstart: 10;
 $fadeDuration: 600ms;  // Default value -- gets changed in JS
 @mixin setTransition {
@@ -137,7 +137,7 @@ $onImageClickAreaHeight: 100%;
   width: 20%;
   height: $onImageClickAreaHeight;
   left: 0;
-  top: #{(100% - $onImageClickAreaHeight) / 2};
+  top: calc((100% - $onImageClickAreaHeight) / 2);
   cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
   pointer-events: auto;
   z-index: $zstart+7;
@@ -148,7 +148,7 @@ $onImageClickAreaHeight: 100%;
   width: 20%;
   height: $onImageClickAreaHeight;
   right: 0;
-  top: #{(100% - $onImageClickAreaHeight) / 2};
+  top: calc((100% - $onImageClickAreaHeight) / 2);
   cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
   pointer-events: auto;
   z-index: 3; // relative to figure  $zstart+7;

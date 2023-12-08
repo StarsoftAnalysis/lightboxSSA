@@ -1,9 +1,11 @@
 /* lightboxSSA.scss */
 body.lb-disable-scrolling {
-  overflow: hidden; }
+  overflow: hidden;
+}
 
 [data-lightbox] {
-  cursor: pointer; }
+  cursor: pointer;
+}
 
 #lb-overlay {
   position: fixed;
@@ -14,7 +16,13 @@ body.lb-disable-scrolling {
   z-index: 10;
   background: gray;
   opacity: 0;
-  cursor: url(../images/closeCursorSSA.png) 13 14, pointer; }
+  -webkit-transition: opacity 600ms ease-in-out;
+  -moz-transition: opacity 600ms ease-in-out;
+  -ms-transition: opacity 600ms ease-in-out;
+  -o-transition: opacity 600ms ease-in-out;
+  transition: opacity 600ms ease-in-out;
+  cursor: url(../images/closeCursorSSA.png) 13 14, pointer;
+}
 
 #lb-nav {
   position: fixed;
@@ -26,22 +34,25 @@ body.lb-disable-scrolling {
   display: flex;
   justify-content: center;
   align-items: center;
-  pointer-events: none;
-  opacity: 1; }
+  pointer-events: auto;
+  opacity: 1;
+}
 
 #lb-prev {
-  opacity: 1;
   height: 50%;
   width: 50%;
+  z-index: 12;
   pointer-events: auto;
-  cursor: url(../images/prevCursorSSA.png) 2 17, pointer; }
+  cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
+}
 
 #lb-next {
-  opacity: 1;
   height: 50%;
   width: 50%;
+  z-index: 12;
   pointer-events: auto;
-  cursor: url(../images/nextCursorSSA.png) 18 17, pointer; }
+  cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
+}
 
 .lb-flex {
   position: fixed;
@@ -52,45 +63,86 @@ body.lb-disable-scrolling {
   display: flex;
   justify-content: center;
   align-items: center;
-  pointer-events: none; }
+  pointer-events: none;
+  z-index: 13;
+  -webkit-transition: opacity 600ms ease-in-out;
+  -moz-transition: opacity 600ms ease-in-out;
+  -ms-transition: opacity 600ms ease-in-out;
+  -o-transition: opacity 600ms ease-in-out;
+  transition: opacity 600ms ease-in-out;
+}
 
-#lb-flex1 {
-  z-index: 13; }
-
-#lb-flex2 {
-  z-index: 14; }
-
-#lb-wrapper1, #lb-wrapper2 {
+figure.lb-figure {
+  display: block;
   position: relative;
-  pointer-events: none; }
-
-#lb-image1, #lb-image2 {
-  border: white 8px solid;
-  border-radius: 4px;
-  max-width: 90vw;
-  max-height: 90vh; }
-
-#lb-image1 {
-  pointer-events: none; }
-
-#lb-image2 {
-  pointer-events: auto;
-  /* initially */ }
+  margin: 0;
+  z-index: 14;
+}
+figure.lb-figure figcaption {
+  position: absolute;
+  left: 1vh;
+  bottom: 1vh;
+  background-color: rgba(255, 255, 255, 0.6);
+  width: calc(100% - 2vh);
+  max-height: calc(100% - 2vh);
+  text-align: center;
+  z-index: 2;
+}
 
 #lb-image1-prev, #lb-image2-prev {
   position: absolute;
   width: 20%;
-  height: 30%;
+  height: 100%;
   left: 0;
-  top: 35%;
+  top: 0%;
   cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
-  z-index: 17; }
+  pointer-events: auto;
+  z-index: 17;
+}
 
 #lb-image1-next, #lb-image2-next {
   position: absolute;
   width: 20%;
-  height: 30%;
+  height: 100%;
   right: 0;
-  top: 35%;
+  top: 0%;
   cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
-  z-index: 17; }
+  pointer-events: auto;
+  z-index: 3;
+}
+
+#lb-image1, #lb-image2 {
+  border: white 1vh solid;
+  border-radius: 0.5vh;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#lb-image1 {
+  pointer-events: auto;
+}
+
+#lb-image2 {
+  pointer-events: auto; /* initially */
+}
+
+/*
+// TEMP:
+#lb-overlay:hover {
+    border: solid 1px red;
+}
+#lb-prev:hover, #lb-next:hover {
+    border: solid 1px green;
+}
+#lb-image1:hover, #lb-image2:hover {
+    border: solid 1px yellow;
+}
+#lb-image1-next:hover, #lb-image2-next:hover, #lb-image1-prev:hover, #lb-image2-prev:hover {
+    border: solid 1px blue;
+}
+*/
+
+/*# sourceMappingURL=lightboxSSA.css.map */

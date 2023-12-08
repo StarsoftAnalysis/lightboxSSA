@@ -1,5 +1,8 @@
-// LightboxSSA v2.50
-// Copyright 2020 Chris Dennis
+// LightboxSSA 
+
+// version 0.5 6/12/2023
+
+// Copyright 2020-2023 Chris Dennis
 
 //    This file is part of LightboxSSA.
 //
@@ -23,8 +26,9 @@
 // https://github.com/lokesh/lightbox2/blob/master/LICENSE
 // More info: http://lokeshdhakar.com/projects/lightbox2/
 
-// data- attributes
+// data- attributes   -- get them from the img or figure or anchor if not data-
 // - data-lightbox="galleryname"
+// - data-aspect
 // - data-title="image title"
 // - data-alt="alt info"
 // - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
@@ -34,20 +38,34 @@
 //  -- see enable() applying click to anything with a data-lightbox
 //  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
+// ongoing issues
+// - cSOT on image and imagePrev/Next instead of figure?
+
 // TODO
-// - is lb-cancel needed? maybe reinstate lb-loader because it's slower on real server 
-// - preload next/prev images
-// - it's a class, but use of # implies only one...
-// - keyboard < > esc
-// - fix fadeTo and jumpy timing sometimes
+// - more pure functions -- ??move them outside the class -- need lbssa prefix if so
+// Touch screens:
+//  - simple touch only to start lightbox
+//  - touch outside image to close -- NOT on clickable areas
+//  - swipe l/r to change image (already done?)
+//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
+//        those areas ought to respnd to either...
+///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
+//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
+//  - make caption transparent to touches
+//  - simple touch image to go to url if any
+
+// - trap back button to call dismantle
+// - demo/test site as part of this repo
+// - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
+// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
+// - keyboard < > esc -- reinstate previous effort
+    // - keyboard < > esc -- also back button to close lb
+// - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
+// - sort on onError/placeholder
 // - preload neighbours
-// - loading spinner
-// - keyboard < > esc -- also back button to close lb
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
-// - use title as tool tip? or add details?
 // - more Aria stuff?
-// - get caption from figcaption
 // - validate option values from 'user' and document user-settable ones
 // - maybe put X in corner of non-hover screens
 // - still get multiple jumps esp on phone
@@ -74,29 +92,32 @@
 //   - and/or allow prev/next touches on edges of image
 // - on click/mouse/pointer events should return quickly -- maybe just prevent further clicks, and then call start() from a timeout.
 // - swiping
+// - get caption from figcaption
+// - use title as tool tip? or add details?
+// - loading spinner
+// - use srcset that we've carefully parsed
+// - clickThroughImage -- to url, if external, config option to do target=_blank
+// - single-image lightbox -- need no < > arrows
+// - ditto -- need bigger image, otherwise there's not much point.
+// - check getSiblings and pointer stuff
 
 class LightboxSSA {
 
     constructor (options) {
+        //console.log("CCCCCCCCCCCCCCCCConstructor options=", options);
         this.album = [];
         this.currentImageIndex = 0;
-        this.constants = {
-            // 'constants' defined e.g. in CSS
-            arrowInset: 20, // distance of <> arrows from edge of window, in px
-            arrowWidth: 31,
-        };
         // NOTE: these have to be lowercase or snake_case because of the way they can be
         // set e.g. via Hugo params
         this.defaults = {
-            album_label: 'Image %1 of %2',
-            show_image_number_label: false,    // TODO not reimplemented
-            always_show_nav_on_touch_devices: false,
-            fade_duration: 600,  // for overlay
-            overlay_opacity: 0.9,
-            image_fade_duration: 600,
-            max_size: 50000,
-            max_width: 90,
-            max_height: 90,
+            //album_label: 'Image %1 of %2',
+            //show_image_number_label: false,    // TODO not reimplemented
+            //always_show_nav_on_touch_devices: false,
+            fade_duration: 600,
+            overlay_opacity: 1.0,   
+            //max_size: 50000,
+            max_width: 95,  // %
+            max_height: 95,
             //resizeDuration: 700,
             wrap_around: true,
             disable_scrolling: false, // hide scrollbar so that lightbox uses full area of window
@@ -105,16 +126,22 @@ class LightboxSSA {
             // This will free you to add html tags, such as links, in the caption.
             // If the caption data is user submitted or from some other untrusted source, then set this to true
             // to prevent xss and other injection attacks.
+            // FIXME implement this:
             sanitize_title: false,
-            min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
-            placeholderImage: '/images/imageNotFoundSSA.png',
+            //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
+            swipemin: 0.1,  // minimum swipe distance (as fraction screen size) 
+            image_location: '/images/',  // FIXME changing this will break the CSS!
+            placeholder_image: 'imageNotFound.png',  // within image_location
         };
-        this.options = Object.assign({}, this.defaults);
-        //this.options = $.extend(this.options, this.defaults, options);
-        //this.options = {...this.options, ...this.defaults, ...options}
-        this.applyOptions(options);
 
-        this.init();
+        // Apply defaults from Hugo config (if this is part of Hugo)
+        this.options = Object.assign({}, this.defaults);
+        this.applyOptions(options);
+        //this.transitionEnd = this.whichTransitionEvent();
+
+        this.docReady(() => {
+            this.enable();
+        });
     }
 
     // Add the user-supplied options to this.options, doing a bit of validation, convert strings to numbers, etc.
@@ -145,11 +172,6 @@ class LightboxSSA {
         }
     }
 
-    // TODO not used
-    imageCountLabel (currentImageNum, totalImages) {
-        return this.options.album_label.replace(/%1/g, currentImageNum).replace(/%2/g, totalImages);
-    }
-
     docReady (fn) {
         // see if DOM is already available
         if (document.readyState === "complete" || document.readyState === "interactive") {
@@ -160,304 +182,429 @@ class LightboxSSA {
         }
     }
 
-    // init() is called from constructor -- could be merged  TODO
-    init () {
-        var self = this;
-        this.docReady(function() {
-            // Now in start():  self.build();
-            self.enable();
-            //alert('lbssa ready and enabled');
-        });
+    handleKey (e) {
+        const KEYCODE_ESC        = 27;
+        const KEYCODE_LEFTARROW  = 37;
+        const KEYCODE_RIGHTARROW = 39;
+        switch (e.keyCode) {
+            case KEYCODE_ESC:
+                e.stopPropagation();
+                //console.log("escape pressed", e.keyCode, e.code);
+                this.dismantle();
+                break;
+            case KEYCODE_LEFTARROW:
+                //console.log("<- pressed", e.keyCode, e.code);
+                this.prevImage(e);
+                break;
+            case KEYCODE_RIGHTARROW:
+                //console.log("-> pressed", e.keyCode, e.code);
+                this.nextImage(e);
+                break;
+        }
     }
+    
+    /* Not needed -- use 'once' instead 
+    // From https://www.freecodecamp.org/news/javascript-debounce-example/
+    // const processChanges = debounce(() => saveInput());
+    // TODO this is throttling rather than debouncing?
+    debounce (func, timeout = 300) {
+        let timer;
+        return (...args) => {
+            const now = Date.now();
+            if (!timer) {
+                console.log("debounce: running func with args:", now, func, ...args);
+                func.apply(this, args);
+            } else {
+                console.log("debounce: not running func", now, func);
+            }
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                timer = undefined;
+                console.log("debounce: timer cleared", Date.now()); 
+            }, timeout);
+        };
+    }
+    */
+    /*
+    // is this better?  No!
+    debounce2 (fn, delay = 300) {
+        let timer;
+        return (...args) => {
+            if (timer) {
+                clearTimeout(timer);
+                console.log("debounce: putting it off");
+            }
+            // Oh! this won't run the fn for ages...
+            timer = setTimeout(fn, delay, ...args)
+        }
+    }
+    */
 
-    imageClickHandler (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const lbelement = e.currentTarget;
-        setTimeout(() => {  // Use timeout to return from event quickly
-            this.start(lbelement);
-        }, 0);
+    /*
+    // From https://webdesign.tutsplus.com/javascript-debounce-and-throttle--cms-36783t#toc-v2qk-debounce-vs-throttle
+    //initialize throttlePause variable outside throttle function
+    let throttlePause;
+    const throttle = (callback, time) => {
+        //don't run the function if throttlePause is true
+        if (throttlePause) return;
+        //set throttlePause to true after the if condition. This allows the function to be run once
+        throttlePause = true;
+        //setTimeout runs the callback within the specified time
+        setTimeout(() => {
+            callback();
+            //throttlePause is set to false once the function has been called, allowing the throttle function to loop
+            throttlePause = false;
+        }, time);
+    };
+    */
+
+    /*
+    simpleTouch (element, callback, ...args) {
+        // TEMP no bounce  element.addEventListener('touchstart', this.debounce((estart) => {
+        return;  // Oh! FIXME it works better on my screen without all this  9Sep23
+        element.addEventListener('touchstart', (estart) => {
+            estart.preventDefault();
+            estart.stopPropagation();
+            const t0 = estart.touches[0];
+            const el = t0.target;
+            const startX = t0.screenX;
+            const startY = t0.screenY;
+            el.addEventListener('touchend', (eend) => {
+                const t0 = eend.changedTouches[0];
+                const endX = t0.screenX;
+                const endY = t0.screenY;
+                console.log("lb:sT:end endX=%o startX=%o  endY=%o startY=%o", endX, startX, endY, startY); //eend=", eend);
+                // TODO detect up/down scrolling -- propogate it, or something.
+                if (endX == startX && endY == startY) {
+                    // good touch -- fire the callback
+                    if (typeof(callback) == 'function') {
+                        setTimeout(() => callback(eend, ...args));
+                    }
+                }
+            }, { once: true });
+        }); //);
     }
+    */
 
     // enable() is called via init() when page (i.e. JS) is loaded
     enable () {
-        var self = this;
-        
+        const self = this;
         // Attach click/touch/pointer listeners to every element on the page
         // that has [data-lightbox] in its attributes.
-        // (This requires that DOM is ready, but happens before the lightbox has been built)
+        // Need to ignore swipes at this stage.
+        // (This requires that DOM is ready, but happens before the lightbox has been built.)
         const matches = document.querySelectorAll("[data-lightbox]");
         matches.forEach(function(match) {
-            match.addEventListener('touchstart', self.imageClickHandler.bind(self), true);
-            /*match.addEventListener('touchstart', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const lbelement = e.currentTarget;
-                setTimeout(() => {  // Use timeout to return from event quickly
-                    self.start(e.currentTarget);
-                }, 0);
-            }, true);*/
-            match.addEventListener('click', self.imageClickHandler.bind(self), true);
-            /*match.addEventListener('click', function (e) {
-                e.preventDefault();  // e.g. to stop an <a data-lightbox=x> doing the <a>'s href
-                e.stopPropagation();
-                const lbelement = e.currentTarget;
-                setTimeout(function () {  // Use timeout to return from event quickly
-                    self.start(lbelement);
-                }, 0);
-            }, true);*/
+            self.clickOrTouch(match, self.start.bind(self), match);
         });
     }
 
-    windowWidth () { // from https://stackoverflow.com/questions/6942785/
-        return window.innerWidth && document.documentElement.clientWidth ? 
-            Math.min(window.innerWidth, document.documentElement.clientWidth) : 
-            window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth;
+    prevImage (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // TODO check wrap_around   and do nothing if album length is 1 (or is that already handled elsewhere?)
+        //console.log("method prevImage: currentII=%d", this.currentImageIndex);
+        if (this.currentImageIndex == 0) {
+            this.changeImage(this.album.length - 1);
+        } else {
+            this.changeImage(this.currentImageIndex - 1);
+        }
     }
- 
+
+    nextImage (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        //console.log("method nextImage: currentII=%d", this.currentImageIndex);
+        if (this.currentImageIndex === this.album.length - 1) {
+            this.changeImage(0);
+        } else {
+            this.changeImage(this.currentImageIndex + 1);
+        }
+    }
+
+    // Honour a click on the current lightbox image (either 1 or 2).
+    // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
+    // If via swipe, e is null.
+    clickThroughImage (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // this.currentImageIndex is evaluated at click time, so gives the correct URL.
+        const targetUrl = this.album[this.currentImageIndex].url;
+        //console.log("method cTI: currentII=%d  targetUrl='%s'", this.currentImageIndex, targetUrl);
+        if (targetUrl) {
+            // using window.open always seems to be blocked as a pop-up, so don't bother
+            /*
+                if (isExternalLink(targetUrl)) {
+                    window.open(targetUrl, "_blank"); //, "noopener");
+                } else {
+                */
+            window.location = targetUrl;
+            /* } */
+        /*
+        } else if (this.albumLen == 1) {
+            // Nowhere to go, so close the lightbox
+            // FIXME or maybe don't -- try ignoring the click
+            console.log("lb:cTI: NOT dismantling when nowhere to go");
+            //this.dismantle();
+        */
+        }
+    }
+
+    // Attach click or debounced touch events to an element, with a callback.
+    // (If there's no callback, we still may prevent the click/touch from propagating.)
+    // Callback gets passed the event and any other arsgs.
+    clickOrTouch (element, callback, ...args) {
+        // TEMP no debounce element.addEventListener('click', this.debounce(() => callback(args)));
+        //console.log("lb:cOT, element=%o callback=%o", element, callback);
+        element.addEventListener('click', (e) => { callback(e, ...args); });
+        // NOT NEEDED!  this.simpleTouch(element, callback, args);
+    }
+        
+    // FIXME does this handle being attached to more than one element ?!"!?
     // From http://www.javascriptkit.com/javatutors/touchevents2.shtml
-    swipedetect (touchsurface, callback) {
-        let swipedir, startX, startY, distX, distY, elapsedTime, startTime;
-        let handleswipe = callback; // || function(swipedir) {};
-        const threshold = 100;  // required min distance traveled to be considered swipe
-        const restraint = 70;   // maximum distance allowed at the same time in perpendicular direction
-        const allowedTime = 400; // maximum time allowed to travel that distance
+    // Detect left/right swipe or simple touch on gallery pictures.
+    // Goes to previous, next, clickthrough or nowhere.
+    clickTouchOrSwipe (element, clickCallback, leftCallback, rightCallback) {
+        const self = this;
+        //console.log("cTOS surface=", element);
 
-        touchsurface.addEventListener('touchstart', function(e) {
-            const touchobj = e.changedTouches[0];
-            swipedir = 'none';
-            startX = touchobj.pageX;
-            startY = touchobj.pageY;
-            startTime = new Date().getTime(); // record time when finger first makes contact with surface
-            e.preventDefault();
-        }, false);
+        // Simple click
+        element.addEventListener('click', (eclick) => { 
+            eclick.preventDefault();
+            eclick.stopPropagation();
+            //console.log("cTOS: simple click");
+            clickCallback(eclick); 
+        });
 
-        touchsurface.addEventListener('touchmove', function(e) {
-            e.preventDefault(); // prevent scrolling when inside DIV
-        }, false);
-
-        touchsurface.addEventListener('touchend', function(e) {
-            let touchobj = e.changedTouches[0];
-            distX = touchobj.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
-            distY = touchobj.pageY - startY; // get vertical dist traveled by finger while in contact with surface
-            elapsedTime = new Date().getTime() - startTime; // get time elapsed
-            //console.log("swipe: ", distX, distY, elapsedTime);
-            //alert("swipe: X=" + distX + " Y=" + distY + "time=" + elapsedTime);
-            if (elapsedTime <= allowedTime) {                                               // first condition for swipe met
-                if (Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) {         // 2nd condition for horizontal swipe met
-                    swipedir = (distX < 0) ? 'left' : 'right';                              // if dist travelled is negative, it indicates left swipe
-                } else if (Math.abs(distY) >= threshold && Math.abs(distX) <= restraint) {  // 2nd condition for vertical swipe met
-                    swipedir = (distY < 0) ? 'up' : 'down';                                 // if dist travelled is negative, it indicates up swipe
+        // Touches -- simple or swipe left/right
+        //element.addEventListener('touchstart', function(estart) {
+        element.addEventListener('touchstart', function(estart) {
+            estart.preventDefault();
+            estart.stopPropagation();
+            const touch = estart.changedTouches[0];
+            let swipedir = '';
+            const startX = touch.pageX;
+            const startY = touch.pageY;
+            //console.log("cTOS: touchstart %o at %d,%d", Date.now(), startX, startY);
+            //let startTime = new Date().getTime(); // record time when finger first makes contact with surface
+            element.addEventListener('touchend', function(eend) {
+                eend.preventDefault();
+                const touch = eend.changedTouches[0];
+                const distX = touch.pageX - startX; // get horizontal dist traveled by finger while in contact with surface
+                const distY = touch.pageY - startY; // get vertical dist traveled by finger while in contact with surface
+                //const endTime = new Date().getTime();
+                //const elapsedTime = endTime - startTime;
+                //console.log("cTOS: touchend %o at %d,%d", Date.now(), distX, distY);
+                // Detect left/right or up/down swipe.  Check for l/r first -- diagonals will be detected as l/r rather than u/d.
+                if (Math.abs(distX) >= self.options.swipemin * window.innerWidth) { 
+                    swipedir = (distX < 0) ? 'l' : 'r';
+                    //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
+                } else if (Math.abs(distY) >= self.options.swipemin * window.innerHeight) {
+                    swipedir = (distY < 0) ? 'u' : 'd';
+                    //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
+                } else {
+                    // Very short swipe -- call it a touch
+                    //console.log("cTOS: short distance (%d,%d) -- none", distX, distY);
+                    swipedir = 't';
                 }
-            }
-            if (handleswipe) {
-                handleswipe(swipedir, e);
-            }
-            e.preventDefault();
-        }, false);
+                switch (swipedir) {
+                    case 't':   // touch
+                        if (typeof(clickCallback) == 'function') {
+                            clickCallback(eend);
+                        }
+                        break;
+                    case 'r':   // left or down: previous image
+                    case 'd':
+                        if (typeof(leftCallback) == 'function') {
+                            leftCallback(eend);
+                        }
+                        break;
+                    case 'l':   // right or up: next image
+                    case 'u':
+                        if (typeof(rightCallback) == 'function') {
+                            rightCallback(eend);
+                        }
+                        break;
+                    default:
+                        // do nothing
+                }
+            }, { once: true }); // only want touchend once per touchstart.
+        });
+
+        element.addEventListener('touchmove', function(emove) {
+            emove.preventDefault(); // prevent scrolling when inside DIV   What?
+        });
     }
 
     // Build html for the lightbox and the overlay.
     // Attach event handlers to the new DOM elements.
     // NOTE This happens as part of start(), after user has clicked an image.
     build () {
-        // FIXME what's this?
-        //if ($('#lb-overlay').length > 0) {  // Presumably avoiding reentry
-        //    return;
-        //}
+        //console.log("BBBBBBBBBBBBBuild");
 
         if (this.options.disable_scrolling) {
             this.oldBodyOverflow = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
         }
 
+        // FIXME are -overlay and -nav both needed? -- overlay traps clicks
         const html = `
-            <div id=lb-overlay class=lb-element></div>
-            <div id=lb-nav class=lb-element>
+            <div id=lb-overlay class=lb-element>
+            <div id=lb-nav class="lb-element lb-navclass">
                 <div id=lb-prev aria-label="Previous image" class=lb-element></div>
                 <div id=lb-next aria-label="Next image" class=lb-element></div>
             </div>
             <div id=lb-flex1 class="lb-flex lb-element">
-                <div id=lb-wrapper1 class=lb-element>
-                    <img id=lb-image1 class=lb-element src="/images/spinnerSSA.gif">
-                    <div id=lb-image1-prev class=lb-element></div>
-                    <div id=lb-image1-next class=lb-element></div>
-                </div>
+                <figure id=lb-figure1 class="lb-element lb-figure">
+                    <div id=lb-image1-prev class="lb-element lb-navclass"></div>
+                    <div id=lb-image1-next class="lb-element lb-navclass"></div>
+                    <img id=lb-image1 class=lb-element src="${this.defaults.image_location}spinner.gif">
+                    <figcaption id=lb-figcap1 class=lb-element></figcaption>
+                </figure>
             </div>
             <div id=lb-flex2 class="lb-flex lb-element">
-                <div id=lb-wrapper2 class=lb-element>
-                    <img id=lb-image2 class=lb-element src="/images/spinnerSSA.gif">
-                    <div id=lb-image2-prev class=lb-element></div>
-                    <div id=lb-image2-next class=lb-element></div>
-                </div>
-            </div>
+                <figure id=lb-figure2 class="lb-element lb-figure">
+                    <div id=lb-image2-prev class="lb-element lb-navclass"></div>
+                    <div id=lb-image2-next class="lb-element lb-navclass"></div>
+                    <img id=lb-image2 class=lb-element src="${this.defaults.image_location}spinner.gif">
+                    <figcaption id=lb-figcap2 class=lb-element></figcaption>
+                </figure>
+            </div></div>
         `;
-        //$(html).appendTo($('body'));
         document.body.insertAdjacentHTML('beforeend', html);
+
+        // Swappable units
+        this.unit1 = {
+            id:        1,
+            flex:      document.getElementById('lb-flex1'),
+            figure:    document.getElementById('lb-figure1'),
+            imagePrev: document.getElementById('lb-image1-prev'),
+            imageNext: document.getElementById('lb-image1-next'),
+            image:     document.getElementById('lb-image1'),
+            figcap:    document.getElementById('lb-figcap1'),
+        };
+        this.unit2 = {
+            id:        2,
+            flex:      document.getElementById('lb-flex2'),
+            figure:    document.getElementById('lb-figure2'),
+            imagePrev: document.getElementById('lb-image2-prev'),
+            imageNext: document.getElementById('lb-image2-next'),
+            image:     document.getElementById('lb-image2'),
+            figcap:    document.getElementById('lb-figcap2'),
+        };
 
         // Cache DOM objects
         this.overlay    = document.getElementById('lb-overlay');
         this.nav        = document.getElementById('lb-nav');
         this.prev       = document.getElementById('lb-prev');
         this.next       = document.getElementById('lb-next');
-        this.flex1      = document.getElementById('lb-flex1');
-        this.flex2      = document.getElementById('lb-flex2');
-        this.wrapper1   = document.getElementById('lb-wrapper1');
-        this.wrapper2   = document.getElementById('lb-wrapper2');
-        this.image1     = document.getElementById('lb-image1');
-        this.image2     = document.getElementById('lb-image2');
-        this.image1prev = document.getElementById('lb-image1-prev');
-        this.image1next = document.getElementById('lb-image1-next');
-        this.image2prev = document.getElementById('lb-image2-prev');
-        this.image2next = document.getElementById('lb-image2-next');
         this.lbelements = document.getElementsByClassName('lb-element');
+        this.lbnavelements = document.getElementsByClassName('lb-navclass');
 
-        /*??
         // Override CSS depending on options
-        // TODO get window width, make sure there's room for the <> arrows -- add a bit of spacing if possible.
-        //  - need to get current window width...  and redo the calculation on window resize.  Pity -- it's all automatic at the moment.
-        const winWidth = this.windowWidth();
-        const maxWidthPixels = winWidth * this.options.max_width / 100;
-        if ((winWidth - maxWidthPixels) < (2 * (this.constants.arrowWidth + this.constants.arrowInset))) {
-            // remove the arrow inset
-            this.prev['background-position'] = 'left  center';
-            this.next['background-position'] = 'right center';
-        } else {
-            // include the inset
-            this.prev['background-position'] = 'left '  + (this.constants.arrowInset) + 'px center';
-            this.next['background-position'] = 'right ' + (this.constants.arrowInset) + 'px center';
-        }
-        const max_width = (Math.min(maxWidthPixels, winWidth - 2*this.constants.arrowWidth)) + "px";
-        this.image1.style['max-width']  = max_width; // "calc(90% - 51px)";   //this.percentString(this.options.max_width);
-        this.image1.style['max-height'] = this.options.max_height;
-        this.image2.style['max-width']  = max_width; //this.percentString(this.options.max_width);
-        this.image2.style['max-height'] = this.options.max_height;
-        */
-
+        /* in onload stuff
+        this.unit1.image.style.maxWidth = "" + this.options.max_width + "vw";
+        this.unit2.image.style.maxWidth = "" + this.options.max_width + "vw";
+        this.unit1.image.style.maxHeight = "" + this.options.max_height + "vh";
+        this.unit2.image.style.maxHeight = "" + this.options.max_height + "vh";
+        */ 
         // Attach event handlers
         const self = this;
-        this.overlay.addEventListener('click', this.dismantle.bind(this), false);
-        this.overlay.addEventListener('touchstart', this.dismantle.bind(this), false);
+        // Close lightbox if clicked/touched other than on navigation areas:
+        this.clickOrTouch(this.overlay, this.dismantle.bind(this));
 
-        function prevImage (e) {
-            if (e) {    // e is null if via swipe
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            // TODO check wrap_around
-            if (this.currentImageIndex == 0) {
-                this.changeImage(this.album.length - 1);
-            } else {
-                this.changeImage(this.currentImageIndex - 1);
-            }
+        // Intercept key presses (looking for 'escape' or left/right arrows)
+        document.addEventListener('keydown', this.handleKey.bind(this), false);
+
+        this.clickOrTouch(this.prev,            this.prevImage.bind(this));
+        this.clickOrTouch(this.unit1.imagePrev, this.prevImage.bind(this));
+        this.clickOrTouch(this.unit2.imagePrev, this.prevImage.bind(this));
+        this.clickOrTouch(this.next,            this.nextImage.bind(this));
+        this.clickOrTouch(this.unit1.imageNext, this.nextImage.bind(this));
+        this.clickOrTouch(this.unit2.imageNext, this.nextImage.bind(this));
+
+        // from https://www.designcise.com/web/tutorial/how-to-check-if-a-string-url-refers-to-an-external-link-using-javascript
+        function isExternalLink (url) {
+            const tmp = document.createElement('a');
+            tmp.href = url;
+            return tmp.host !== window.location.host;
         }
-        this.prev.addEventListener('click', prevImage.bind(this), false);
-        this.prev.addEventListener('touchstart', prevImage.bind(this), false);
-        this.image1prev.addEventListener('click', prevImage.bind(this), false);
-        this.image1prev.addEventListener('touchstart', prevImage.bind(this), false);
-        this.image2prev.addEventListener('click', prevImage.bind(this), false);
-        this.image2prev.addEventListener('touchstart', prevImage.bind(this), false);
 
-        function nextImage (e) {
-            if (e) {    // e is null if via swipe
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            if (this.currentImageIndex === this.album.length - 1) {
-                this.changeImage(0);
-            } else {
-                this.changeImage(this.currentImageIndex + 1);
-            }
-        }
-        this.next.addEventListener('click', nextImage.bind(this), false);
-        this.next.addEventListener('touchstart', nextImage.bind(this), false);
-        this.image1next.addEventListener('click', nextImage.bind(this), false);
-        this.image1next.addEventListener('touchstart', nextImage.bind(this), false);
-        this.image2next.addEventListener('click', nextImage.bind(this), false);
-        this.image2next.addEventListener('touchstart', nextImage.bind(this), false);
+        // Images get clicked/touched where not covered by navigation divs
+        this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
+        this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
 
-        // Honour a click on the current lightbox image (either 1 or 2).
-        // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
-        // If via swipe, e is null.
-        function clickThroughImage (e) {
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            // this.currentImageIndex is evaluated at click time, so gives the correct URL.
-            if (this.album[this.currentImageIndex].url) {
-                // Jump to the given URL
-                window.location = this.album[this.currentImageIndex].url;
-            }
-        }
-        this.image1.addEventListener('click', clickThroughImage.bind(this), false);
-        //this.image1.addEventListener('touchstart', clickThroughImage.bind(this), false);
-        this.image2.addEventListener('click', clickThroughImage.bind(this), false);
-        //this.image2.addEventListener('touchstart', clickThroughImage.bind(this), false);
-
-        this.swipedetect(this.image1, function (swipedir, e) {
-            // swipedir contains either "none", "left", "right", "top", or "down"
-            //console.log("image1 detected swipe", swipedir);
-            //alert("image1 detected swipe: " + swipedir);
-            if (swipedir == 'right' || swipedir == 'down') {
-                prevImage.bind(self)(e);
-            } else if (swipedir == 'left' || swipedir == 'up') {
-                nextImage.bind(self)(e);
-            } else {    // no swipe, just simple touch
-                clickThroughImage.bind(self)(e);
-            }
-        });
-
-        this.swipedetect(this.image2, function (swipedir, e) {
-            // swipedir contains either "none", "left", "right", "top", or "down"
-            //console.log("image2 detected swipe", swipedir);
-            //alert("image2 detected swipe:" + swipedir);
-            if (swipedir == 'right' || swipedir == 'down') {
-                prevImage.bind(self)(e);
-            } else if (swipedir == 'left' || swipedir == 'up') {
-                nextImage.bind(self)(e);
-            } else {    // no swipe, just simple touch
-                clickThroughImage.bind(self)(e);
-            }
-        });
-
-        /*
-        this.$loader.on('click', function() {
-            self.dismantle();
-            return false;
-        });
-        */
     }; // end of build()
 
-    fadeTo (element, duration, opacity, completeFn = null) {
-        if (completeFn) {
-            // FIXME can't get transitionend to work, just use a timeout
-            //element.addEventListener('transitionend', completeFn, { once: true, capture: true });
-            setTimeout(completeFn, duration);
+    // TEMP fadeTo that just does it now
+    /*
+    fadeToZero (element, duration, opacity, completeFn = null) {
+        if (opacity != 0) {
+            element.style.display = ""; // revert to non-inline value
         }
+        element.style.opacity = opacity;
+        if (opacity == 0) {
+            element.style.display = "none";
+        }
+        if (completeFn) {
+            completeFn();
+        }
+    }
+    */
+
+    fadeTo (element, duration, opacity, completeFn = null) {
+        //console.log("lb:fadeTo element=%s  duration=%o  opacity=%o  fn=%o", element.id, duration, opacity, completeFn);
+        // Still can't get transitionend stuff to work reliably, so we'll just do timeout stuff
         element.style['transition-property'] = 'opacity';
-        element.style['transition-duration'] = duration + 'ms';
-        // Do the fade after a short delay to let the CSS changes take effect:
-        setTimeout(function() {
-            element.style.opacity = opacity;
-        }, 50);
+        element.style['transition-duration'] = this.options.fade_duration + 'ms';
+        if (opacity != 0) {
+            // Make sure it's displayed if the target opacity is non-zero
+            element.style.display = ""; // revert to non-inline value
+        }
+        // Start the opacity transition after CSS changes
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                element.style.opacity = opacity;
+            });
+        });
+        setTimeout(() => {
+            //console.log("fadeTo timed out to fade_duration");
+            if (opacity == 0) {
+                element.style.display = "none";
+            }
+            if (typeof completeFn == "function") {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        completeFn();
+                    });
+                });
+            }
+
+        }, this.options.fade_duration);
     }
 
     // User has clicked on an element with 'data-lightbox'.
-    // Show lightbox. If the image is part of a set, add siblings to album array.
-    start (lbelement) {
-        // lbelement is the thing clicked on -- typically a <figure> or <image>. -- no longer a $jquery thing!
-
-        // Apply user-supplied options 
-        if (typeof lightboxSSAOptions == "object") {
-            //$.extend(this.options, lightboxSSAOptions);
-            //this.options = {...this.options, ...lightboxSSAOptions}
-            this.applyOptions(lightboxSSAOptions);
+    // Show lightbox. If the image is part of a set, add others in set to album array.
+    start (e, lbelement) {
+        // Spread args not working?  -- make sure lbelement isn't an array:
+        if (Array.isArray(lbelement)) {
+            lbelement = lbelement[0];
+        }
+        // lbelement is the thing clicked on -- typically a <figure> or <image>
+        //console.log("SSSSSSSSSSSSSSStart lbelement=", lbelement);
+        if (!lbelement) {
+            return; // shouldn't happen
         }
 
+        // Apply user-supplied options 
+        if (typeof lightboxssa_options == "object") {
+            console.log("lbSSA.start: options are %o", lightboxssa_options);
+            this.applyOptions(lightboxssa_options);
+        }
+
+        // Build <<<<<<<<<<<<<<<
         this.build();
-        // FIXME keyboard stuff isn't working -- need to do the non-JS version of this:
-        //this.$overlay.focus();
+
         this.showLightbox();
 
         this.album = [];
@@ -465,128 +612,206 @@ class LightboxSSA {
 
         const self = this;
         function addToAlbum (lbe) {
-            const tag = lbe.tabname; //$lbelement.prop("tagName");
+            const tag = lbe.tagName;
+            const parent = lbe.parentElement;
+            let img = null;
+            let figcaption = null;
+            switch (tag) {
+            case "IMG":
+                img = lbe;
+                break;
+            case "FIGURE":
+                img = lbe.querySelector('img');
+                figcaption = lbe.querySelector('figcaption');
+                break;
+            }
             // Image can be from: -- searched in this order
             // - data-image
             // - <img>'s src
             // - <figure>'s (first) <img>'s src
-            // - <a>'s <img>'s src
             //var imageURL = $lbelement.attr('data-image');
             let imageURL = lbe.getAttribute('data-image');  // returns null or "" if not there
-
             if (!imageURL) {
-                if (tag == 'IMG') {
+                switch (tag) {
+                case "IMG":
                     imageURL = lbe.getAttribute('src');
-                } else if (tag == 'FIGURE' || tag == 'A') {
-                    // Find the first img (if any)
-                    //let $imgs = $lbelement.find('img'); // TO HERE
-                    //if ($imgs.length > 0) {
-                    //    imageURL = $imgs.attr('src');
-                    //}
-                    let img = lbe.querySelector('img');
+                        break;
+                case 'FIGURE':
                     if (img) {
                         imageURL = img.getAttribute('src');
                     }
+                    break;
                 }
             }
             if (!imageURL) {
-                imageURL = 'missingImage.jpg';
+                imageURL = self.options.image_location + self.options.placeholder_image;
             }
             //console.log("imageURL: ", imageURL);
             // Link URL is from data-url or <fig>'s <img>'s data-url or <a>'s href
             // - <a>'s href - how to check if that is an image?
             let linkURL = lbe.getAttribute('data-url');
             if (!linkURL) {
-                if (tag == 'FIGURE') {
-                    //let $imgs = $lbelement.find('img');
-                    //if ($imgs.length > 0) {
-                    //   linkURL = $imgs.attr('data-url');
-                    //}
-                    let img = lbe.querySelector('img');
+                switch (tag) {
+                case 'FIGURE':
                     if (img) {
                         linkURL = img.getAttribute('data-url');
                     }
-                } else if (tag == 'A') {
+                    break;
+                case 'A':
                     linkURL = lbe.getAttribute('href');
+                    break;
                 }
             }
-            // (no linkURL is OK)       
-            //console.log("adding image ", $lbelement, ", imageURL is ", imageURL, ", linkURL is ", linkURL);
-            // TODO Caption -- maybe get it from figcaption
+            // Title -- from data-title or img's title
+            let title = lbe.getAttribute('data-title');
+            if (!title) {
+                if (img) {
+                    title = img.getAttribute('title');
+                }
+            }
+            // Alt -- from data-alt or img's alt
+            let alt = lbe.getAttribute('data-alt');
+            if (!alt) {
+                if (img) {
+                    alt = img.getAttribute('alt');
+                }
+            }
+            // Caption -- from data-caption or figcaption
+            let caption = lbe.getAttribute('data-caption');
+            if (!caption) {
+                if (figcaption) {
+                    caption = figcaption.textContent;
+                }
+            }
+            // srcset -- from data-srcset or img
+            let srcsetString, srcset;
+            srcsetString = lbe.getAttribute('data-srcset');
+            if (!srcsetString) {
+                if (img) {
+                    srcsetString = img.getAttribute('srcset');
+                }
+            }
+            // aspect ratio -- from data-aspect
+            let aspect = lbe.getAttribute('data-aspect');
+            if (aspect) {
+                aspect = parseFloat(aspect);
+            }
+            if (!aspect || isNaN(aspect)) {
+                aspect = 1.0; // arbitrary default
+            }
+            //console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcsetString, aspect);
             self.album.push({
-                name:    imageURL,
-                url:     linkURL,
-                alt:     lbe.getAttribute('data-alt'),
-                title:   lbe.getAttribute('data-title') || lbe.getAttribute('title'),
-                srclist: lbe.getAttribute('data-imagelist'),
+                name:         imageURL,
+                url:          linkURL,
+                title:        title,
+                alt:          alt,
+                caption:      caption,
+                srcsetString: srcsetString,
+                aspect:       aspect,
             });
         } // end of addToAlbum
 
-        //var dataLightboxValue = $lbelement.attr('data-lightbox');    // dLV gets 'lightbox' or the name of the gallery
         const dataLightboxValue = lbelement.getAttribute('data-lightbox');
         // Find all elements with the same gallery name.  querySelectorAll returns them in document order.
         const lbelements = document.querySelectorAll('[data-lightbox="' + dataLightboxValue + '"]');
-        let i = 0;
-        //for (var i = 0; i < $lbelements.length; i += 1) {
-        lbelements.forEach(function(lbe) {
-            //addToAlbum($($lbelements[i]));
-            addToAlbum(lbe);
-            //if ($lbelements[i] === $lbelement[0]) {
-            //if ($lbelements[i] === lbelement) {
-            if (lbe === lbelement) {
-                imageNumber = i;
-            }
-            i += 1;
-        });
+        if (lbelements) {
+            let i = 0;
+            lbelements.forEach(function(lbe) {
+                addToAlbum(lbe);
+                if (lbe === lbelement) {
+                    imageNumber = i;
+                }
+                i += 1;
+            });
+        } else {
+            // Don't know why this happens sometimes.  Timing?
+            console.log("lb: no lightbox elements! dlB=%s", dataLightboxValue);
+            // At least put the original element in the album
+            addToAlbum(lbelement);
+            imageNumber = 0;
+        }
+        //console.log("imageNumber=%d  album: ", imageNumber, this.album);
 
         this.albumLen = this.album.length;
         if (this.albumLen == 1) {
             // nowhere to navigate to
-            //this.$nav.hide();
-            this.fadeTo(this.nav, this.options.fadeDuration, 0);
+            for (const nav of this.lbnavelements) {
+                nav.style.display = "none";
+            }
+            // (clickThroughImage will handle clicks)
         }
         if (this.albumLen == 2 && !this.options.wrap_around) {
             // TODO adjust arrows by hiding prev or next
         }
-        this.currentImage = this.image1;
-        this.otherImage = this.image2;
+
+        // Set pointers for swapping (they'll be swapped immediately in changeImage())
+        this.currentUnit = this.unit2;
+        this.otherUnit   = this.unit1;
         this.changeImage(imageNumber);
     }; // end of start()
 
     // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
+    // FIXME currently not doing any preloading -- conflicts with srcset stuff, I think.
     // (depends on length of album)
-    // Load the specified image as this.$otherImage, adjust its size, then call showImage() to swap images
+    // Load the specified image as this.otherUnit.image, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {
+        if (this.album.len == 0) {
+            //console.log("lb:changeImage: album is empty");
+            return;
+        }
         const self = this;
-        const image = this.otherImage;
+        // The DOM figure/image/figcap we're about to modify:
+        const figure = this.otherUnit.figure;
+        const image = this.otherUnit.image;
+        const figcap = this.otherUnit.figcap;
+        // The album entry we're going to load:
+        const albumEntry = this.album[imageNumber];
+        if (!albumEntry) {
+            //console.log("lb:cI: albumEntry not set");
+            return;
+        }
 
-        // Disable keyboard nav during transitions
-        this.disableKeyboardNav();
+        function onLoad (e) {
+            // Get the dimensions of the image that the srcset mechanism has chosen:
+            const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
+            //console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
 
-        function onLoad () {
-            // 'self' is the lightbox object
-            // 'image' is the DOM object (either lb-image1 or lb-image2)
-
-            image.setAttribute('alt', self.album[imageNumber].alt);
-            image.setAttribute('title', self.album[imageNumber].title);
-            // TODO Caption?
-            
-            image.style.cursor = (self.album[imageNumber].url ? "pointer" : "auto");
-
+            // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
+            // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
+            if (targetImage.srcset) {
+                let pixelWidth = targetImage.naturalWidth;  // use this if src (rather than srcset) image was used.
+                const wpos = targetImage.currentSrc.indexOf("?w=");
+                if (wpos > -1) {
+                    pixelWidth = parseInt(targetImage.currentSrc.substr(wpos+3));
+                }
+                if (!isNaN(pixelWidth)) {
+                    targetImage.style.maxWidth = `${pixelWidth}px`;
+                }
+            }
             self.showImage();
-
         }; // end of onload function
 
         function onError () {
             // Expected image not found -- use placeholder
-            this.src = self.options.placeholderImage;
+            // (This seems to work.  If the placeholder isn't found,
+            // we just end up with a border round nothing.)
+            this.src = self.options.image_location + self.options.placeholder_image;
         }
 
         image.addEventListener('load', onLoad, { once: true });
-        image.addEventListener('error', onLoad, { once: true });
+        image.addEventListener('error', onError, { once: true });
 
         // Load the new image -- it will have opacity 0 at first
-        image.setAttribute("src", this.album[imageNumber].name);
+        // (this fires the onLoad function above) 
+        console.log("lbSSA: loading from album %v", albumEntry);
+        image.src = albumEntry.name;
+        image.srcset =  albumEntry.srcsetString || "";
+        image.sizes = "" + this.options.max_width + "vw";
+        image.alt = albumEntry.alt || "";
+        image.title = albumEntry.title || "";
+        image.style.cursor = (albumEntry.url ? "pointer" : "auto");
+        figcap.innerHTML = albumEntry.caption || "";
+
         this.currentImageIndex = imageNumber;
 
     }; // end of changeImage()
@@ -598,93 +823,33 @@ class LightboxSSA {
         });
     }
 
-    // From https://gomakethings.com/how-to-get-all-of-an-elements-siblings-with-vanilla-js/
-    getSiblings (elem, includeSelf = true) {
-        // Setup siblings array and get the first sibling
-        const siblings = [];
-        let sibling = elem.parentNode.firstChild;
-        // Loop through each sibling and push to the array
-        while (sibling) {
-            if (sibling.nodeType === 1 && (includeSelf || (sibling !== elem))) {
-                siblings.push(sibling);
-            }
-            sibling = sibling.nextSibling
-        }
-        return siblings;
-    };
-
-    // Display the image and its details and begin preload neighbouring images.
+    // Display the image and its details and begin preloading neighbouring images.
     // Fades out the current image, fades in the other one, then swaps the pointers.
     showImage () {  // (width, height) 
-        //this.$loader.stop(true).hide();   // FIXME reinstate this
-        // TODO ? also disable other clicks and keyboard events before the swap?
-        //this.currentImage.style["pointer-events"] = "none";
-        const siblings = this.getSiblings(this.currentImage);
-        //console.log("1. siblings:", siblings);
-        for (let i = 0; i < siblings.length; i++) {
-            //console.log("siblings[i]:", siblings[i]);
-            siblings[i].style['pointer-events'] = 'none';
-        }
-        //this.currentImage.style["touch-action"] = "none";    // FIXME touch action needed?
-        this.fadeTo(this.currentImage, this.options.image_fade_duration, 0);
-        this.fadeTo(this.otherImage, this.options.image_fade_duration+10, 1, () => {    // function() {
-            // Swap the images
-            const temp = this.otherImage;
-            this.otherImage = this.currentImage;
-            this.currentImage = temp;
-            //this.currentImage.style["pointer-events"] = "auto";
-            const siblings = this.getSiblings(this.currentImage);
-            //console.log("2. siblings:", siblings);
-            for (let i = 0; i < siblings.length; i++) {
-                //console.log("siblings[i]:", siblings[i]);
-                siblings[i].style['pointer-events'] = 'auto';
-            }
-            //this.currentImage.style["touch-action"] = "auto";
-            //this.updateNav();
-            this.preloadNeighboringImages();
-            this.enableKeyboardNav();  // FIXME move this start() or build() -- no, need to disable nav during changeImage 
+        //console.log("showImage swapping from %s to %s", this.currentUnit.id, this.otherUnit.id);
+        this.currentUnit.imagePrev.style['pointer-events'] = 'none';
+        this.currentUnit.imageNext.style['pointer-events'] = 'none';
+        // TODO? don't bother to fade if already at the target opacity
+        this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0.0, (e) => {
+            //requestAnimationFrame(() =>{console.log("fade out current finished");});
+            //console.log("fade out current finished  e=", e);
         });
-        //}.bind(this));
+        this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1.0, (e) => {    // function() {
+            //console.log("fade in other finished  e=", e);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    //console.log("fade in other timeout called");
+                    // Swap the images
+                    [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
+                    this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
+                    this.currentUnit.imageNext.style['pointer-events'] = 'auto';
+                });
+            });
+        });
     }
 
-    // Display previous and next navigation if appropriate.
-    /* Still needed?
-    updateNav () {
-        // Check to see if the browser supports touch events. If so, we take the conservative approach
-        // and assume that mouse hover events are not supported and always show prev/next navigation
-        // arrows in image sets.
-        let alwaysShowNav = false;
-        try {
-            document.createEvent('TouchEvent');
-            alwaysShowNav = this.options.always_show_nav_on_touch_devices;   //) ? true : false;
-        } catch (e) {}
-
-        // FIXME sort out arrow opacity -- is it still needed? yes, does .show() among other things.
-        if (this.album.length > 1) {
-            if (this.options.wrap_around) {
-                if (alwaysShowNav) {
-                    this.$overlay.find('.lb-prev, .lb-next').css('opacity', '1');
-                }
-                this.$overlay.find('.lb-prev, .lb-next').show();
-            } else {
-                if (this.currentImageIndex > 0) {
-                    this.$overlay.find('.lb-prev').show();
-                    if (alwaysShowNav) {
-                        this.$overlay.find('.lb-prev').css('opacity', '1');
-                    }
-                }
-                if (this.currentImageIndex < this.album.length - 1) {
-                    this.$overlay.find('.lb-next').show();
-                    if (alwaysShowNav) {
-                        this.$overlay.find('.lb-next').css('opacity', '1');
-                    }
-                }
-            }
-        }
-    };
-    */
-
     // Preload previous and next images in set.
+    // TODO (if we're doing this at all) -- set srcset and sizes as in changeImage()
     preloadNeighboringImages () {
         if (this.album.length > this.currentImageIndex + 1) {
             var preloadNext = new Image();
@@ -696,66 +861,21 @@ class LightboxSSA {
         }
     };
 
-    // FIXME does this still work?
-    enableKeyboardNav () {
-        /* TODO keyboard stuff
-        this.$overlay.on('keyup.keyboard', this.keyboardAction.bind(this));
-        this.$overlay.on('keyup.keyboard', this.keyboardAction.bind(this));
-        */
-    }
-
-    disableKeyboardNav () {
-        //this.$lightbox.off('.keyboard');
-        // TODO this.$overlay.off('.keyboard');
-    }
-
-    keyboardAction (event) {
-        const KEYCODE_ESC        = 27;
-        const KEYCODE_LEFTARROW  = 37;
-        const KEYCODE_RIGHTARROW = 39;
-
-        let keycode = event.keyCode;
-        if (keycode === KEYCODE_ESC) {
-            // Prevent bubbling so as to not affect other components on the page.
-            event.stopPropagation();
-            this.dismantle();
-        } else if (keycode === KEYCODE_LEFTARROW) {
-            if (this.currentImageIndex !== 0) {
-                this.changeImage(this.currentImageIndex - 1);
-            } else if (this.options.wrap_around && this.album.length > 1) {
-                this.changeImage(this.album.length - 1);
-            }
-        } else if (keycode === KEYCODE_RIGHTARROW) {
-            if (this.currentImageIndex !== this.album.length - 1) {
-                this.changeImage(this.currentImageIndex + 1);
-            } else if (this.options.wrap_around && this.album.length > 1) {
-                this.changeImage(0);
-            }
-        }
-    };
-
-    remove (element) {
-        this.fadeTo(element, this.options.fade_duration, 0, function() {
-            //element.parentNode.removeChild(element);
-            // FIXME why don't we get here?
-            element.remove();
-        });
-        /* FIXME not needed
-        // Hack!
-        setTimeout(function () {
-            element.remove();
-        }, this.options.fade_duration);
-        */
-    }
-
     // Unbuild the DOM structure
-    dismantle () {
-        for (let lbelement of this.lbelements) {
-            this.remove(lbelement);
-        };
+    dismantle (e) {
+        // Fading before removing would be nice, but it leaves bits behind,
+        // and e.g. clickThrough event still happens.
+        //console.log("DDDDDDDDDDDDDDDDDDDDDDDismantling");
+        this.fadeTo(this.overlay, this.options.fade_duration, 0, () => {
+            setTimeout(() => {
+                this.overlay.replaceChildren();
+                this.overlay.remove();
+            });
+        });
         if (this.options.disable_scrolling) {
             document.body.style.overflow = this.oldBodyOverflow;
         }
+        document.removeEventListener('keydown', this.handleKey);
     };
 
 } // end of class LightboxSSA
