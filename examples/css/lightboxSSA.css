@@ -1,4 +1,5 @@
 /* lightboxSSA.scss */
+
 body.lb-disable-scrolling {
   overflow: hidden;
 }

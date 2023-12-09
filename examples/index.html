@@ -6,21 +6,14 @@
   <script src="js/lightboxSSA.js" defer></script>
   <link rel="stylesheet" href="css/lightboxSSA.css">
 <style>
+    body {
+        padding: 0 1em;
+    }
     figure {
-      margin: 0 1em 0.5em;
+      margin: 0.5em 1em 0.5em 0;
       width: fit-content;
-      display: table;
-    }
-    figure figcaption {
-      display: table-caption;
-      caption-side: bottom;
-    }
-    figure img, figure video {
-      display: table-cell;
-    }
-    div#div1 img {
-        width: 30%;
-    }
+      display: inline-block; /*table;*/
+    } 
 </style>
 </head>
 <body>
@@ -33,12 +26,12 @@
     Each with its own lightbox.
     <div id=div1>
       <figure data-lightbox="example-1">
-          <img src="/photos/pic1.jpg"  alt="A view of Westminster Abbey">
-          <figcaption>Short caption</figcaption>
+          <img src="/photos/pic1.jpg" width=300 alt="A view of Westminster Abbey">
+          <figcaption>Westminster Abbey</figcaption>
       </figure>
       <figure data-lightbox="example-2" data-title="This is a title that only Javascript will find">
-          <img src="/photos/pic2.jpg" alt="Looking down at a calm sea from the top of a chalk cliff">
-          <figcaption>LKJ LK LKJ LKJ LKJ LKJ LKJ LKJ LKJ LKJlksdjf lskdfj slkdfj asdkfj asldkfj A much longer caption that should wrap nicely beneath the image.</figcaption>
+          <img src="/photos/pic2.jpg" width=300 alt="Looking down at a calm sea from the top of a chalk cliff">
+          <figcaption>A cliff, can't remember where</figcaption>
       </figure>
     </div>
 
@@ -48,20 +41,20 @@
     The lightboxes are linked into a gallery.
     <div id=div2>
       <figure data-lightbox="example-set" data-title="Click the right half of the image to move forward.">
-        <img src="https://picsum.photos/200/300?random=3" alt="Random image">
-        <figcaption>Caption for random image 1</figcaption>
+        <img src="https://picsum.photos/400/600?random=3" width=200 alt="Random image">
+        <figcaption>Caption 1</figcaption>
       </figure>
       <figure data-lightbox="example-set" data-title="Or press the right arrow on your keyboard.">
-        <img src="https://picsum.photos/200/300?random=4" alt="Random image">
-        <figcaption>Caption for random image 2</figcaption>
+        <img src="https://picsum.photos/400/600?random=4" width=200 alt="Random image">
+        <figcaption>Caption 2</figcaption>
       </figure>
       <figure data-lightbox="example-set" data-title="The next image in the set is preloaded as you're viewing.">
-        <img src="https://picsum.photos/200/300?random=5" alt="Random image">
-        <figcaption>Caption for random image 3</figcaption>
+        <img src="https://picsum.photos/400/600?random=5" width=200 alt="Random image">
+        <figcaption>Caption 3</figcaption>
       </figure>
       <figure data-lightbox="example-set" data-title="Click anywhere outside the image or the X to the right to close.">
-        <img src="https://picsum.photos/200/300?random=6" alt="Random image">
-        <figcaption>Caption for random image 4</figcaption>
+        <img src="https://picsum.photos/400/600?random=6" width=200 alt="Random image">
+        <figcaption>Caption 4</figcaption>
       </figure>
     </div>
 

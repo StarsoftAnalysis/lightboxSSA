@@ -130,8 +130,7 @@ class LightboxSSA {
             sanitize_title: false,
             //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
             swipemin: 0.1,  // minimum swipe distance (as fraction screen size) 
-            image_location: '/images/',  // FIXME changing this will break the CSS!
-            placeholder_image: 'imageNotFound.png',  // within image_location
+            placeholder_image: '../images/imageNotFound.png',  // within image_location
         };
 
         // Apply defaults from Hugo config (if this is part of Hugo)
@@ -458,7 +457,7 @@ class LightboxSSA {
                 <figure id=lb-figure1 class="lb-element lb-figure">
                     <div id=lb-image1-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image1-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image1 class=lb-element src="${this.defaults.image_location}spinner.gif">
+                    <img id=lb-image1 class=lb-element src="../images/spinner.gif">
                     <figcaption id=lb-figcap1 class=lb-element></figcaption>
                 </figure>
             </div>
@@ -466,7 +465,7 @@ class LightboxSSA {
                 <figure id=lb-figure2 class="lb-element lb-figure">
                     <div id=lb-image2-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image2-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image2 class=lb-element src="${this.defaults.image_location}spinner.gif">
+                    <img id=lb-image2 class=lb-element src="../images/spinner.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
             </div></div>
@@ -598,7 +597,7 @@ class LightboxSSA {
 
         // Apply user-supplied options 
         if (typeof lightboxssa_options == "object") {
-            console.log("lbSSA.start: options are %o", lightboxssa_options);
+            //console.log("lbSSA.start: options are %o", lightboxssa_options);
             this.applyOptions(lightboxssa_options);
         }
 
@@ -644,7 +643,7 @@ class LightboxSSA {
                 }
             }
             if (!imageURL) {
-                imageURL = self.options.image_location + self.options.placeholder_image;
+                imageURL = self.options.placeholder_image;
             }
             //console.log("imageURL: ", imageURL);
             // Link URL is from data-url or <fig>'s <img>'s data-url or <a>'s href
@@ -725,7 +724,7 @@ class LightboxSSA {
             });
         } else {
             // Don't know why this happens sometimes.  Timing?
-            console.log("lb: no lightbox elements! dlB=%s", dataLightboxValue);
+            //console.log("lb: no lightbox elements! dlB=%s", dataLightboxValue);
             // At least put the original element in the album
             addToAlbum(lbelement);
             imageNumber = 0;
@@ -795,7 +794,7 @@ class LightboxSSA {
             // Expected image not found -- use placeholder
             // (This seems to work.  If the placeholder isn't found,
             // we just end up with a border round nothing.)
-            this.src = self.options.image_location + self.options.placeholder_image;
+            this.src = self.options.placeholder_image;
         }
 
         image.addEventListener('load', onLoad, { once: true });
@@ -803,7 +802,6 @@ class LightboxSSA {
 
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
-        console.log("lbSSA: loading from album %v", albumEntry);
         image.src = albumEntry.name;
         image.srcset =  albumEntry.srcsetString || "";
         image.sizes = "" + this.options.max_width + "vw";
