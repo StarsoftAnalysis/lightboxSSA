@@ -110,26 +110,14 @@ class LightboxSSA {
         // NOTE: these have to be lowercase or snake_case because of the way they can be
         // set e.g. via Hugo params
         this.defaults = {
-            //album_label: 'Image %1 of %2',
-            //show_image_number_label: false,    // TODO not reimplemented
-            //always_show_nav_on_touch_devices: false,
+            active: true,   // Only used by Hugo; not in this Javascript
             fade_duration: 600,
             overlay_opacity: 1.0,   
-            //max_size: 50000,
             max_width: 95,  // %
             max_height: 95,
-            //resizeDuration: 700,
             wrap_around: true,
             disable_scrolling: false, // hide scrollbar so that lightbox uses full area of window
-            // Sanitize Title
-            // If the caption data is trusted, for example you are hardcoding it in, then leave this to false.
-            // This will free you to add html tags, such as links, in the caption.
-            // If the caption data is user submitted or from some other untrusted source, then set this to true
-            // to prevent xss and other injection attacks.
-            // FIXME implement this:
-            sanitize_title: false,
-            //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
-            swipemin: 0.1,  // minimum swipe distance (as fraction screen size) 
+            swipe_min: 0.1,  // minimum swipe distance (as fraction screen size) 
             placeholder_image: '../images/imageNotFound.png',  // within image_location
         };
 
@@ -143,12 +131,32 @@ class LightboxSSA {
         });
     }
 
+    clampInt(val, min, max) {
+        if val < min {
+            return min
+        }
+        if val > max {
+            return max
+        }
+        return val
+    }
+
     // Add the user-supplied options to this.options, doing a bit of validation, convert strings to numbers, etc.
     // (Just makes values usable -- doesn't give any feedback) 
     applyOptions (options) {
         for (let key in options) {
             //console.log(key, options[key]);
             switch (key) {
+                case 'fade_duration':
+                    // Value in ms
+                    let val = parseInt(options[key], 10);
+                    if (isNaN(val)) {
+                        // Leave previous/default value
+                    } else {
+                        // Apply reasonable limits
+                        this.options[key] = this.clamp(val, 0, 100_000);
+                    }
+                    break;
                 case 'max_width':
                 case 'max_height':
                     // Need a number to use as a percentage.
@@ -156,12 +164,23 @@ class LightboxSSA {
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
-                        if (val < 10) {
-                            val = 10;
-                        } else if (val > 100) {
-                            val = 100;
-                        }
-                        this.options[key] = val;
+                        this.options[key] = this.clamp(val, 10, 100);
+                    }
+                    break;
+                case 'wrap_around':
+                case 'disable_scrolling':
+                    // Make it either true or false
+                    if (('false'.startsWith(val.toLowerCase())) || !val) {
+                        val = false
+                    }
+                    this.options[key] = val ? true : false
+                    break;
+                case 'overlay_opacity':
+                case 'swipe_min':
+                    // 0.0 .. 1.0
+                    f = parseFloat(val)
+                    if (!isNaN(f)) {     // leave as default if NaN
+                        this.options[key] = f
                     }
                     break;
                 default:
@@ -395,10 +414,10 @@ class LightboxSSA {
                 //const elapsedTime = endTime - startTime;
                 //console.log("cTOS: touchend %o at %d,%d", Date.now(), distX, distY);
                 // Detect left/right or up/down swipe.  Check for l/r first -- diagonals will be detected as l/r rather than u/d.
-                if (Math.abs(distX) >= self.options.swipemin * window.innerWidth) { 
+                if (Math.abs(distX) >= self.options.swipe_min * window.innerWidth) { 
                     swipedir = (distX < 0) ? 'l' : 'r';
                     //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
-                } else if (Math.abs(distY) >= self.options.swipemin * window.innerHeight) {
+                } else if (Math.abs(distY) >= self.options.swipe_min * window.innerHeight) {
                     swipedir = (distY < 0) ? 'u' : 'd';
                     //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
                 } else {

@@ -39,12 +39,20 @@ const lightboxSSA = {
 
 The settable options are:
 
-* overlay_opacity: 0.9,
-* etc. TODO
+* `disable_scrolling`: Hide the scrollbar so that lightbox uses full area of the window. true/false  Default: true
+* `fade_duration`: The time in ms to fade from one image to the next.  Default: 600
+* `max_height`: The maximum height of the image, as a percentage of the screen width. 10 - 100 Default: 95%
+* `max_width`: The maximum width of the image, as a percentage of the screen width. 10 - 100  Default: 95%
+* `overlay_opacity`: The opacity of the overlay that is displayed behind the lightbox image.  Valid values are between 0.00 (clear) and 1.0 (completely opaque).  Default: 1.0
+* `swipe_min`: The minimum distance for a swipe gesture to be accepted, as a fraction of the screen size.  0.0 - 1.0  Default: 0.1
+* `wrap_around`: Whether or not the gallery feature will wrap around at each end. true/false  Default: true
+* `active`: For Hugo sites only.  Set this to `true` to include the lightboxSSA javascript and CSS on the page (or on all pages if
+the setting is in the site's configuration file).  true/false  Default: false
 
 ## Installation
 
-
+Depends if you use SASS...   Include the Javascript and CSS in the usual way, keeping the `images` directory in the same
+place relative to the `js` and `css` directories, because the Javascript and CSS both use relative URLs to find the images.
 
 ### Hugo
 
@@ -84,5 +92,5 @@ I don't use things like Bower or Grunt, so there are just SCSS and JS files for 
 ### Licence
 
 This project is licensed under the terms of the GNU Public Licence version 3.0.  Please see
-the file 'COPYING' for details.
+the file 'LICENSE.txt' for details.
 
