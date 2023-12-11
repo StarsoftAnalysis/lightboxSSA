@@ -132,10 +132,10 @@ class LightboxSSA {
     }
 
     clampInt(val, min, max) {
-        if val < min {
+        if (val < min) {
             return min
         }
-        if val > max {
+        if (val > max) {
             return max
         }
         return val
@@ -146,10 +146,11 @@ class LightboxSSA {
     applyOptions (options) {
         for (let key in options) {
             //console.log(key, options[key]);
+            let val
             switch (key) {
                 case 'fade_duration':
                     // Value in ms
-                    let val = parseInt(options[key], 10);
+                    val = parseInt(options[key], 10);
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
@@ -160,7 +161,7 @@ class LightboxSSA {
                 case 'max_width':
                 case 'max_height':
                     // Need a number to use as a percentage.
-                    let val = parseInt(options[key], 10);
+                    val = parseInt(options[key], 10);
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
