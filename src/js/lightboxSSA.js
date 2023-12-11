@@ -42,6 +42,7 @@
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
+// - respond to a class as well as data- attributes
 // - more pure functions -- ??move them outside the class -- need lbssa prefix if so
 // Touch screens:
 //  - simple touch only to start lightbox
@@ -155,7 +156,7 @@ class LightboxSSA {
                         // Leave previous/default value
                     } else {
                         // Apply reasonable limits
-                        this.options[key] = this.clamp(val, 0, 100_000);
+                        this.options[key] = this.clampInt(val, 0, 100_000);
                     }
                     break;
                 case 'max_width':
@@ -165,7 +166,7 @@ class LightboxSSA {
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
-                        this.options[key] = this.clamp(val, 10, 100);
+                        this.options[key] = this.clampInt(val, 10, 100);
                     }
                     break;
                 case 'wrap_around':
@@ -309,10 +310,10 @@ class LightboxSSA {
     enable () {
         const self = this;
         // Attach click/touch/pointer listeners to every element on the page
-        // that has [data-lightbox] in its attributes.
+        // that has data-lightbox=... in its attributes or class='lightbox-...'.
         // Need to ignore swipes at this stage.
         // (This requires that DOM is ready, but happens before the lightbox has been built.)
-        const matches = document.querySelectorAll("[data-lightbox]");
+        const matches = document.querySelectorAll("[data-lightbox], [class*='lightbox-' i]" );  // need 'contains' because classes are returned as a string
         matches.forEach(function(match) {
             self.clickOrTouch(match, self.start.bind(self), match);
         });
@@ -341,6 +342,15 @@ class LightboxSSA {
         }
     }
 
+    // from https://www.designcise.com/web/tutorial/how-to-check-if-a-string-url-refers-to-an-external-link-using-javascript
+    /*
+    isExternalLink (url) {
+        const tmp = document.createElement('a');
+        tmp.href = url;
+        return tmp.host !== window.location.host;
+    }
+    */
+
     // Honour a click on the current lightbox image (either 1 or 2).
     // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
     // If via swipe, e is null.
@@ -353,7 +363,7 @@ class LightboxSSA {
         if (targetUrl) {
             // using window.open always seems to be blocked as a pop-up, so don't bother
             /*
-                if (isExternalLink(targetUrl)) {
+                if (this.isExternalLink(targetUrl)) {
                     window.open(targetUrl, "_blank"); //, "noopener");
                 } else {
                 */
@@ -477,7 +487,7 @@ class LightboxSSA {
                 <figure id=lb-figure1 class="lb-element lb-figure">
                     <div id=lb-image1-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image1-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image1 class=lb-element src="../images/spinner.gif">
+                    <img id=lb-image1 class=lb-element src="../images/spinnerSSA.gif">
                     <figcaption id=lb-figcap1 class=lb-element></figcaption>
                 </figure>
             </div>
@@ -485,7 +495,7 @@ class LightboxSSA {
                 <figure id=lb-figure2 class="lb-element lb-figure">
                     <div id=lb-image2-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image2-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image2 class=lb-element src="../images/spinner.gif">
+                    <img id=lb-image2 class=lb-element src="../images/spinnerSSA.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
             </div></div>
@@ -542,13 +552,6 @@ class LightboxSSA {
         this.clickOrTouch(this.unit1.imageNext, this.nextImage.bind(this));
         this.clickOrTouch(this.unit2.imageNext, this.nextImage.bind(this));
 
-        // from https://www.designcise.com/web/tutorial/how-to-check-if-a-string-url-refers-to-an-external-link-using-javascript
-        function isExternalLink (url) {
-            const tmp = document.createElement('a');
-            tmp.href = url;
-            return tmp.host !== window.location.host;
-        }
-
         // Images get clicked/touched where not covered by navigation divs
         this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
         this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
@@ -602,7 +605,7 @@ class LightboxSSA {
         }, this.options.fade_duration);
     }
 
-    // User has clicked on an element with 'data-lightbox'.
+    // User has clicked on an element with 'data-lightbox' or 'class=lightbox-...'.
     // Show lightbox. If the image is part of a set, add others in set to album array.
     start (e, lbelement) {
         // Spread args not working?  -- make sure lbelement isn't an array:
@@ -730,9 +733,23 @@ class LightboxSSA {
             });
         } // end of addToAlbum
 
-        const dataLightboxValue = lbelement.getAttribute('data-lightbox');
+        // Find other elements with the same gallery name -- either from data-lightbox or class=lightbox-
         // Find all elements with the same gallery name.  querySelectorAll returns them in document order.
-        const lbelements = document.querySelectorAll('[data-lightbox="' + dataLightboxValue + '"]');
+        // TODO? rename dataLightboxValue to galleryName
+        let lbelements = [];
+        let dataLightboxValue = lbelement.getAttribute('data-lightbox');
+        if (dataLightboxValue) {
+            lbelements = document.querySelectorAll(`[data-lightbox="${dataLightboxValue}" i]`);
+        } else {
+            // not found in data-..., look in class (if more than one, we'll end up with the last one)
+            const classes = lbelement.classList;
+            classes.forEach(function (value, key, listObj) {
+                if (value.startsWith("lightbox-")) {
+                    dataLightboxValue = value.replace("lightbox-", "");
+                }
+            });
+            lbelements = document.querySelectorAll(`[class="lightbox-${dataLightboxValue}" i]`);
+        }
         if (lbelements) {
             let i = 0;
             lbelements.forEach(function(lbe) {
