@@ -54,6 +54,7 @@ the setting is in the site's configuration file).  true/false  Default: false
 Depends if you use SASS...   Include the Javascript and CSS in the usual way, keeping the `images` directory in the same
 place relative to the `js` and `css` directories, because the Javascript and CSS both use relative URLs to find the images.
 
+
 ### Hugo
 
 LightboxSSA can be used with Hugo.  
@@ -82,6 +83,68 @@ lightboxSSA:
     wrap_around: true
 ---
 ```
+
+## Usage
+
+### Using Hugo shortcodes
+
+lightboxSSA can be used with the `{{<figure>}}`, but note that it uses `title=...` to create an `h4` element within the `<figcaption>`, and follows it
+with the contents of the `caption=` attribute, rather than using `title` as a tooltip for the image as you might expect.
+
+The [`{{<figset>}}` and `{{<figrow>}}` shortcodes](https://github.com/StarsoftAnalysis/figset) were designed to work together with lightboxSSA, and do a better job.
+
+### Attaching a lightbox to an HTML element
+
+A lightbox can be attached to any element, but only makes sense for an `<img>` or for a `<figure>` that contains an `<img>`.
+
+The link from the figure or image to the lightbox is achieved in one of two ways: with a `data-lightbox` attribute, or by
+applying a `lightbox` class.  For example:
+
+```html
+<img data-lightbox=img1 src="thingy.png">
+```
+or
+```html
+<img class="lightbox-img1" src="thingy.png">
+```
+
+### Details 
+The lightbox will take details (caption, title, alt text, etc.) from the img or the figure, or both.  If the lightbox is attached
+to a `<figure>`, it will look for details in the enclosed `<img>` first, and then from the figure element.  If the lightbox is attached
+to an `<img>`, it will NOT look at any enclosing `<figure>`.
+
+To make it more complicated, there are two ways of supplying some of these details: with `data-...` attributes, or with the usual
+`figcaption`, `title`, and `alt` attributes.  `data-...` attributes take precedence.  The reason for this is to allow
+the details on the lightbox to be different from those on the main page.  
+
+The details that can be set are:
+
+* **image name**: `src=...` -- in the `img`'s src attribute.  The name (URL) of the image, e.g. `/images/photo1.png`, or `https://example.com/remote.jpg`.
+* **link URL**: `data-url=...` -- an URL to link to when the user clicks on the image from within the lightbox.
+* **title**: `data-title=...` or `title=...` -- The title, used as a tooltip when the mouse pointer is over the image.
+* **alt**: `data-alt=...` or `alt=...` -- The [alt text](https://en.wikipedia.org/wiki/Alt_attribute) for the image.
+* **caption**: `data-caption=...` or `<figcaption>...</figcaption>` -- The caption to display with the image.  If the image is part
+of a `<figure>`, the `figcaption` text will be used, unless overridden by `data-title` in the image or figure elements. 
+* **srcset**: 'data-srcset=...' or 'srcset=...' -- The [`srcset`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/srcset) to use with the image.
+Note that `data-sizes` is not needed: lightboxSSA will calculate calculate a suitable `sizes` value for use within the lightbox.  
+
+
+Examples:
+```html
+<figure data-lightbox="example-2" data-caption="A different caption for the light box" data-title="Lightbox-only title">
+    <img src="/photos/pic2.jpg" width=300 alt="Looking down at a calm sea from the top of a chalk cliff">
+    <figcaption>A cliff, can't remember where</figcaption>
+</figure>
+```
+
+With a bare image -- see lbssatest site or examples?
+
+Use title= for tooltip on main page, will also be tooltip on lightbox; data-title= will only show up on lightbox (overriding title=).
+Likewise for caption and data-caption.
+And alt.
+This is complicated -- see addToAlbum()   FIXME   e.g. if there's a figure with an image, either may have the title or data-title 
+Rule: data- attributes take precedence -- they can override those without data- because they are unique to the lightbox, 
+e.g. '<img data-title=x title=y ... >  uses y on the main page, x on the lightbox.
 
 ---
 

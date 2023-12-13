@@ -28,7 +28,7 @@
 
 // data- attributes   -- get them from the img or figure or anchor if not data-
 // - data-lightbox="galleryname"
-// - data-aspect
+// - data-srcset
 // - data-title="image title"
 // - data-alt="alt info"
 // - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
@@ -42,35 +42,21 @@
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
-// - respond to a class as well as data- attributes
+// - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
+// - data-title doesn't show up in lightbox -- well, it sort of does, but only when the pointer is normal, not a </> arrow.
+//    - title (on a bare image) shows up in the main page
+// - 
+// - make param names compatible with {{<figure>}}
 // - more pure functions -- ??move them outside the class -- need lbssa prefix if so
-// Touch screens:
-//  - simple touch only to start lightbox
-//  - touch outside image to close -- NOT on clickable areas
-//  - swipe l/r to change image (already done?)
-//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
-//        those areas ought to respnd to either...
-///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
-//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
-//  - make caption transparent to touches
-//  - simple touch image to go to url if any
-
-// - trap back button to call dismantle
-// - demo/test site as part of this repo
 // - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
-// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
 // - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
 // - sort on onError/placeholder
-// - preload neighbours
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
 // - more Aria stuff?
-// - validate option values from 'user' and document user-settable ones
 // - maybe put X in corner of non-hover screens
-// - still get multiple jumps esp on phone
-// - nav heights -- make secondary ones same height as main; all should be e.g. 50vh
 
 // DONE
 // - if figure, use enclosed img for source
@@ -101,6 +87,18 @@
 // - single-image lightbox -- need no < > arrows
 // - ditto -- need bigger image, otherwise there's not much point.
 // - check getSiblings and pointer stuff
+// Touch screens:
+//  - simple touch only to start lightbox
+//  - touch outside image to close -- NOT on clickable areas
+//  - swipe l/r to change image (already done?)
+//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
+//        those areas ought to respnd to either...
+///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
+//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
+//  - make caption transparent to touches
+//  - simple touch image to go to url if any
+// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
+// - respond to a class as well as data- attributes
 
 class LightboxSSA {
 
@@ -476,7 +474,6 @@ class LightboxSSA {
             document.body.style.overflow = 'hidden';
         }
 
-        // FIXME are -overlay and -nav both needed? -- overlay traps clicks
         const html = `
             <div id=lb-overlay class=lb-element>
             <div id=lb-nav class="lb-element lb-navclass">
@@ -634,102 +631,105 @@ class LightboxSSA {
 
         const self = this;
         function addToAlbum (lbe) {
-            const tag = lbe.tagName;
-            const parent = lbe.parentElement;
+            // Find details from the figure and/or the img:
+            // img overrides figure; data-... details override others
+            //const parent = lbe.parentElement;  not used
+            let figure = null;
             let img = null;
             let figcaption = null;
+            const tag = lbe.tagName;
             switch (tag) {
-            case "IMG":
-                img = lbe;
-                break;
-            case "FIGURE":
-                img = lbe.querySelector('img');
-                figcaption = lbe.querySelector('figcaption');
-                break;
-            }
-            // Image can be from: -- searched in this order
-            // - data-image
-            // - <img>'s src
-            // - <figure>'s (first) <img>'s src
-            //var imageURL = $lbelement.attr('data-image');
-            let imageURL = lbe.getAttribute('data-image');  // returns null or "" if not there
-            if (!imageURL) {
-                switch (tag) {
                 case "IMG":
-                    imageURL = lbe.getAttribute('src');
-                        break;
-                case 'FIGURE':
-                    if (img) {
-                        imageURL = img.getAttribute('src');
-                    }
+                    img = lbe;
                     break;
-                }
-            }
-            if (!imageURL) {
-                imageURL = self.options.placeholder_image;
-            }
-            //console.log("imageURL: ", imageURL);
-            // Link URL is from data-url or <fig>'s <img>'s data-url or <a>'s href
-            // - <a>'s href - how to check if that is an image?
-            let linkURL = lbe.getAttribute('data-url');
-            if (!linkURL) {
-                switch (tag) {
-                case 'FIGURE':
-                    if (img) {
-                        linkURL = img.getAttribute('data-url');
-                    }
+                case "FIGURE":
+                    figure = lbe;
+                    img = lbe.querySelector('img'); // first img -- we don't expect more
+                    figcaption = lbe.querySelector('figcaption');
                     break;
-                case 'A':
-                    linkURL = lbe.getAttribute('href');
-                    break;
-                }
             }
-            // Title -- from data-title or img's title
-            let title = lbe.getAttribute('data-title');
-            if (!title) {
-                if (img) {
-                    title = img.getAttribute('title');
-                }
+            // Image -- from img's src, or use placeholder
+            let imageName = "";
+            if (img) {
+                imageName = img.getAttribute('data-image');  // returns null or "" if not there
             }
-            // Alt -- from data-alt or img's alt
-            let alt = lbe.getAttribute('data-alt');
-            if (!alt) {
-                if (img) {
-                    alt = img.getAttribute('alt');
-                }
+            if (!imageName) {
+                imageName = self.options.placeholder_image;
             }
-            // Caption -- from data-caption or figcaption
-            let caption = lbe.getAttribute('data-caption');
-            if (!caption) {
-                if (figcaption) {
-                    caption = figcaption.textContent;
-                }
+            // Link URL -- from img's data-url or figure's data-url 
+            let linkURL = ""
+            if (img) {
+                linkURL - img.getAttribute('data-url');
             }
-            // srcset -- from data-srcset or img
-            let srcsetString, srcset;
-            srcsetString = lbe.getAttribute('data-srcset');
-            if (!srcsetString) {
-                if (img) {
-                    srcsetString = img.getAttribute('srcset');
-                }
+            if (!linkURL && figure) {
+                linkURL = img.getAttribute('data-url');
             }
-            // aspect ratio -- from data-aspect
-            let aspect = lbe.getAttribute('data-aspect');
-            if (aspect) {
-                aspect = parseFloat(aspect);
+            // Title -- from img's data-title or figure's data-title or img's title
+            let title = "";
+            if (img) {
+                title = img.getAttribute('data-title');
             }
-            if (!aspect || isNaN(aspect)) {
+            if (!title && figure) {
+                title = figure.getAttribute('data-title');
+            }
+            if (!title && img) {
+                title = img.getAttribute('title');
+            }
+            // Alt -- from img's data-alt or figure's data-alt or img's alt
+            let alt = "";
+            if (img) {
+                alt = img.getAttribute('data-alt');
+            }
+            if (!alt && figure) {
+                alt = figure.getAttribute('data-alt');
+            }
+            if (!alt && img) {
+                alt = img.getAttribute('alt');
+            }
+            // Caption -- from img's data-caption or figure's data-caption or figcaption
+            let caption = ""
+            if (img) {
+                caption = img.getAttribute('data-caption');
+            }
+            if (!caption && figure) {
+                caption = figure.getAttribute('data-caption');
+            }
+            if (!caption && figcaption) {
+                caption = figcaption.textContent;
+            }
+            // srcset -- from img's data-srcset or figure's data-srcset or img's srcset
+            let srcset = '';
+            if (img) {
+                srcset = img.getAttribute('data-srcset');
+            }
+            if (!srcset && figure) {
+                srcset = figure.getAttribute('data-srcset');
+            }
+            if (!srcset && img) {
+                srcset = img.getAttribute('srcset');
+            }
+            /* NOT USED
+            // aspect ratio -- from img's data-aspect or figure's data-aspect
+            let aspect = 1.0;
+            if (img) {
+                aspect = parseFloat(img.getAttribute('data-aspect'));
+            }
+            if (!aspect && figure) {
+                aspect = parseFloat(figure.getAttribute('data-aspect'));
+            }
+            if (!aspect) {
                 aspect = 1.0; // arbitrary default
             }
-            //console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcsetString, aspect);
+            */
+            //console.log("lbSSA adding image: imageName=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageName, linkURL, title, alt, caption, srcsetString, aspect);
             self.album.push({
-                name:         imageURL,
+                name:         imageName,
                 url:          linkURL,
                 title:        title,
                 alt:          alt,
                 caption:      caption,
                 srcsetString: srcsetString,
-                aspect:       aspect,
+                //aspect:       aspect,
             });
         } // end of addToAlbum
 

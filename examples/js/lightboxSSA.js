@@ -42,34 +42,20 @@
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
+// - data-title doesn't show up in lightbox -- well, it sort of does, but only when the pointer is normal, not a </> arrow.
+//    - title (on a bare image) shows up in the main page
+// - 
+// - make param names compatible with {{<figure>}}
 // - more pure functions -- ??move them outside the class -- need lbssa prefix if so
-// Touch screens:
-//  - simple touch only to start lightbox
-//  - touch outside image to close -- NOT on clickable areas
-//  - swipe l/r to change image (already done?)
-//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
-//        those areas ought to respnd to either...
-///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
-//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
-//  - make caption transparent to touches
-//  - simple touch image to go to url if any
-
-// - trap back button to call dismantle
-// - demo/test site as part of this repo
 // - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
-// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
 // - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
 // - sort on onError/placeholder
-// - preload neighbours
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
 // - more Aria stuff?
-// - validate option values from 'user' and document user-settable ones
 // - maybe put X in corner of non-hover screens
-// - still get multiple jumps esp on phone
-// - nav heights -- make secondary ones same height as main; all should be e.g. 50vh
 
 // DONE
 // - if figure, use enclosed img for source
@@ -100,6 +86,18 @@
 // - single-image lightbox -- need no < > arrows
 // - ditto -- need bigger image, otherwise there's not much point.
 // - check getSiblings and pointer stuff
+// Touch screens:
+//  - simple touch only to start lightbox
+//  - touch outside image to close -- NOT on clickable areas
+//  - swipe l/r to change image (already done?)
+//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
+//        those areas ought to respnd to either...
+///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
+//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
+//  - make caption transparent to touches
+//  - simple touch image to go to url if any
+// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
+// - respond to a class as well as data- attributes
 
 class LightboxSSA {
 
@@ -110,26 +108,14 @@ class LightboxSSA {
         // NOTE: these have to be lowercase or snake_case because of the way they can be
         // set e.g. via Hugo params
         this.defaults = {
-            //album_label: 'Image %1 of %2',
-            //show_image_number_label: false,    // TODO not reimplemented
-            //always_show_nav_on_touch_devices: false,
+            active: true,   // Only used by Hugo; not in this Javascript
             fade_duration: 600,
             overlay_opacity: 1.0,   
-            //max_size: 50000,
             max_width: 95,  // %
             max_height: 95,
-            //resizeDuration: 700,
             wrap_around: true,
             disable_scrolling: false, // hide scrollbar so that lightbox uses full area of window
-            // Sanitize Title
-            // If the caption data is trusted, for example you are hardcoding it in, then leave this to false.
-            // This will free you to add html tags, such as links, in the caption.
-            // If the caption data is user submitted or from some other untrusted source, then set this to true
-            // to prevent xss and other injection attacks.
-            // FIXME implement this:
-            sanitize_title: false,
-            //min_nav_width: this.constants.arrowWidth, // Space for arrow *outside* the image area.  Arrow images are 31px wide.
-            swipemin: 0.1,  // minimum swipe distance (as fraction screen size) 
+            swipe_min: 0.1,  // minimum swipe distance (as fraction screen size) 
             placeholder_image: '../images/imageNotFound.png',  // within image_location
         };
 
@@ -143,25 +129,57 @@ class LightboxSSA {
         });
     }
 
+    clampInt(val, min, max) {
+        if (val < min) {
+            return min
+        }
+        if (val > max) {
+            return max
+        }
+        return val
+    }
+
     // Add the user-supplied options to this.options, doing a bit of validation, convert strings to numbers, etc.
     // (Just makes values usable -- doesn't give any feedback) 
     applyOptions (options) {
         for (let key in options) {
             //console.log(key, options[key]);
+            let val
             switch (key) {
-                case 'max_width':
-                case 'max_height':
-                    // Need a number to use as a percentage.
-                    let val = parseInt(options[key], 10);
+                case 'fade_duration':
+                    // Value in ms
+                    val = parseInt(options[key], 10);
                     if (isNaN(val)) {
                         // Leave previous/default value
                     } else {
-                        if (val < 10) {
-                            val = 10;
-                        } else if (val > 100) {
-                            val = 100;
-                        }
-                        this.options[key] = val;
+                        // Apply reasonable limits
+                        this.options[key] = this.clampInt(val, 0, 100_000);
+                    }
+                    break;
+                case 'max_width':
+                case 'max_height':
+                    // Need a number to use as a percentage.
+                    val = parseInt(options[key], 10);
+                    if (isNaN(val)) {
+                        // Leave previous/default value
+                    } else {
+                        this.options[key] = this.clampInt(val, 10, 100);
+                    }
+                    break;
+                case 'wrap_around':
+                case 'disable_scrolling':
+                    // Make it either true or false
+                    if (('false'.startsWith(val.toLowerCase())) || !val) {
+                        val = false
+                    }
+                    this.options[key] = val ? true : false
+                    break;
+                case 'overlay_opacity':
+                case 'swipe_min':
+                    // 0.0 .. 1.0
+                    f = parseFloat(val)
+                    if (!isNaN(f)) {     // leave as default if NaN
+                        this.options[key] = f
                     }
                     break;
                 default:
@@ -289,10 +307,10 @@ class LightboxSSA {
     enable () {
         const self = this;
         // Attach click/touch/pointer listeners to every element on the page
-        // that has [data-lightbox] in its attributes.
+        // that has data-lightbox=... in its attributes or class='lightbox-...'.
         // Need to ignore swipes at this stage.
         // (This requires that DOM is ready, but happens before the lightbox has been built.)
-        const matches = document.querySelectorAll("[data-lightbox]");
+        const matches = document.querySelectorAll("[data-lightbox], [class*='lightbox-' i]" );  // need 'contains' because classes are returned as a string
         matches.forEach(function(match) {
             self.clickOrTouch(match, self.start.bind(self), match);
         });
@@ -321,6 +339,15 @@ class LightboxSSA {
         }
     }
 
+    // from https://www.designcise.com/web/tutorial/how-to-check-if-a-string-url-refers-to-an-external-link-using-javascript
+    /*
+    isExternalLink (url) {
+        const tmp = document.createElement('a');
+        tmp.href = url;
+        return tmp.host !== window.location.host;
+    }
+    */
+
     // Honour a click on the current lightbox image (either 1 or 2).
     // If the image has no URL, it's clickability will have been turned off, but we'll check anyway.
     // If via swipe, e is null.
@@ -333,7 +360,7 @@ class LightboxSSA {
         if (targetUrl) {
             // using window.open always seems to be blocked as a pop-up, so don't bother
             /*
-                if (isExternalLink(targetUrl)) {
+                if (this.isExternalLink(targetUrl)) {
                     window.open(targetUrl, "_blank"); //, "noopener");
                 } else {
                 */
@@ -395,10 +422,10 @@ class LightboxSSA {
                 //const elapsedTime = endTime - startTime;
                 //console.log("cTOS: touchend %o at %d,%d", Date.now(), distX, distY);
                 // Detect left/right or up/down swipe.  Check for l/r first -- diagonals will be detected as l/r rather than u/d.
-                if (Math.abs(distX) >= self.options.swipemin * window.innerWidth) { 
+                if (Math.abs(distX) >= self.options.swipe_min * window.innerWidth) { 
                     swipedir = (distX < 0) ? 'l' : 'r';
                     //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
-                } else if (Math.abs(distY) >= self.options.swipemin * window.innerHeight) {
+                } else if (Math.abs(distY) >= self.options.swipe_min * window.innerHeight) {
                     swipedir = (distY < 0) ? 'u' : 'd';
                     //console.log("cTOS: distX=%o distY=%O swipedir=%s", distX, distY, swipedir);
                 } else {
@@ -446,7 +473,6 @@ class LightboxSSA {
             document.body.style.overflow = 'hidden';
         }
 
-        // FIXME are -overlay and -nav both needed? -- overlay traps clicks
         const html = `
             <div id=lb-overlay class=lb-element>
             <div id=lb-nav class="lb-element lb-navclass">
@@ -457,7 +483,7 @@ class LightboxSSA {
                 <figure id=lb-figure1 class="lb-element lb-figure">
                     <div id=lb-image1-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image1-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image1 class=lb-element src="../images/spinner.gif">
+                    <img id=lb-image1 class=lb-element src="../images/spinnerSSA.gif">
                     <figcaption id=lb-figcap1 class=lb-element></figcaption>
                 </figure>
             </div>
@@ -465,7 +491,7 @@ class LightboxSSA {
                 <figure id=lb-figure2 class="lb-element lb-figure">
                     <div id=lb-image2-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image2-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image2 class=lb-element src="../images/spinner.gif">
+                    <img id=lb-image2 class=lb-element src="../images/spinnerSSA.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
             </div></div>
@@ -522,13 +548,6 @@ class LightboxSSA {
         this.clickOrTouch(this.unit1.imageNext, this.nextImage.bind(this));
         this.clickOrTouch(this.unit2.imageNext, this.nextImage.bind(this));
 
-        // from https://www.designcise.com/web/tutorial/how-to-check-if-a-string-url-refers-to-an-external-link-using-javascript
-        function isExternalLink (url) {
-            const tmp = document.createElement('a');
-            tmp.href = url;
-            return tmp.host !== window.location.host;
-        }
-
         // Images get clicked/touched where not covered by navigation divs
         this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
         this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
@@ -582,7 +601,7 @@ class LightboxSSA {
         }, this.options.fade_duration);
     }
 
-    // User has clicked on an element with 'data-lightbox'.
+    // User has clicked on an element with 'data-lightbox' or 'class=lightbox-...'.
     // Show lightbox. If the image is part of a set, add others in set to album array.
     start (e, lbelement) {
         // Spread args not working?  -- make sure lbelement isn't an array:
@@ -597,7 +616,7 @@ class LightboxSSA {
 
         // Apply user-supplied options 
         if (typeof lightboxssa_options == "object") {
-            console.log("lbSSA.start: options are %o", lightboxssa_options);
+            //console.log("lbSSA.start: options are %o", lightboxssa_options);
             this.applyOptions(lightboxssa_options);
         }
 
@@ -611,21 +630,25 @@ class LightboxSSA {
 
         const self = this;
         function addToAlbum (lbe) {
-            const tag = lbe.tagName;
-            const parent = lbe.parentElement;
+            // Find details from the figure and/or the img:
+            // img overrides figure; data-... details override others
+            //const parent = lbe.parentElement;  not used
+            let figure = null;
             let img = null;
             let figcaption = null;
+            const tag = lbe.tagName;
             switch (tag) {
-            case "IMG":
-                img = lbe;
-                break;
-            case "FIGURE":
-                img = lbe.querySelector('img');
-                figcaption = lbe.querySelector('figcaption');
-                break;
+                case "IMG":
+                    img = lbe;
+                    break;
+                case "FIGURE":
+                    figure = lbe;
+                    img = lbe.querySelector('img');
+                    figcaption = lbe.querySelector('figcaption');
+                    break;
             }
             // Image can be from: -- searched in this order
-            // - data-image
+            // - data-image   FIXME 
             // - <img>'s src
             // - <figure>'s (first) <img>'s src
             //var imageURL = $lbelement.attr('data-image');
@@ -661,10 +684,11 @@ class LightboxSSA {
                     break;
                 }
             }
-            // Title -- from data-title or img's title
-            let title = lbe.getAttribute('data-title');
+            // Title -- from img's data-title or figure's data-title or img's title
+            let title = img.getAttribute('data-title');
             if (!title) {
-                if (img) {
+                title = figure.getAttribute('data-title');
+                if (!title) {
                     title = img.getAttribute('title');
                 }
             }
@@ -710,9 +734,23 @@ class LightboxSSA {
             });
         } // end of addToAlbum
 
-        const dataLightboxValue = lbelement.getAttribute('data-lightbox');
+        // Find other elements with the same gallery name -- either from data-lightbox or class=lightbox-
         // Find all elements with the same gallery name.  querySelectorAll returns them in document order.
-        const lbelements = document.querySelectorAll('[data-lightbox="' + dataLightboxValue + '"]');
+        // TODO? rename dataLightboxValue to galleryName
+        let lbelements = [];
+        let dataLightboxValue = lbelement.getAttribute('data-lightbox');
+        if (dataLightboxValue) {
+            lbelements = document.querySelectorAll(`[data-lightbox="${dataLightboxValue}" i]`);
+        } else {
+            // not found in data-..., look in class (if more than one, we'll end up with the last one)
+            const classes = lbelement.classList;
+            classes.forEach(function (value, key, listObj) {
+                if (value.startsWith("lightbox-")) {
+                    dataLightboxValue = value.replace("lightbox-", "");
+                }
+            });
+            lbelements = document.querySelectorAll(`[class="lightbox-${dataLightboxValue}" i]`);
+        }
         if (lbelements) {
             let i = 0;
             lbelements.forEach(function(lbe) {
@@ -724,7 +762,7 @@ class LightboxSSA {
             });
         } else {
             // Don't know why this happens sometimes.  Timing?
-            console.log("lb: no lightbox elements! dlB=%s", dataLightboxValue);
+            //console.log("lb: no lightbox elements! dlB=%s", dataLightboxValue);
             // At least put the original element in the album
             addToAlbum(lbelement);
             imageNumber = 0;
@@ -802,7 +840,6 @@ class LightboxSSA {
 
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
-        console.log("lbSSA: loading from album %v", albumEntry);
         image.src = albumEntry.name;
         image.srcset =  albumEntry.srcsetString || "";
         image.sizes = "" + this.options.max_width + "vw";
