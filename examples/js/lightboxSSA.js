@@ -26,22 +26,18 @@
 // https://github.com/lokesh/lightbox2/blob/master/LICENSE
 // More info: http://lokeshdhakar.com/projects/lightbox2/
 
-// data- attributes   -- get them from the img or figure or anchor if not data-
+// data- attributes   -- get them from the img or figure etc.
 // - data-lightbox="galleryname"
-// - data-aspect
+// - data-srcset
 // - data-title="image title"
 // - data-alt="alt info"
 // - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
-    // OR -- don't wrap it, just add an on.click and a pointer
-// Oh2 -- no javascript? should fall back to showing the image.  or fallback to just showing the image/gallery?  The latter
-// I'll change that to put the data- attributes in the <fig>, so no wrapping <a> required.
-//  -- see enable() applying click to anything with a data-lightbox
-//  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // ongoing issues
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
+// - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
 // - data-title doesn't show up in lightbox -- well, it sort of does, but only when the pointer is normal, not a </> arrow.
 //    - title (on a bare image) shows up in the main page
 // - 
@@ -643,94 +639,92 @@ class LightboxSSA {
                     break;
                 case "FIGURE":
                     figure = lbe;
-                    img = lbe.querySelector('img');
+                    img = lbe.querySelector('img'); // first img -- we don't expect more
                     figcaption = lbe.querySelector('figcaption');
                     break;
             }
-            // Image can be from: -- searched in this order
-            // - data-image   FIXME 
-            // - <img>'s src
-            // - <figure>'s (first) <img>'s src
-            //var imageURL = $lbelement.attr('data-image');
-            let imageURL = lbe.getAttribute('data-image');  // returns null or "" if not there
-            if (!imageURL) {
-                switch (tag) {
-                case "IMG":
-                    imageURL = lbe.getAttribute('src');
-                        break;
-                case 'FIGURE':
-                    if (img) {
-                        imageURL = img.getAttribute('src');
-                    }
-                    break;
-                }
+            // Image -- from img's src, or use placeholder
+            let imageName = "";
+            if (img) {
+                imageName = img.getAttribute('data-image');  // returns null or "" if not there
             }
-            if (!imageURL) {
-                imageURL = self.options.placeholder_image;
+            if (!imageName) {
+                imageName = self.options.placeholder_image;
             }
-            //console.log("imageURL: ", imageURL);
-            // Link URL is from data-url or <fig>'s <img>'s data-url or <a>'s href
-            // - <a>'s href - how to check if that is an image?
-            let linkURL = lbe.getAttribute('data-url');
-            if (!linkURL) {
-                switch (tag) {
-                case 'FIGURE':
-                    if (img) {
-                        linkURL = img.getAttribute('data-url');
-                    }
-                    break;
-                case 'A':
-                    linkURL = lbe.getAttribute('href');
-                    break;
-                }
+            // Link URL -- from img's data-url or figure's data-url 
+            let linkURL = ""
+            if (img) {
+                linkURL - img.getAttribute('data-url');
+            }
+            if (!linkURL && figure) {
+                linkURL = img.getAttribute('data-url');
             }
             // Title -- from img's data-title or figure's data-title or img's title
-            let title = img.getAttribute('data-title');
-            if (!title) {
+            let title = "";
+            if (img) {
+                title = img.getAttribute('data-title');
+            }
+            if (!title && figure) {
                 title = figure.getAttribute('data-title');
-                if (!title) {
-                    title = img.getAttribute('title');
-                }
             }
-            // Alt -- from data-alt or img's alt
-            let alt = lbe.getAttribute('data-alt');
-            if (!alt) {
-                if (img) {
-                    alt = img.getAttribute('alt');
-                }
+            if (!title && img) {
+                title = img.getAttribute('title');
             }
-            // Caption -- from data-caption or figcaption
-            let caption = lbe.getAttribute('data-caption');
-            if (!caption) {
-                if (figcaption) {
-                    caption = figcaption.textContent;
-                }
+            // Alt -- from img's data-alt or figure's data-alt or img's alt
+            let alt = "";
+            if (img) {
+                alt = img.getAttribute('data-alt');
             }
-            // srcset -- from data-srcset or img
-            let srcsetString, srcset;
-            srcsetString = lbe.getAttribute('data-srcset');
-            if (!srcsetString) {
-                if (img) {
-                    srcsetString = img.getAttribute('srcset');
-                }
+            if (!alt && figure) {
+                alt = figure.getAttribute('data-alt');
             }
-            // aspect ratio -- from data-aspect
-            let aspect = lbe.getAttribute('data-aspect');
-            if (aspect) {
-                aspect = parseFloat(aspect);
+            if (!alt && img) {
+                alt = img.getAttribute('alt');
             }
-            if (!aspect || isNaN(aspect)) {
+            // Caption -- from img's data-caption or figure's data-caption or figcaption
+            let caption = ""
+            if (img) {
+                caption = img.getAttribute('data-caption');
+            }
+            if (!caption && figure) {
+                caption = figure.getAttribute('data-caption');
+            }
+            if (!caption && figcaption) {
+                caption = figcaption.textContent;
+            }
+            // srcset -- from img's data-srcset or figure's data-srcset or img's srcset
+            let srcset = '';
+            if (img) {
+                srcset = img.getAttribute('data-srcset');
+            }
+            if (!srcset && figure) {
+                srcset = figure.getAttribute('data-srcset');
+            }
+            if (!srcset && img) {
+                srcset = img.getAttribute('srcset');
+            }
+            /* NOT USED
+            // aspect ratio -- from img's data-aspect or figure's data-aspect
+            let aspect = 1.0;
+            if (img) {
+                aspect = parseFloat(img.getAttribute('data-aspect'));
+            }
+            if (!aspect && figure) {
+                aspect = parseFloat(figure.getAttribute('data-aspect'));
+            }
+            if (!aspect) {
                 aspect = 1.0; // arbitrary default
             }
-            //console.log("lbSSA adding image: imageURL=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageURL, linkURL, title, alt, caption, srcsetString, aspect);
+            */
+            //console.log("lbSSA adding image: imageName=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageName, linkURL, title, alt, caption, srcsetString, aspect);
             self.album.push({
-                name:         imageURL,
+                name:         imageName,
                 url:          linkURL,
                 title:        title,
                 alt:          alt,
                 caption:      caption,
                 srcsetString: srcsetString,
-                aspect:       aspect,
+                //aspect:       aspect,
             });
         } // end of addToAlbum
 

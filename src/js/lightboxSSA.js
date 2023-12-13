@@ -26,17 +26,12 @@
 // https://github.com/lokesh/lightbox2/blob/master/LICENSE
 // More info: http://lokeshdhakar.com/projects/lightbox2/
 
-// data- attributes   -- get them from the img or figure or anchor if not data-
+// data- attributes   -- get them from the img or figure etc.
 // - data-lightbox="galleryname"
 // - data-srcset
 // - data-title="image title"
 // - data-alt="alt info"
 // - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
-    // OR -- don't wrap it, just add an on.click and a pointer
-// Oh2 -- no javascript? should fall back to showing the image.  or fallback to just showing the image/gallery?  The latter
-// I'll change that to put the data- attributes in the <fig>, so no wrapping <a> required.
-//  -- see enable() applying click to anything with a data-lightbox
-//  -- so user can do <a data-lightbox...> if they want non-JS clickability
 
 // ongoing issues
 // - cSOT on image and imagePrev/Next instead of figure?

@@ -126,7 +126,7 @@ figure.lb-figure figcaption {
 }
 
 #lb-image2 {
-  pointer-events: auto; /* initially */
+  pointer-events: auto;
 }
 
 /*

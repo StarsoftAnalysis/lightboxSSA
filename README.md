@@ -1,29 +1,71 @@
 # LightboxSSA
 
-
 LightboxSSA is small Javascript program, with some CSS, that can be used to overlay images on top of the current page for viewing as a lightbox.
+
+This repository is arranged so that it can be used as a [Hugo](https://gohugo.io/) [module](https://gohugo.io/hugo-modules/use-modules/), but the components can be used on non-Hugo sites too.
 
 This is yet another fork of 
 [Lokesh Dhakar](http://www.lokeshdhakar.com)'s excellent [Lightbox2](https://github.com/lokesh/lightbox2).
 
-This repository is arranged so that it can be used as a Hugo module.
-
 ## Major changes from Lightbox2
 
-* User can click/touch on images to link to a page with more information, or any other URL.
-* Use flex and CSS to reduce the need to do image size calculations in Javascript,
+* The ser can click/touch on images to link to a page with more information, or any other URL.
+* Uses CSS's [flexbox](https://css-tricks.com/snippets/css/a-guide-to-flexbox/) feature to reduce the need to do image size calculations in Javascript,
   and make the whole thing much more responsive.
+* Will use an image's srcset attribute if available.
 * Replaced arrow images with dynamic cursors.  Cursors don't show in phones or other
   touch screens, but phone users can guess that swiping should be possible, so:
 * Added swiping for touch screens.
-* Uses 'proper' Javascript classes.
+* Uses 'proper' Javascript ES6 classes.
 * No more jQuery.  And it's no longer a Javascript module, but it is a Hugo module.
+* Designed to work with Hugo's [`{{<figset>}}` and `{{<figrow>}}` shortcodes](https://github.com/StarsoftAnalysis/figset).
 
 ## Requirements
 
-* ES6 (but you can transpile to more widely compatible versions of Javascript if required).
+* Javascript ES6 (but you can transpile to more widely compatible versions of Javascript if required).
 
 ---
+
+## Installation
+
+The CSS component of lightboxSSA is written in SASS, but the distribution includes the compiled CSS in the `examples` folder
+if required.
+
+Include the Javascript and SASS/CSS in the usual way, keeping the `images` directory in the same
+place relative to the `js` and `css` directories, because the Javascript and CSS both use relative URLs to find the 
+dynamic cursor images.
+
+### Hugo
+
+LightboxSSA can be used with Hugo, either as a module or a theme.
+
+You ust need to include something like
+'''
+{{ partial "lightboxSSA.html" . }}
+'''
+in your `partials/head.html` or equivalent.
+That will put the JS and CSS on pages
+that have `lightboxssa: active: true` in their frontmatter.
+
+To include lightboxSSA JS and CSS on every page,
+put
+`lightboxSSA: active: true`
+(with other options if required, see below)
+in the site's configuration file (config|hugo.yaml|toml) 
+within the `params` section.
+
+If you want to adjust any options for the whole site, use something like this:
+```yaml
+# config.yaml
+...
+params:
+    lightboxSSA: 
+        active: true
+        overlay_opacity: 0.9
+        wrap_around: true
+```
+
+## Usage
 
 ## Options
 
@@ -48,43 +90,6 @@ The settable options are:
 * `wrap_around`: Whether or not the gallery feature will wrap around at each end. true/false  Default: true
 * `active`: For Hugo sites only.  Set this to `true` to include the lightboxSSA javascript and CSS on the page (or on all pages if
 the setting is in the site's configuration file).  true/false  Default: false
-
-## Installation
-
-Depends if you use SASS...   Include the Javascript and CSS in the usual way, keeping the `images` directory in the same
-place relative to the `js` and `css` directories, because the Javascript and CSS both use relative URLs to find the images.
-
-
-### Hugo
-
-LightboxSSA can be used with Hugo.  
-
-...now as a module.
-Just need to include something like
-'''{{ partial "lightboxSSA.html" . }}'''
-in your `partials/head.html` or equivalent.
--- that will put the JS and CSS on every page
-that has `lightboxssa: ...` in its frontmatter.
-
-Put
-```lightboxSSA: true```
-(with options if required, see below)
-in config.yaml within params (or the .toml version)
-to include lbSSA CSS and JS on every page. 
-(unless it active:false).
-If you want to adjust any options, use something like this:
-
-```yaml
----
-...
-lightboxSSA: 
-    active: true
-    overlay_opacity: 0.9
-    wrap_around: true
----
-```
-
-## Usage
 
 ### Using Hugo shortcodes
 
