@@ -20,10 +20,6 @@ This is yet another fork of
 * No more jQuery.  And it's no longer a Javascript module, but it is a Hugo module.
 * Designed to work with Hugo's [`{{<figset>}}` and `{{<figrow>}}` shortcodes](https://github.com/StarsoftAnalysis/figset).
 
-## Requirements
-
-* Javascript ES6 (but you can transpile to more widely compatible versions of Javascript if required).
-
 ---
 
 ## Installation

@@ -716,15 +716,15 @@ class LightboxSSA {
                 aspect = 1.0; // arbitrary default
             }
             */
-            //console.log("lbSSA adding image: imageName=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageName, linkURL, title, alt, caption, srcsetString, aspect);
+            //console.log("lbSSA adding image: imageName=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageName, linkURL, title, alt, caption, srcset, aspect);
             self.album.push({
-                name:         imageName,
-                url:          linkURL,
-                title:        title,
-                alt:          alt,
-                caption:      caption,
-                srcsetString: srcsetString,
-                //aspect:       aspect,
+                name:    imageName,
+                url:     linkURL,
+                title:   title,
+                alt:     alt,
+                caption: caption,
+                srcset:  srcset,
+                //aspect:  aspect,
             });
         } // end of addToAlbum
 
@@ -835,7 +835,7 @@ class LightboxSSA {
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
         image.src = albumEntry.name;
-        image.srcset =  albumEntry.srcsetString || "";
+        image.srcset =  albumEntry.srcset || "";
         image.sizes = "" + this.options.max_width + "vw";
         image.alt = albumEntry.alt || "";
         image.title = albumEntry.title || "";

@@ -1,17 +1,15 @@
 {{- /* partials/lightboxSSA.html */ -}}
 
 {{- /* 
-This partial is designed to be called from the head (or footer?) of a Hugo website
-page, so that relevant javascript and CSS are included
 
-Needs to be passed the context:
+    This partial is designed to be called from the head (or footer?) of a Hugo website
+    page, so that relevant javascript and CSS are included.
+    It looks at the page or site parameters to see if lightbox.active is true,
+    and only outputs the JS and CSS if so.
 
-{{- partial "lightboxSSA.html" . -}}
+    Needs to be passed the context:
 
-TODO
-* user might want to include JS and/or CSS in their own bundles,
-  so need options to this partial re whether or not to output the JS and CSS from here.
-  -- if user is bundling, it's their problem to be efficient.
+    {{- partial "lightboxSSA.html" . -}}
 
 */ -}}
 
@@ -33,6 +31,7 @@ TODO
         {{- $lbparams = $lbpage -}}
     {{- end -}}
 {{- end -}}
+{{- warnf "lbssa.html: lbsite=%v  lbpage=%v  lbparams=%v" $lbsite $lbpage $lbparams -}}
 
 {{- /* Only output JS and CSS if lighboxssa is marked 'active' for this page */ -}}
 {{- if $lbparams.active -}}
@@ -41,9 +40,12 @@ TODO
     {{- $jsbExternals := slice -}}
     {{- $jsbDefines := dict -}}
 
-    {{- /* TODO when available: --target=chrome58,firefox57,safari11,edge16 */ -}}
-    {{- /* NOTE can't do ES6 -- esbuild can't transform 'class' syntax to es5 ('yet') */ -}}
-    {{- $jsbDftOpts := dict "externals" $jsbExternals "defines" $jsbDefines "minify" (not .Site.IsServer) "target" "es2015" "format" "iife" -}}
+    {{- $jsbDftOpts := dict -}}
+    {{- if .Site.IsServer -}}
+        {{- $jsbDftOpts = dict "externals" $jsbExternals  "defines" $jsbDefines  "minify" false  "target" "es2020"  "format" "iife" -}}
+    {{- else -}}
+        {{- $jsbDftOpts = dict "externals" $jsbExternals  "defines" $jsbDefines  "minify" true   "target" "es2020"  "format" "iife"  "drop" "debugger"  "drop" "console" -}}
+    {{- end -}}
     {{- $jsbOpts := merge $jsbDftOpts (dict "targetPath" "js/lightboxSSA.js") -}}
     {{- $js := resources.Get "lightboxSSA/js/lightboxSSA.js" | js.Build $jsbOpts | fingerprint -}}
     <script src="{{ $js.RelPermalink }}" defer integrity="{{ $js.Data.Integrity }}"></script>
