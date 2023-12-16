@@ -1,6 +1,6 @@
-// LightboxSSA 
+// lightboxSSA.js
 
-// version 0.5 6/12/2023
+// version 0.5.0 6/12/2023
 
 // Copyright 2020-2023 Chris Dennis
 
@@ -31,12 +31,13 @@
 // - data-srcset
 // - data-title="image title"
 // - data-alt="alt info"
-// - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
+// - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>.  or the <figure>?
 
 // ongoing issues
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
+// - FIXME need ?w=800 etc on srcset entries -- figset provides them -- do we expect the user to do so?   or can we generate them?-probably not, or we wouldn't need figset to do it.
 // - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
 // - data-title doesn't show up in lightbox -- well, it sort of does, but only when the pointer is normal, not a </> arrow.
 //    - title (on a bare image) shows up in the main page
@@ -47,7 +48,6 @@
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
 // - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
-// - sort on onError/placeholder
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
 // - more Aria stuff?
@@ -643,10 +643,16 @@ class LightboxSSA {
                     figcaption = lbe.querySelector('figcaption');
                     break;
             }
-            // Image -- from img's src, or use placeholder
+            // Image -- from img's data-image or figure's data-image, or img's src, or use placeholder
             let imageName = "";
             if (img) {
                 imageName = img.getAttribute('data-image');  // returns null or "" if not there
+            }
+            if (!imageName && figure) {
+                imageName = figure.getAttribute('data-image');
+            }
+            if (!imageName && img) {
+                imageName = img.src;
             }
             if (!imageName) {
                 imageName = self.options.placeholder_image;
@@ -762,6 +768,15 @@ class LightboxSSA {
             imageNumber = 0;
         }
         //console.log("imageNumber=%d  album: ", imageNumber, this.album);
+        
+        /*
+        // If data-url is present, wrap the element in <a>...</a>
+        // NO!  The click will happen within the lightbox
+        so it's not the lbelement that needs wrapping -- we just look for clicks!!!
+        let url = lbelement.getAttribute('data-url);
+        if (url) {
+        }
+        */
 
         this.albumLen = this.album.length;
         if (this.albumLen == 1) {
@@ -806,9 +821,9 @@ class LightboxSSA {
             // Get the dimensions of the image that the srcset mechanism has chosen:
             const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
             //console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
-
             // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
             // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
+            /* FIXME This doesn't seem to be needed after all
             if (targetImage.srcset) {
                 let pixelWidth = targetImage.naturalWidth;  // use this if src (rather than srcset) image was used.
                 const wpos = targetImage.currentSrc.indexOf("?w=");
@@ -819,12 +834,13 @@ class LightboxSSA {
                     targetImage.style.maxWidth = `${pixelWidth}px`;
                 }
             }
+            */
             self.showImage();
         }; // end of onload function
 
         function onError () {
             // Expected image not found -- use placeholder
-            // (This seems to work.  If the placeholder isn't found,
+            // (If the placeholder isn't found,
             // we just end up with a border round nothing.)
             this.src = self.options.placeholder_image;
         }
