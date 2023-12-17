@@ -9,7 +9,7 @@ This is yet another fork of
 
 ## Major changes from Lightbox2
 
-* The ser can click/touch on images to link to a page with more information, or any other URL.
+* The user can click/touch on images to link to a page with more information, or any other URL.
 * Uses CSS's [flexbox](https://css-tricks.com/snippets/css/a-guide-to-flexbox/) feature to reduce the need to do image size calculations in Javascript,
   and make the whole thing much more responsive.
 * Will use an image's srcset attribute if available.
@@ -82,6 +82,7 @@ The settable options are:
 * `max_height`: The maximum height of the image, as a percentage of the screen width. 10 - 100 Default: 95%
 * `max_width`: The maximum width of the image, as a percentage of the screen width. 10 - 100  Default: 95%
 * `overlay_opacity`: The opacity of the overlay that is displayed behind the lightbox image.  Valid values are between 0.00 (clear) and 1.0 (completely opaque).  Default: 1.0
+* `overlay_colour`: The colour of the overlay, expressed in any CSS colour format, such as `#aa22ff` or `rgb(30,100,2200`)
 * `swipe_min`: The minimum distance for a swipe gesture to be accepted, as a fraction of the screen size.  0.0 - 1.0  Default: 0.1
 * `wrap_around`: Whether or not the gallery feature will wrap around at each end. true/false  Default: true
 * `active`: For Hugo sites only.  Set this to `true` to include the lightboxSSA javascript and CSS on the page (or on all pages if

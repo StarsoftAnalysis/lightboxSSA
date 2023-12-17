@@ -37,7 +37,14 @@
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
-// - FIXME need ?w=800 etc on srcset entries -- figset provides them -- do we expect the user to do so?   or can we generate them?-probably not, or we wouldn't need figset to do it.
+// TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
+// FIXME currently not doing any preloading -- conflicts with srcset stuff, I think.
+// - overlay_opacity and swipe_min as perentages?
+// - data-url-target needed?
+// - should small images be expanded to max_width/height.  No -- say so in the docs
+// - option for overlay colour
+// - caption background doesn't quite fit
+// - FIXME? need ?w=800 etc on srcset entries -- figset provides them -- do we expect the user to do so?   or can we generate them?-probably not, or we wouldn't need figset to do it.
 // - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
 // - data-title doesn't show up in lightbox -- well, it sort of does, but only when the pointer is normal, not a </> arrow.
 //    - title (on a bare image) shows up in the main page
@@ -107,6 +114,7 @@ class LightboxSSA {
             active: true,   // Only used by Hugo; not in this Javascript
             fade_duration: 600,
             overlay_opacity: 1.0,   
+            overlay_colour: "gray", // any CSS colour string
             max_width: 95,  // %
             max_height: 95,
             wrap_around: true,
@@ -173,9 +181,9 @@ class LightboxSSA {
                 case 'overlay_opacity':
                 case 'swipe_min':
                     // 0.0 .. 1.0
-                    f = parseFloat(val)
-                    if (!isNaN(f)) {     // leave as default if NaN
-                        this.options[key] = f
+                    val = parseFloat(options[key]);
+                    if (!isNaN(val)) {     // leave as default if NaN
+                        this.options[key] = val
                     }
                     break;
                 default:
@@ -548,6 +556,12 @@ class LightboxSSA {
         this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
         this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
 
+        // Set the overlay colour
+        let overlay = document.getElementById("lb-overlay");
+        if (overlay) {
+            overlay.style.backgroundColor = this.options.overlay_colour;
+        }
+
     }; // end of build()
 
     // TEMP fadeTo that just does it now
@@ -636,6 +650,7 @@ class LightboxSSA {
             switch (tag) {
                 case "IMG":
                     img = lbe;
+                    // (DON'T look for a parent figure!)
                     break;
                 case "FIGURE":
                     figure = lbe;
@@ -660,7 +675,7 @@ class LightboxSSA {
             // Link URL -- from img's data-url or figure's data-url 
             let linkURL = ""
             if (img) {
-                linkURL - img.getAttribute('data-url');
+                linkURL = img.getAttribute('data-url');
             }
             if (!linkURL && figure) {
                 linkURL = img.getAttribute('data-url');
@@ -777,6 +792,7 @@ class LightboxSSA {
         if (url) {
         }
         */
+        /* Pictures have click-through if... */
 
         this.albumLen = this.album.length;
         if (this.albumLen == 1) {
@@ -796,8 +812,6 @@ class LightboxSSA {
         this.changeImage(imageNumber);
     }; // end of start()
 
-    // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
-    // FIXME currently not doing any preloading -- conflicts with srcset stuff, I think.
     // (depends on length of album)
     // Load the specified image as this.otherUnit.image, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {

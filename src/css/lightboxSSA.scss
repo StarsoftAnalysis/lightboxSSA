@@ -55,7 +55,7 @@ body.lb-disable-scrolling {
     width: 100vw;
     height: 100vh;
     z-index: $zstart;
-    background: gray;
+    background: gray;   // initially
     opacity: 0; // initially
     @include setTransition;
     cursor: url(../images/closeCursorSSA.png) 13 14, pointer;
