@@ -46,9 +46,6 @@
 // - caption background doesn't quite fit
 // - FIXME? need ?w=800 etc on srcset entries -- figset provides them -- do we expect the user to do so?   or can we generate them?-probably not, or we wouldn't need figset to do it.
 // - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
-// - data-title doesn't show up in lightbox -- well, it sort of does, but only when the pointer is normal, not a </> arrow.
-//    - title (on a bare image) shows up in the main page
-// - 
 // - make param names compatible with {{<figure>}}
 // - more pure functions -- ??move them outside the class -- need lbssa prefix if so
 // - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
@@ -889,6 +886,8 @@ class LightboxSSA {
         //console.log("showImage swapping from %s to %s", this.currentUnit.id, this.otherUnit.id);
         this.currentUnit.imagePrev.style['pointer-events'] = 'none';
         this.currentUnit.imageNext.style['pointer-events'] = 'none';
+        this.currentUnit.imagePrev.title = "";
+        this.currentUnit.imageNext.title = "";
         // TODO? don't bother to fade if already at the target opacity
         this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0.0, (e) => {
             //requestAnimationFrame(() =>{console.log("fade out current finished");});
@@ -896,6 +895,7 @@ class LightboxSSA {
         });
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1.0, (e) => {    // function() {
             //console.log("fade in other finished  e=", e);
+            // FIXME why two layers or rAF ?
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     //console.log("fade in other timeout called");
@@ -903,6 +903,8 @@ class LightboxSSA {
                     [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
                     this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
                     this.currentUnit.imageNext.style['pointer-events'] = 'auto';
+                    this.currentUnit.imagePrev.title = this.currentUnit.image.title;
+                    this.currentUnit.imageNext.title = this.currentUnit.image.title;
                 });
             });
         });
