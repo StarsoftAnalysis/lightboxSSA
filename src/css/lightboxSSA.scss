@@ -27,7 +27,10 @@
 
 // Variables
 $imageBorder: 1vh;
-$imageRadius: calc($imageBorder / 2);
+$imageRadius: $imageBorder / 2;
+$captionLeftInset: $imageBorder * 0.7;
+$captionBottomInset: $imageBorder * 1.4;
+
 $zstart: 10;
 $fadeDuration: 600ms;  // Default value -- gets changed in JS
 @mixin setTransition {
@@ -78,8 +81,6 @@ body.lb-disable-scrolling {
     opacity: 1;
 }
 #lb-prev { //, #lb-image1-prev, #lb-image2-prev {
-//?    opacity: 1;
-//    background: green; opacity: 0.3;
     height: 50%;
     width: 50%;
     z-index: $zstart+2;
@@ -87,8 +88,6 @@ body.lb-disable-scrolling {
     cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
 }
 #lb-next { // , #lb-image1-next, #lb-image2-next {
-//?    opacity: 1;
-//    background: green; opacity: 0.3;
     height: 50%;
     width: 50%;
     z-index: $zstart+2;
@@ -116,15 +115,13 @@ figure.lb-figure {
   position: relative;
   margin: 0;
   z-index: $zstart+4;
-  //max-width: 90vw;     // These may get adjusted by JS   now done on the figure instead
-  //max-height: 90vh;
   figcaption {
     position: absolute;
     left: $imageBorder;
-    bottom: $imageBorder;
+    bottom: $captionBottomInset;
     background-color: rgba(255, 255, 255, 0.6);
-    width: calc(100% - #{2 * $imageBorder});
-    max-height: calc(100% - #{2 * $imageBorder});
+    width: calc(100% - $captionLeftInset * 2);
+    max-height: calc(100% - $imageBorder * 2);
     text-align: center;
     z-index: 2; // relative to figure  $zstart+6;
   }

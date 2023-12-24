@@ -33,7 +33,9 @@ dynamic cursor images.
 
 ### Hugo
 
-LightboxSSA can be used with Hugo, either as a module or a theme.
+LightboxSSA can be used with Hugo (version 0.114 or later), either as a module or a theme.
+
+Needs Dart SASS -- use option `transpiler: dartsass`.
 
 You ust need to include something like
 '''

@@ -1,10 +1,9 @@
 # hugo.yaml for Hugo module 'lightboxSSA'
 
 module:
-  # Need at least 64 for ?  and extended for SASS
+  # Need at least 0.114 for Dart SASS
   hugoVersion:
-    min: 0.64.0
-    extended: true
+    min: 0.114.0
   mounts:
     - source: src/partials
       target: layouts/partials

@@ -60,7 +60,7 @@
         }
     </script>
 
-    {{- $cssoptions := (dict "enableSourceMap" true "outputStyle" "compressed") -}}
+    {{- $cssoptions := (dict  "transpiler" "dartsass"  "enableSourceMap" true  "outputStyle" "compressed") -}}
     {{- if .Site.IsServer -}}
         {{- $cssoptions := (dict "enableSourceMap" true) -}}
     {{- end -}}
