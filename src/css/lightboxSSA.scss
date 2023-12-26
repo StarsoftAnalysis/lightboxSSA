@@ -27,9 +27,9 @@
 
 // Variables
 $imageBorder: 1vh;
-$imageRadius: $imageBorder / 2;
-$captionLeftInset: $imageBorder * 0.7;
-$captionBottomInset: $imageBorder * 1.4;
+$imageRadius: calc($imageBorder / 2);
+$captionLeftInset: calc($imageBorder * 0.7);
+$captionBottomInset: calc($imageBorder * 1.4);
 
 $zstart: 10;
 $fadeDuration: 600ms;  // Default value -- gets changed in JS
@@ -135,7 +135,7 @@ $onImageClickAreaHeight: 100%;
   height: $onImageClickAreaHeight;
   left: 0;
   top: calc((100% - $onImageClickAreaHeight) / 2);
-  cursor: url(/images/lightboxSSAprevCursorSSA.png) 2 17, pointer;
+  cursor: url(/images/lightboxSSA/prevCursorSSA.png) 2 17, pointer;
   pointer-events: auto;
   z-index: $zstart+7;
 }

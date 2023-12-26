@@ -1,6 +1,6 @@
-// LightboxSSA 
+// lightboxSSA.js
 
-// version 0.5 6/12/2023
+// version 0.5.0 6/12/2023
 
 // Copyright 2020-2023 Chris Dennis
 
@@ -31,23 +31,27 @@
 // - data-srcset
 // - data-title="image title"
 // - data-alt="alt info"
-// - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>
+// - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>.  or the <figure>?
 
 // ongoing issues
 // - cSOT on image and imagePrev/Next instead of figure?
 
 // TODO
+// TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
+// FIXME currently not doing any preloading -- conflicts with srcset stuff, I think.
+// - overlay_opacity and swipe_min as perentages?
+// - data-url-target needed?
+// - should small images be expanded to max_width/height.  No -- say so in the docs
+// - option for overlay colour
+// - caption background doesn't quite fit
+// - FIXME? need ?w=800 etc on srcset entries -- figset provides them -- do we expect the user to do so?   or can we generate them?-probably not, or we wouldn't need figset to do it.
 // - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
-// - data-title doesn't show up in lightbox -- well, it sort of does, but only when the pointer is normal, not a </> arrow.
-//    - title (on a bare image) shows up in the main page
-// - 
 // - make param names compatible with {{<figure>}}
 // - more pure functions -- ??move them outside the class -- need lbssa prefix if so
 // - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
 // - keyboard < > esc -- reinstate previous effort
     // - keyboard < > esc -- also back button to close lb
 // - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
-// - sort on onError/placeholder
 //  - highlight something during touchmove
 // - hide/disable prev or nav if only two images?
 // - more Aria stuff?
@@ -107,12 +111,13 @@ class LightboxSSA {
             active: true,   // Only used by Hugo; not in this Javascript
             fade_duration: 600,
             overlay_opacity: 1.0,   
+            overlay_colour: "gray", // any CSS colour string
             max_width: 95,  // %
             max_height: 95,
             wrap_around: true,
             disable_scrolling: false, // hide scrollbar so that lightbox uses full area of window
             swipe_min: 0.1,  // minimum swipe distance (as fraction screen size) 
-            placeholder_image: '../images/imageNotFound.png',  // within image_location
+            placeholder_image: '/images/lightboxSSA/imageNotFound.png',  // within image_location
         };
 
         // Apply defaults from Hugo config (if this is part of Hugo)
@@ -173,9 +178,9 @@ class LightboxSSA {
                 case 'overlay_opacity':
                 case 'swipe_min':
                     // 0.0 .. 1.0
-                    f = parseFloat(val)
-                    if (!isNaN(f)) {     // leave as default if NaN
-                        this.options[key] = f
+                    val = parseFloat(options[key]);
+                    if (!isNaN(val)) {     // leave as default if NaN
+                        this.options[key] = val
                     }
                     break;
                 default:
@@ -479,7 +484,7 @@ class LightboxSSA {
                 <figure id=lb-figure1 class="lb-element lb-figure">
                     <div id=lb-image1-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image1-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image1 class=lb-element src="../images/spinnerSSA.gif">
+                    <img id=lb-image1 class=lb-element src="/images/lightboxSSA/spinnerSSA.gif">
                     <figcaption id=lb-figcap1 class=lb-element></figcaption>
                 </figure>
             </div>
@@ -487,7 +492,7 @@ class LightboxSSA {
                 <figure id=lb-figure2 class="lb-element lb-figure">
                     <div id=lb-image2-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image2-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image2 class=lb-element src="../images/spinnerSSA.gif">
+                    <img id=lb-image2 class=lb-element src="/images/lightboxSSA/spinnerSSA.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
             </div></div>
@@ -547,6 +552,12 @@ class LightboxSSA {
         // Images get clicked/touched where not covered by navigation divs
         this.clickTouchOrSwipe(this.unit1.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
         this.clickTouchOrSwipe(this.unit2.figure, this.clickThroughImage.bind(this), this.prevImage.bind(this), this.nextImage.bind(this));
+
+        // Set the overlay colour
+        let overlay = document.getElementById("lb-overlay");
+        if (overlay) {
+            overlay.style.backgroundColor = this.options.overlay_colour;
+        }
 
     }; // end of build()
 
@@ -636,6 +647,7 @@ class LightboxSSA {
             switch (tag) {
                 case "IMG":
                     img = lbe;
+                    // (DON'T look for a parent figure!)
                     break;
                 case "FIGURE":
                     figure = lbe;
@@ -643,10 +655,16 @@ class LightboxSSA {
                     figcaption = lbe.querySelector('figcaption');
                     break;
             }
-            // Image -- from img's src, or use placeholder
+            // Image -- from img's data-image or figure's data-image, or img's src, or use placeholder
             let imageName = "";
             if (img) {
                 imageName = img.getAttribute('data-image');  // returns null or "" if not there
+            }
+            if (!imageName && figure) {
+                imageName = figure.getAttribute('data-image');
+            }
+            if (!imageName && img) {
+                imageName = img.src;
             }
             if (!imageName) {
                 imageName = self.options.placeholder_image;
@@ -654,7 +672,7 @@ class LightboxSSA {
             // Link URL -- from img's data-url or figure's data-url 
             let linkURL = ""
             if (img) {
-                linkURL - img.getAttribute('data-url');
+                linkURL = img.getAttribute('data-url');
             }
             if (!linkURL && figure) {
                 linkURL = img.getAttribute('data-url');
@@ -716,15 +734,15 @@ class LightboxSSA {
                 aspect = 1.0; // arbitrary default
             }
             */
-            //console.log("lbSSA adding image: imageName=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageName, linkURL, title, alt, caption, srcsetString, aspect);
+            //console.log("lbSSA adding image: imageName=%s linkURL=%s title=%s alt=%s caption=%s srcset=%o aspect=%f", imageName, linkURL, title, alt, caption, srcset, aspect);
             self.album.push({
-                name:         imageName,
-                url:          linkURL,
-                title:        title,
-                alt:          alt,
-                caption:      caption,
-                srcsetString: srcsetString,
-                //aspect:       aspect,
+                name:    imageName,
+                url:     linkURL,
+                title:   title,
+                alt:     alt,
+                caption: caption,
+                srcset:  srcset,
+                //aspect:  aspect,
             });
         } // end of addToAlbum
 
@@ -762,6 +780,16 @@ class LightboxSSA {
             imageNumber = 0;
         }
         //console.log("imageNumber=%d  album: ", imageNumber, this.album);
+        
+        /*
+        // If data-url is present, wrap the element in <a>...</a>
+        // NO!  The click will happen within the lightbox
+        so it's not the lbelement that needs wrapping -- we just look for clicks!!!
+        let url = lbelement.getAttribute('data-url);
+        if (url) {
+        }
+        */
+        /* Pictures have click-through if... */
 
         this.albumLen = this.album.length;
         if (this.albumLen == 1) {
@@ -781,8 +809,6 @@ class LightboxSSA {
         this.changeImage(imageNumber);
     }; // end of start()
 
-    // TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
-    // FIXME currently not doing any preloading -- conflicts with srcset stuff, I think.
     // (depends on length of album)
     // Load the specified image as this.otherUnit.image, adjust its size, then call showImage() to swap images
     changeImage (imageNumber) {
@@ -806,9 +832,9 @@ class LightboxSSA {
             // Get the dimensions of the image that the srcset mechanism has chosen:
             const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
             //console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
-
             // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
             // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
+            /* FIXME This doesn't seem to be needed after all
             if (targetImage.srcset) {
                 let pixelWidth = targetImage.naturalWidth;  // use this if src (rather than srcset) image was used.
                 const wpos = targetImage.currentSrc.indexOf("?w=");
@@ -819,12 +845,13 @@ class LightboxSSA {
                     targetImage.style.maxWidth = `${pixelWidth}px`;
                 }
             }
+            */
             self.showImage();
         }; // end of onload function
 
         function onError () {
             // Expected image not found -- use placeholder
-            // (This seems to work.  If the placeholder isn't found,
+            // (If the placeholder isn't found,
             // we just end up with a border round nothing.)
             this.src = self.options.placeholder_image;
         }
@@ -835,7 +862,7 @@ class LightboxSSA {
         // Load the new image -- it will have opacity 0 at first
         // (this fires the onLoad function above) 
         image.src = albumEntry.name;
-        image.srcset =  albumEntry.srcsetString || "";
+        image.srcset =  albumEntry.srcset || "";
         image.sizes = "" + this.options.max_width + "vw";
         image.alt = albumEntry.alt || "";
         image.title = albumEntry.title || "";
@@ -859,6 +886,8 @@ class LightboxSSA {
         //console.log("showImage swapping from %s to %s", this.currentUnit.id, this.otherUnit.id);
         this.currentUnit.imagePrev.style['pointer-events'] = 'none';
         this.currentUnit.imageNext.style['pointer-events'] = 'none';
+        this.currentUnit.imagePrev.title = "";
+        this.currentUnit.imageNext.title = "";
         // TODO? don't bother to fade if already at the target opacity
         this.fadeTo(this.currentUnit.flex, this.options.fade_duration, 0.0, (e) => {
             //requestAnimationFrame(() =>{console.log("fade out current finished");});
@@ -866,6 +895,7 @@ class LightboxSSA {
         });
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1.0, (e) => {    // function() {
             //console.log("fade in other finished  e=", e);
+            // FIXME why two layers or rAF ?
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     //console.log("fade in other timeout called");
@@ -873,6 +903,8 @@ class LightboxSSA {
                     [this.otherUnit, this.currentUnit] = [this.currentUnit, this.otherUnit];
                     this.currentUnit.imagePrev.style['pointer-events'] = 'auto';
                     this.currentUnit.imageNext.style['pointer-events'] = 'auto';
+                    this.currentUnit.imagePrev.title = this.currentUnit.image.title;
+                    this.currentUnit.imageNext.title = this.currentUnit.image.title;
                 });
             });
         });
