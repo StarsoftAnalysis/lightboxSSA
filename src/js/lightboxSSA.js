@@ -748,10 +748,13 @@ class LightboxSSA {
 
         // Find other elements with the same gallery name -- either from data-lightbox or class=lightbox-
         // Find all elements with the same gallery name.  querySelectorAll returns them in document order.
-        // TODO? rename dataLightboxValue to galleryName
+        // NOTE that there may legitimately be no attribute, in which case we don't want a gallery.
         let lbelements = [];
         let dataLightboxValue = lbelement.getAttribute('data-lightbox');
-        if (dataLightboxValue) {
+        if (dataLightboxValue == "") {
+            // No attribute, so no gallery.  Just the single image
+            lbelements = [lbelement];
+        } else if (dataLightboxValue !== null) {
             lbelements = document.querySelectorAll(`[data-lightbox="${dataLightboxValue}" i]`);
         } else {
             // not found in data-..., look in class (if more than one, we'll end up with the last one)
@@ -763,7 +766,7 @@ class LightboxSSA {
             });
             lbelements = document.querySelectorAll(`[class="lightbox-${dataLightboxValue}" i]`);
         }
-        if (lbelements) {
+        if (lbelements.length > 0) {
             let i = 0;
             lbelements.forEach(function(lbe) {
                 addToAlbum(lbe);
@@ -774,7 +777,7 @@ class LightboxSSA {
             });
         } else {
             // Don't know why this happens sometimes.  Timing?
-            //console.log("lb: no lightbox elements! dlB=%s", dataLightboxValue);
+            console.log("lb: no lightbox elements!  lbelement=%o  dlB=%s", lbelement, dataLightboxValue);
             // At least put the original element in the album
             addToAlbum(lbelement);
             imageNumber = 0;

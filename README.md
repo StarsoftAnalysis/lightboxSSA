@@ -1,5 +1,7 @@
 # LightboxSSA
 
+TODO: cursor shape when over an lightboxed image
+
 LightboxSSA is small Javascript program, with some CSS, that can be used to overlay images on top of the current page for viewing as a lightbox.
 
 This repository is arranged so that it can be used as a [Hugo](https://gohugo.io/) [module](https://gohugo.io/hugo-modules/use-modules/), but the components can be used on non-Hugo sites too.
@@ -97,12 +99,15 @@ with the contents of the `caption=` attribute, rather than using `title` as a to
 
 The [`{{<figset>}}` and `{{<figrow>}}` shortcodes](https://github.com/StarsoftAnalysis/figset) were designed to work together with lightboxSSA, and do a better job.
 
+Note that with Hugo's `figure` shortcode, `data-lightbox` doesn't get passed on to the HTML `<figure>` element; so use `class="lightbox-..."`.
+Or use the `figset` shortcode.
+
 ### Attaching a lightbox to an HTML element
 
 A lightbox can be attached to any element, but only makes sense for an `<img>` or for a `<figure>` that contains an `<img>`.
 
 The link from the figure or image to the lightbox is achieved in one of two ways: with a `data-lightbox` attribute, or by
-applying a `lightbox` class.  For example:
+applying a `lightbox-...` class.  For example:
 
 ```html
 <img data-lightbox=img1 src="thingy.png">
@@ -111,6 +116,9 @@ or
 ```html
 <img class="lightbox-img1" src="thingy.png">
 ```
+
+The value of the `data-lightbox` attribute is used to group images into galleries.  Use a unique attribute,
+or no attribute, to create a lightbox for a single image with no gallery.
 
 ### Details 
 The lightbox will take details (caption, title, alt text, etc.) from the img or the figure, or both.  If the lightbox is attached
