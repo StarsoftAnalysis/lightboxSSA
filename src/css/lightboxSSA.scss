@@ -61,7 +61,7 @@ body.lb-disable-scrolling {
     background: gray;   // initially
     opacity: 0; // initially
     @include setTransition;
-    cursor: url(../images/closeCursorSSA.png) 13 14, pointer;
+    cursor: url(/images/lightboxSSA/closeCursorSSA.png) 13 14, pointer;
 }
 
 // lb-nav and lb-prev/next sit behind the flex/figure/image, 
@@ -85,14 +85,14 @@ body.lb-disable-scrolling {
     width: 50%;
     z-index: $zstart+2;
     pointer-events: auto;
-    cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
+    cursor: url(/images/lightboxSSA/prevCursorSSA.png) 2 17, pointer;
 }
 #lb-next { // , #lb-image1-next, #lb-image2-next {
     height: 50%;
     width: 50%;
     z-index: $zstart+2;
     pointer-events: auto;
-    cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
+    cursor: url(/images/lightboxSSA/nextCursorSSA.png) 18 17, pointer;
 }
 
 .lb-flex {
@@ -135,7 +135,7 @@ $onImageClickAreaHeight: 100%;
   height: $onImageClickAreaHeight;
   left: 0;
   top: calc((100% - $onImageClickAreaHeight) / 2);
-  cursor: url(../images/prevCursorSSA.png) 2 17, pointer;
+  cursor: url(/images/lightboxSSAprevCursorSSA.png) 2 17, pointer;
   pointer-events: auto;
   z-index: $zstart+7;
 }
@@ -146,7 +146,7 @@ $onImageClickAreaHeight: 100%;
   height: $onImageClickAreaHeight;
   right: 0;
   top: calc((100% - $onImageClickAreaHeight) / 2);
-  cursor: url(../images/nextCursorSSA.png) 18 17, pointer;
+  cursor: url(/images/lightboxSSA/nextCursorSSA.png) 18 17, pointer;
   pointer-events: auto;
   z-index: 3; // relative to figure  $zstart+7;
 }

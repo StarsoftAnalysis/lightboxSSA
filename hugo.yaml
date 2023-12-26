@@ -7,5 +7,7 @@ module:
   mounts:
     - source: src/partials
       target: layouts/partials
+    - source: src/images
+      target: static/images/lightboxSSA
     - source: src
       target: assets/lightboxSSA

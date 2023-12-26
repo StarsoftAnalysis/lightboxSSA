@@ -117,7 +117,7 @@ class LightboxSSA {
             wrap_around: true,
             disable_scrolling: false, // hide scrollbar so that lightbox uses full area of window
             swipe_min: 0.1,  // minimum swipe distance (as fraction screen size) 
-            placeholder_image: '../images/imageNotFound.png',  // within image_location
+            placeholder_image: '/images/lightboxSSA/imageNotFound.png',  // within image_location
         };
 
         // Apply defaults from Hugo config (if this is part of Hugo)
@@ -484,7 +484,7 @@ class LightboxSSA {
                 <figure id=lb-figure1 class="lb-element lb-figure">
                     <div id=lb-image1-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image1-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image1 class=lb-element src="../images/spinnerSSA.gif">
+                    <img id=lb-image1 class=lb-element src="/images/lightboxSSA/spinnerSSA.gif">
                     <figcaption id=lb-figcap1 class=lb-element></figcaption>
                 </figure>
             </div>
@@ -492,7 +492,7 @@ class LightboxSSA {
                 <figure id=lb-figure2 class="lb-element lb-figure">
                     <div id=lb-image2-prev class="lb-element lb-navclass"></div>
                     <div id=lb-image2-next class="lb-element lb-navclass"></div>
-                    <img id=lb-image2 class=lb-element src="../images/spinnerSSA.gif">
+                    <img id=lb-image2 class=lb-element src="/images/lightboxSSA/spinnerSSA.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
             </div></div>
