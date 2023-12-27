@@ -1,7 +1,5 @@
 # LightboxSSA
 
-TODO: cursor shape when over an lightboxed image
-
 LightboxSSA is small Javascript program, with some CSS, that can be used to overlay images on top of the current page for viewing as a lightbox.
 
 This repository is arranged so that it can be used as a [Hugo](https://gohugo.io/) [module](https://gohugo.io/hugo-modules/use-modules/), but the components can be used on non-Hugo sites too.

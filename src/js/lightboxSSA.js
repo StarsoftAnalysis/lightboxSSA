@@ -33,72 +33,6 @@
 // - data-alt="alt info"
 // - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>.  or the <figure>?
 
-// ongoing issues
-// - cSOT on image and imagePrev/Next instead of figure?
-
-// TODO
-// TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
-// FIXME currently not doing any preloading -- conflicts with srcset stuff, I think.
-// - overlay_opacity and swipe_min as perentages?
-// - data-url-target needed?
-// - should small images be expanded to max_width/height.  No -- say so in the docs
-// - option for overlay colour
-// - caption background doesn't quite fit
-// - FIXME? need ?w=800 etc on srcset entries -- figset provides them -- do we expect the user to do so?   or can we generate them?-probably not, or we wouldn't need figset to do it.
-// - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
-// - make param names compatible with {{<figure>}}
-// - more pure functions -- ??move them outside the class -- need lbssa prefix if so
-// - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
-// - keyboard < > esc -- reinstate previous effort
-    // - keyboard < > esc -- also back button to close lb
-// - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
-//  - highlight something during touchmove
-// - hide/disable prev or nav if only two images?
-// - more Aria stuff?
-// - maybe put X in corner of non-hover screens
-
-// DONE
-// - if figure, use enclosed img for source
-// - if img, use its src
-// - if a, use its href and enclosed img
-// - not very smooth start-up
-// - need new mechanism for setting options now that loading this js is deferred e.g. set an easter egg
-// - hide <> if only one image
-// - deal with missing images, e.g. set default size, use placeholder
-// - thin black border around images ? related to border vs transform/translate - fixed by using flex instead
-// - flex - div for each image
-// - not working on mobile!
-// - touch-action didn't help -- remove from here and css
-// - disable scroll thing - to get rid of scroll bar
-// - window resize (e.g. pressing F12) breaks aspect ratio
-// - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
-//     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
-// - hide <> arrows on swipable / narrow screens 
-// - debounce prev/next clicks
-//   - and/or allow prev/next touches on edges of image
-// - on click/mouse/pointer events should return quickly -- maybe just prevent further clicks, and then call start() from a timeout.
-// - swiping
-// - get caption from figcaption
-// - use title as tool tip? or add details?
-// - loading spinner
-// - use srcset that we've carefully parsed
-// - clickThroughImage -- to url, if external, config option to do target=_blank
-// - single-image lightbox -- need no < > arrows
-// - ditto -- need bigger image, otherwise there's not much point.
-// - check getSiblings and pointer stuff
-// Touch screens:
-//  - simple touch only to start lightbox
-//  - touch outside image to close -- NOT on clickable areas
-//  - swipe l/r to change image (already done?)
-//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
-//        those areas ought to respnd to either...
-///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
-//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
-//  - make caption transparent to touches
-//  - simple touch image to go to url if any
-// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
-// - respond to a class as well as data- attributes
-
 class LightboxSSA {
 
     constructor (options) {
@@ -832,25 +766,8 @@ class LightboxSSA {
         }
 
         function onLoad (e) {
-            // Get the dimensions of the image that the srcset mechanism has chosen:
-            const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
-            //console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
-            // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
-            // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
-            /* FIXME This doesn't seem to be needed after all
-            if (targetImage.srcset) {
-                let pixelWidth = targetImage.naturalWidth;  // use this if src (rather than srcset) image was used.
-                const wpos = targetImage.currentSrc.indexOf("?w=");
-                if (wpos > -1) {
-                    pixelWidth = parseInt(targetImage.currentSrc.substr(wpos+3));
-                }
-                if (!isNaN(pixelWidth)) {
-                    targetImage.style.maxWidth = `${pixelWidth}px`;
-                }
-            }
-            */
             self.showImage();
-        }; // end of onload function
+        }
 
         function onError () {
             // Expected image not found -- use placeholder
