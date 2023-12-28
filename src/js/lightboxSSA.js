@@ -242,10 +242,10 @@ class LightboxSSA {
     enable () {
         const self = this;
         // Attach click/touch/pointer listeners to every element on the page
-        // that has data-lightbox=... in its attributes or class='lightbox-...'.
+        // that has data-lightbox=... in its attributes or class='lightbox'.
         // Need to ignore swipes at this stage.
         // (This requires that DOM is ready, but happens before the lightbox has been built.)
-        const matches = document.querySelectorAll("[data-lightbox], [class*='lightbox-' i]" );  // need 'contains' because classes are returned as a string
+        const matches = document.querySelectorAll("[data-lightbox], [class*='lightbox' i]" );  // need 'contains' because classes are returned as a string
         matches.forEach(function(match) {
             self.clickOrTouch(match, self.start.bind(self), match);
         });
@@ -542,7 +542,7 @@ class LightboxSSA {
         }, this.options.fade_duration);
     }
 
-    // User has clicked on an element with 'data-lightbox' or 'class=lightbox-...'.
+    // User has clicked on an element with 'data-lightbox' or 'class=lightbox...'.
     // Show lightbox. If the image is part of a set, add others in set to album array.
     start (e, lbelement) {
         // Spread args not working?  -- make sure lbelement isn't an array:
@@ -550,7 +550,6 @@ class LightboxSSA {
             lbelement = lbelement[0];
         }
         // lbelement is the thing clicked on -- typically a <figure> or <image>
-        //console.log("SSSSSSSSSSSSSSStart lbelement=", lbelement);
         if (!lbelement) {
             return; // shouldn't happen
         }
@@ -561,7 +560,6 @@ class LightboxSSA {
             this.applyOptions(lightboxssa_options);
         }
 
-        // Build <<<<<<<<<<<<<<<
         this.build();
 
         this.showLightbox();
@@ -680,25 +678,44 @@ class LightboxSSA {
             });
         } // end of addToAlbum
 
-        // Find other elements with the same gallery name -- either from data-lightbox or class=lightbox-
+        // Find other elements with the same gallery name -- either from data-lightbox or class=lightbox...
         // Find all elements with the same gallery name.  querySelectorAll returns them in document order.
         // NOTE that there may legitimately be no attribute, in which case we don't want a gallery.
         let lbelements = [];
-        let dataLightboxValue = lbelement.getAttribute('data-lightbox');
-        if (dataLightboxValue == "") {
+        let galleryName = lbelement.getAttribute('data-lightbox');
+        if (galleryName === "") {
             // No attribute, so no gallery.  Just the single image
-            lbelements = [lbelement];
-        } else if (dataLightboxValue !== null) {
-            lbelements = document.querySelectorAll(`[data-lightbox="${dataLightboxValue}" i]`);
-        } else {
-            // not found in data-..., look in class (if more than one, we'll end up with the last one)
+        } else if (galleryName === null) {
+            // no data-lightbox so look for class (if more than one, we'll end up with the last one)
             const classes = lbelement.classList;
             classes.forEach(function (value, key, listObj) {
-                if (value.startsWith("lightbox-")) {
-                    dataLightboxValue = value.replace("lightbox-", "");
+                if (value.startsWith("lightbox")) {
+                    if (value.startsWith("lightbox-")) {
+                        // Strip off the prefix
+                        galleryName = value.replace("lightbox-", "");
+                    } else {
+                        // simple 'lightbox' class -- no gallery
+                    }
                 }
             });
-            lbelements = document.querySelectorAll(`[class="lightbox-${dataLightboxValue}" i]`);
+        }
+        if (galleryName) {
+            // Collect all the elements with either data-lightbox... or class=lightbox...
+            lbelements = document.querySelectorAll(`[data-lightbox='${galleryName}' i], [class='lightbox-${galleryName}' i]`);
+            /*
+            // TODO sort them in DOM order -- can't see how.
+            let lbarray = Array.from(lbelements);
+            lbarray.sort(function(a,b) {
+                //var aCat = a.getElementsByTagName("category")[0].childNodes[0].nodeValue;
+                //var bCat = b.getElementsByTagName("category")[0].childNodes[0].nodeValue;
+                //if (aCat > bCat) return 1;
+                //if (aCat < bCat) return -1;
+                return 0;
+            });
+            */
+        } else { 
+            // Just one image in the lightbox
+            lbelements = [lbelement];
         }
         if (lbelements.length > 0) {
             let i = 0;
@@ -711,7 +728,7 @@ class LightboxSSA {
             });
         } else {
             // Don't know why this happens sometimes.  Timing?
-            console.log("lb: no lightbox elements!  lbelement=%o  dlB=%s", lbelement, dataLightboxValue);
+            console.log("lb: no lightbox elements!  lbelement=%o  dlB=%s", lbelement, galleryName);
             // At least put the original element in the album
             addToAlbum(lbelement);
             imageNumber = 0;

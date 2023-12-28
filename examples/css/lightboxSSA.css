@@ -3,7 +3,7 @@ body.lb-disable-scrolling {
   overflow: hidden;
 }
 
-[data-lightbox] {
+[data-lightbox], [class*=lightbox i] {
   cursor: pointer;
 }
 
@@ -95,7 +95,7 @@ figure.lb-figure figcaption {
   height: 100%;
   left: 0;
   top: 0%;
-  cursor: url(/images/lightboxSSAprevCursorSSA.png) 2 17, pointer;
+  cursor: url(/images/lightboxSSA/prevCursorSSA.png) 2 17, pointer;
   pointer-events: auto;
   z-index: 17;
 }

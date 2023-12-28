@@ -115,8 +115,11 @@ or
 <img class="lightbox-img1" src="thingy.png">
 ```
 
-The value of the `data-lightbox` attribute is used to group images into galleries.  Use a unique attribute,
+The value of the `data-lightbox=...`/`class=lightbox-...` attribute (aka the gallery name) is used to group images into galleries.  Use a unique attribute,
 or no attribute, to create a lightbox for a single image with no gallery.
+
+If you mix  `data-lightbox=...`/`class=lightbox-...` attributes with the same gallery name, the order of the images in the gallery won't be 
+in DOM order, so do one or the other.
 
 ### Details 
 The lightbox will take details (caption, title, alt text, etc.) from the img or the figure, or both.  If the lightbox is attached

@@ -33,72 +33,6 @@
 // - data-alt="alt info"
 // - data-url="http... "   - link when lightboxed image is clicked - optional - if present, we wrap the <img> with a <a>.  or the <figure>?
 
-// ongoing issues
-// - cSOT on image and imagePrev/Next instead of figure?
-
-// TODO
-// TODO need to know which way we're going to optimise loading of prev and next ?  FOR NOW rely on browser's cacheing, and just get prev and next the simple way
-// FIXME currently not doing any preloading -- conflicts with srcset stuff, I think.
-// - overlay_opacity and swipe_min as perentages?
-// - data-url-target needed?
-// - should small images be expanded to max_width/height.  No -- say so in the docs
-// - option for overlay colour
-// - caption background doesn't quite fit
-// - FIXME? need ?w=800 etc on srcset entries -- figset provides them -- do we expect the user to do so?   or can we generate them?-probably not, or we wouldn't need figset to do it.
-// - srcset sizes -- do we need more than one -- maybe not -- we can assume image in the lightbox is as big as the max_width -- already done.
-// - make param names compatible with {{<figure>}}
-// - more pure functions -- ??move them outside the class -- need lbssa prefix if so
-// - wrap_around option is ignored (always wraps) except with keyboard nav.  //   (no it isn't, but arrows aren't removed)
-// - keyboard < > esc -- reinstate previous effort
-    // - keyboard < > esc -- also back button to close lb
-// - more configuration e.g. image margin/radius/colour, caption styling, etc.  NO! use CSS, and have LESS in config
-//  - highlight something during touchmove
-// - hide/disable prev or nav if only two images?
-// - more Aria stuff?
-// - maybe put X in corner of non-hover screens
-
-// DONE
-// - if figure, use enclosed img for source
-// - if img, use its src
-// - if a, use its href and enclosed img
-// - not very smooth start-up
-// - need new mechanism for setting options now that loading this js is deferred e.g. set an easter egg
-// - hide <> if only one image
-// - deal with missing images, e.g. set default size, use placeholder
-// - thin black border around images ? related to border vs transform/translate - fixed by using flex instead
-// - flex - div for each image
-// - not working on mobile!
-// - touch-action didn't help -- remove from here and css
-// - disable scroll thing - to get rid of scroll bar
-// - window resize (e.g. pressing F12) breaks aspect ratio
-// - fine-tune prev/next arrows on narrow screens: remove padding in the .png's, and position the arrow
-//     a small distance from the edge -- see https://css-tricks.com/almanac/properties/b/background-position/
-// - hide <> arrows on swipable / narrow screens 
-// - debounce prev/next clicks
-//   - and/or allow prev/next touches on edges of image
-// - on click/mouse/pointer events should return quickly -- maybe just prevent further clicks, and then call start() from a timeout.
-// - swiping
-// - get caption from figcaption
-// - use title as tool tip? or add details?
-// - loading spinner
-// - use srcset that we've carefully parsed
-// - clickThroughImage -- to url, if external, config option to do target=_blank
-// - single-image lightbox -- need no < > arrows
-// - ditto -- need bigger image, otherwise there's not much point.
-// - check getSiblings and pointer stuff
-// Touch screens:
-//  - simple touch only to start lightbox
-//  - touch outside image to close -- NOT on clickable areas
-//  - swipe l/r to change image (already done?)
-//     -- BUT distinguish swipe from simple touch??  on image and imageprev/next   
-//        those areas ought to respnd to either...
-///  -- maybe, detect if touchscreen, add another layer above to trap swipes.  or remove imageprev/next and let image do 
-//  see https://pantaley.com/blog/How-to-separate-Drag-and-Swipe-from-Click-and-Touch-events/ for ideas
-//  - make caption transparent to touches
-//  - simple touch image to go to url if any
-// - centring of lightbox image seems to ignore browser window scroll bar -- how to stop that?
-// - respond to a class as well as data- attributes
-
 class LightboxSSA {
 
     constructor (options) {
@@ -308,10 +242,10 @@ class LightboxSSA {
     enable () {
         const self = this;
         // Attach click/touch/pointer listeners to every element on the page
-        // that has data-lightbox=... in its attributes or class='lightbox-...'.
+        // that has data-lightbox=... in its attributes or class='lightbox'.
         // Need to ignore swipes at this stage.
         // (This requires that DOM is ready, but happens before the lightbox has been built.)
-        const matches = document.querySelectorAll("[data-lightbox], [class*='lightbox-' i]" );  // need 'contains' because classes are returned as a string
+        const matches = document.querySelectorAll("[data-lightbox], [class*='lightbox' i]" );  // need 'contains' because classes are returned as a string
         matches.forEach(function(match) {
             self.clickOrTouch(match, self.start.bind(self), match);
         });
@@ -608,7 +542,7 @@ class LightboxSSA {
         }, this.options.fade_duration);
     }
 
-    // User has clicked on an element with 'data-lightbox' or 'class=lightbox-...'.
+    // User has clicked on an element with 'data-lightbox' or 'class=lightbox...'.
     // Show lightbox. If the image is part of a set, add others in set to album array.
     start (e, lbelement) {
         // Spread args not working?  -- make sure lbelement isn't an array:
@@ -616,7 +550,6 @@ class LightboxSSA {
             lbelement = lbelement[0];
         }
         // lbelement is the thing clicked on -- typically a <figure> or <image>
-        //console.log("SSSSSSSSSSSSSSStart lbelement=", lbelement);
         if (!lbelement) {
             return; // shouldn't happen
         }
@@ -627,7 +560,6 @@ class LightboxSSA {
             this.applyOptions(lightboxssa_options);
         }
 
-        // Build <<<<<<<<<<<<<<<
         this.build();
 
         this.showLightbox();
@@ -746,24 +678,46 @@ class LightboxSSA {
             });
         } // end of addToAlbum
 
-        // Find other elements with the same gallery name -- either from data-lightbox or class=lightbox-
+        // Find other elements with the same gallery name -- either from data-lightbox or class=lightbox...
         // Find all elements with the same gallery name.  querySelectorAll returns them in document order.
-        // TODO? rename dataLightboxValue to galleryName
+        // NOTE that there may legitimately be no attribute, in which case we don't want a gallery.
         let lbelements = [];
-        let dataLightboxValue = lbelement.getAttribute('data-lightbox');
-        if (dataLightboxValue) {
-            lbelements = document.querySelectorAll(`[data-lightbox="${dataLightboxValue}" i]`);
-        } else {
-            // not found in data-..., look in class (if more than one, we'll end up with the last one)
+        let galleryName = lbelement.getAttribute('data-lightbox');
+        if (galleryName === "") {
+            // No attribute, so no gallery.  Just the single image
+        } else if (galleryName === null) {
+            // no data-lightbox so look for class (if more than one, we'll end up with the last one)
             const classes = lbelement.classList;
             classes.forEach(function (value, key, listObj) {
-                if (value.startsWith("lightbox-")) {
-                    dataLightboxValue = value.replace("lightbox-", "");
+                if (value.startsWith("lightbox")) {
+                    if (value.startsWith("lightbox-")) {
+                        // Strip off the prefix
+                        galleryName = value.replace("lightbox-", "");
+                    } else {
+                        // simple 'lightbox' class -- no gallery
+                    }
                 }
             });
-            lbelements = document.querySelectorAll(`[class="lightbox-${dataLightboxValue}" i]`);
         }
-        if (lbelements) {
+        if (galleryName) {
+            // Collect all the elements with either data-lightbox... or class=lightbox...
+            lbelements = document.querySelectorAll(`[data-lightbox='${galleryName}' i], [class='lightbox-${galleryName}' i]`);
+            /*
+            // TODO sort them in DOM order -- can't see how.
+            let lbarray = Array.from(lbelements);
+            lbarray.sort(function(a,b) {
+                //var aCat = a.getElementsByTagName("category")[0].childNodes[0].nodeValue;
+                //var bCat = b.getElementsByTagName("category")[0].childNodes[0].nodeValue;
+                //if (aCat > bCat) return 1;
+                //if (aCat < bCat) return -1;
+                return 0;
+            });
+            */
+        } else { 
+            // Just one image in the lightbox
+            lbelements = [lbelement];
+        }
+        if (lbelements.length > 0) {
             let i = 0;
             lbelements.forEach(function(lbe) {
                 addToAlbum(lbe);
@@ -774,7 +728,7 @@ class LightboxSSA {
             });
         } else {
             // Don't know why this happens sometimes.  Timing?
-            //console.log("lb: no lightbox elements! dlB=%s", dataLightboxValue);
+            console.log("lb: no lightbox elements!  lbelement=%o  dlB=%s", lbelement, galleryName);
             // At least put the original element in the album
             addToAlbum(lbelement);
             imageNumber = 0;
@@ -829,25 +783,8 @@ class LightboxSSA {
         }
 
         function onLoad (e) {
-            // Get the dimensions of the image that the srcset mechanism has chosen:
-            const targetImage = image;  //e.currentTarget;  // see https://stackoverflow.com/questions/68194927/
-            //console.log("onLoad: currentSrc=%s  i.width=%d  i.naturalWidth=%d", targetImage.currentSrc, targetImage.width, targetImage.naturalWidth);
-            // Rely on srcset urls ending in ?w=800 or whatever the actual image's pixel width is
-            // See this: https://stackoverflow.com/questions/67249881/img-naturalwidth-unexpected-return-value
-            /* FIXME This doesn't seem to be needed after all
-            if (targetImage.srcset) {
-                let pixelWidth = targetImage.naturalWidth;  // use this if src (rather than srcset) image was used.
-                const wpos = targetImage.currentSrc.indexOf("?w=");
-                if (wpos > -1) {
-                    pixelWidth = parseInt(targetImage.currentSrc.substr(wpos+3));
-                }
-                if (!isNaN(pixelWidth)) {
-                    targetImage.style.maxWidth = `${pixelWidth}px`;
-                }
-            }
-            */
             self.showImage();
-        }; // end of onload function
+        }
 
         function onError () {
             // Expected image not found -- use placeholder
