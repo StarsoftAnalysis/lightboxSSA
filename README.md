@@ -20,7 +20,14 @@ This is yet another fork of
 * No more jQuery.  And it's no longer a Javascript module, but it is a Hugo module.
 * Designed to work with Hugo's [`{{<figset>}}` and `{{<figrow>}}` shortcodes](https://github.com/StarsoftAnalysis/figset).
 
----
+## Demo
+
+The `examples` directory in this repository contains a simple website showing some of the features of lightboxSSA.  If you download
+the repository, you can view the example website using a local server by running, for example,
+```
+python -m http.server 8000
+```
+and pointing your browser at `localhost:8000`.
 
 ## Installation
 
@@ -33,7 +40,7 @@ dynamic cursor images.
 
 ### Hugo
 
-LightboxSSA can be used with Hugo (version 0.114 or later), either as a module or a theme.
+LightboxSSA can be used with Hugo (version 0.120 or later), either as a module or a theme.
 
 Needs Dart SASS -- use option `transpiler: dartsass`.
 

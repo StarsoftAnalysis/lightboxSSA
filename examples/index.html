@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <title>LightboxSSA Examples</title>
+  <script src="js/lightboxSSA.js" defer></script>
+  <link rel="stylesheet" href="css/lightboxSSA.css">
+<style>
+    body {
+        padding: 0 1em;
+    }
+    figure {
+      margin: 0.5em 1em 0.5em 0;
+      width: fit-content;
+      display: inline-block; /*table;*/
+    } 
+</style>
+</head>
+<body>
+
+    <h1>LightboxSSA Examples</h1>
+
+    <p>For a more complete demonstration of LightboxSSA, see the <a href="https://starsoftanalysis.github.io/figsetdemo">figset demonstration site</a>.
+
+    <h3>Two Individual Images</h3>
+    Each with its own lightbox.
+    <div id=div1>
+      <figure data-lightbox="example-1">
+          <img src="/photos/pic1.jpg" width=300 alt="A view of Westminster Abbey">
+          <figcaption>Westminster Abbey</figcaption>
+      </figure>
+      <figure data-lightbox="example-2" data-title="This is a title that only Javascript will find" data-caption="Data-caption">
+          <img src="/photos/pic2.jpg" width=300 alt="Looking down at a calm sea from the top of a chalk cliff">
+          <figcaption>A cliff, can't remember where</figcaption>
+      </figure>
+    </div>
+
+    <hr>
+
+    <h3>A Four Image Set</h3>
+    The lightboxes are linked into a gallery.
+    <div id=div2>
+      <figure data-lightbox="example-set" data-title="Click the right half of the image to move forward." data-caption="C1 from figure">
+        <img src="https://picsum.photos/400/600?random=3" width=200 alt="Random image" data-caption="C1 from img">
+        <figcaption>Caption 1</figcaption>
+      </figure>
+      <figure data-lightbox="example-set" data-title="Or press the right arrow on your keyboard.">
+        <img src="https://picsum.photos/400/600?random=4" width=200 alt="Random image">
+        <figcaption>Caption 2</figcaption>
+      </figure>
+      <figure data-lightbox="example-set" data-title="The next image in the set is preloaded as you're viewing.">
+        <img src="https://picsum.photos/400/600?random=5" width=200 alt="Random image">
+        <figcaption>Caption 3</figcaption>
+      </figure>
+      <figure data-lightbox="example-set" data-title="Click away from the image (where the cursor is an X) to close.">
+        <img src="https://picsum.photos/400/600?random=6" width=200 alt="Random image">
+        <figcaption>Caption 4</figcaption>
+      </figure>
+    </div>
+
+    <p>Thanks to <a href="https://picsum.photos">picsum.photos</a> for the images.
+
+    <h3>More detail tests</h3>
+    <div id=div2>
+      <figure data-lightbox="details" xdata-title="Figure data-title" data-caption="C1 from figure">
+        <img src="https://picsum.photos/400/600?random=3" width=200 alt="Random image" title="img title" xdata-title="img data-title" data-caption="C1 from img">
+        <figcaption>Testing titles</figcaption>
+      </figure>
+      <img src="https://picsum.photos/400/600?random=7" width=200 alt="Random image" title="img title" data-lightbox="details" xdata-title="img data-title" data-caption="Bare img caption">
+      <figure data-lightbox="details" data-title="Or press the right arrow on your keyboard.">
+        <img src="https://picsum.photos/400/600?random=4" width=200 alt="Random image">
+        <figcaption>Caption 2</figcaption>
+      </figure>
+      <figure data-lightbox="details" data-title="The next image in the set is preloaded as you're viewing.">
+        <img src="https://picsum.photos/400/600?random=5" width=200 alt="Random image">
+        <figcaption>Caption 3</figcaption>
+      </figure>
+      <figure data-lightbox="details" data-title="Click away from the image (where the cursor is an X) to close.">
+        <img src="https://picsum.photos/400/600?random=6" width=200 alt="Random image">
+        <figcaption>Caption 4</figcaption>
+      </figure>
+    </div>
+</body>
+</html>
