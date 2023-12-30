@@ -103,11 +103,18 @@ class LightboxSSA {
                     break;
                 case 'wrap_around':
                 case 'disable_scrolling':
-                    // Make it either true or false
-                    if (('false'.startsWith(val.toLowerCase())) || !val) {
-                        val = false
+                    // Make sure it's either true or false
+                    val = options[key];
+                    if (typeof(val) == 'boolean') {
+                        // already boolean
+                    } else if (typeof(val) == 'string') {
+                        // it's a string
+                        val = 'false'.startsWith(val.toLowerCase());
+                    } else {
+                        // make it boolean
+                        val = val ? true : false;
                     }
-                    this.options[key] = val ? true : false
+                    this.options[key] = val;
                     break;
                 case 'overlay_opacity':
                 case 'swipe_min':
@@ -254,10 +261,12 @@ class LightboxSSA {
     prevImage (e) {
         e.preventDefault();
         e.stopPropagation();
-        // TODO check wrap_around   and do nothing if album length is 1 (or is that already handled elsewhere?)
-        //console.log("method prevImage: currentII=%d", this.currentImageIndex);
         if (this.currentImageIndex == 0) {
-            this.changeImage(this.album.length - 1);
+            if (this.options.wrap_around) {
+                this.changeImage(this.album.length - 1);
+            } else {
+                this.dismantle();
+            }
         } else {
             this.changeImage(this.currentImageIndex - 1);
         }
@@ -266,9 +275,12 @@ class LightboxSSA {
     nextImage (e) {
         e.preventDefault();
         e.stopPropagation();
-        //console.log("method nextImage: currentII=%d", this.currentImageIndex);
-        if (this.currentImageIndex === this.album.length - 1) {
-            this.changeImage(0);
+        if (this.currentImageIndex == this.album.length - 1) {
+            if (this.options.wrap_around) {
+                this.changeImage(0);
+            } else {
+                this.dismantle();
+            }
         } else {
             this.changeImage(this.currentImageIndex + 1);
         }
@@ -411,21 +423,21 @@ class LightboxSSA {
         const html = `
             <div id=lb-overlay class=lb-element>
             <div id=lb-nav class="lb-element lb-navclass">
-                <div id=lb-prev aria-label="Previous image" class=lb-element></div>
-                <div id=lb-next aria-label="Next image" class=lb-element></div>
+                <div id=lb-prev aria-label="Previous image" class="lb-prev-ptr lb-element"></div>
+                <div id=lb-next aria-label="Next image" class="lb-next-ptr lb-element"></div>
             </div>
             <div id=lb-flex1 class="lb-flex lb-element">
                 <figure id=lb-figure1 class="lb-element lb-figure">
-                    <div id=lb-image1-prev class="lb-element lb-navclass"></div>
-                    <div id=lb-image1-next class="lb-element lb-navclass"></div>
+                    <div id=lb-image1-prev class="lb-element lb-navclass lb-prev-ptr"></div>
+                    <div id=lb-image1-next class="lb-element lb-navclass lb-next-ptr"></div>
                     <img id=lb-image1 class=lb-element src="/images/lightboxSSA/spinnerSSA.gif">
                     <figcaption id=lb-figcap1 class=lb-element></figcaption>
                 </figure>
             </div>
             <div id=lb-flex2 class="lb-flex lb-element">
                 <figure id=lb-figure2 class="lb-element lb-figure">
-                    <div id=lb-image2-prev class="lb-element lb-navclass"></div>
-                    <div id=lb-image2-next class="lb-element lb-navclass"></div>
+                    <div id=lb-image2-prev class="lb-element lb-navclass lb-prev-ptr"></div>
+                    <div id=lb-image2-next class="lb-element lb-navclass lb-next-ptr"></div>
                     <img id=lb-image2 class=lb-element src="/images/lightboxSSA/spinnerSSA.gif">
                     <figcaption id=lb-figcap2 class=lb-element></figcaption>
                 </figure>
@@ -753,9 +765,11 @@ class LightboxSSA {
             }
             // (clickThroughImage will handle clicks)
         }
-        if (this.albumLen == 2 && !this.options.wrap_around) {
+        /* NO not here
+        if (this.albumLen > 1 && !this.options.wrap_around) {
             // TODO adjust arrows by hiding prev or next
         }
+        */
 
         // Set pointers for swapping (they'll be swapped immediately in changeImage())
         this.currentUnit = this.unit2;
@@ -832,7 +846,7 @@ class LightboxSSA {
         });
         this.fadeTo(this.otherUnit.flex, this.options.fade_duration+10, 1.0, (e) => {    // function() {
             //console.log("fade in other finished  e=", e);
-            // FIXME why two layers or rAF ?
+            // FIXME why two layers of rAF ?
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     //console.log("fade in other timeout called");
@@ -842,6 +856,22 @@ class LightboxSSA {
                     this.currentUnit.imageNext.style['pointer-events'] = 'auto';
                     this.currentUnit.imagePrev.title = this.currentUnit.image.title;
                     this.currentUnit.imageNext.title = this.currentUnit.image.title;
+                    // if first/last and not wrapping, take out #lb-next id
+                    // TODO use classes for prev/next cursors
+                    if (this.currentImageIndex == 0 && !this.options.wrap_around) { 
+                        this.prev.classList.remove("lb-prev-ptr");
+                        this.currentUnit.imagePrev.classList.remove('lb-prev-ptr');
+                    } else {
+                        this.prev.classList.add("lb-prev-ptr");
+                        this.currentUnit.imagePrev.classList.add('lb-prev-ptr');
+                    }
+                    if (this.currentImageIndex == this.albumLen-1 && !this.options.wrap_around) { 
+                        this.next.classList.remove("lb-next-ptr");
+                        this.currentUnit.imageNext.classList.remove('lb-next-ptr');
+                    } else {
+                        this.next.classList.add("lb-next-ptr");
+                        this.currentUnit.imageNext.classList.add('lb-next-ptr');
+                    }
                 });
             });
         });
@@ -861,7 +891,7 @@ class LightboxSSA {
     };
 
     // Unbuild the DOM structure
-    dismantle (e) {
+    dismantle () {
         // Fading before removing would be nice, but it leaves bits behind,
         // and e.g. clickThrough event still happens.
         //console.log("DDDDDDDDDDDDDDDDDDDDDDDismantling");

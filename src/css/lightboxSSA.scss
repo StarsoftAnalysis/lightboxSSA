@@ -22,8 +22,7 @@
 // -- see https://freebiesupply.com/blog/css-arrows/ for fancy responsive < > arrows
 // -- see https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Positioning/Understanding_z_index/The_stacking_context
 //    re stacking contexts -- zstart can be anything here
-
-// ?? Use will-change: transform, opacity;  to make sure fadeTo works???
+// -- ?? Use will-change: transform, opacity;  to make sure fadeTo works???
 
 // Variables
 $imageBorder: 1vh;
@@ -85,14 +84,12 @@ body.lb-disable-scrolling {
     width: 50%;
     z-index: $zstart+2;
     pointer-events: auto;
-    cursor: url(/images/lightboxSSA/prevCursorSSA.png) 2 17, pointer;
 }
 #lb-next { // , #lb-image1-next, #lb-image2-next {
     height: 50%;
     width: 50%;
     z-index: $zstart+2;
     pointer-events: auto;
-    cursor: url(/images/lightboxSSA/nextCursorSSA.png) 18 17, pointer;
 }
 
 .lb-flex {
@@ -135,7 +132,6 @@ $onImageClickAreaHeight: 100%;
   height: $onImageClickAreaHeight;
   left: 0;
   top: calc((100% - $onImageClickAreaHeight) / 2);
-  cursor: url(/images/lightboxSSA/prevCursorSSA.png) 2 17, pointer;
   pointer-events: auto;
   z-index: $zstart+7;
 }
@@ -146,9 +142,16 @@ $onImageClickAreaHeight: 100%;
   height: $onImageClickAreaHeight;
   right: 0;
   top: calc((100% - $onImageClickAreaHeight) / 2);
-  cursor: url(/images/lightboxSSA/nextCursorSSA.png) 18 17, pointer;
   pointer-events: auto;
   z-index: 3; // relative to figure  $zstart+7;
+}
+
+// Pointers for Next and Prev clickable areas
+.lb-prev-ptr {
+    cursor: url(/images/lightboxSSA/prevCursorSSA.png) 2 17, pointer;
+}
+.lb-next-ptr {
+    cursor: url(/images/lightboxSSA/nextCursorSSA.png) 18 17, pointer;
 }
 
 #lb-image1, #lb-image2 {

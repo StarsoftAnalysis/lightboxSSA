@@ -150,8 +150,6 @@ Examples:
 </figure>
 ```
 
-With a bare image -- see lbssatest site or examples?
-
 Use title= for tooltip on main page, will also be tooltip on lightbox; data-title= will only show up on lightbox (overriding title=).
 Likewise for caption and data-caption.
 And alt.
@@ -159,7 +157,10 @@ This is complicated -- see addToAlbum()   FIXME   e.g. if there's a figure with 
 Rule: data- attributes take precedence -- they can override those without data- because they are unique to the lightbox, 
 e.g. '<img data-title=x title=y ... >  uses y on the main page, x on the lightbox.
 
----
+### Known Issues
+
+* If lightbox elements share a gallery name but use a mixture of `class=lightbox-...` and `data-lightbox=...`, the order
+  of the images in the gallery may not match the order on the main screen.
 
 ### Local development
 
